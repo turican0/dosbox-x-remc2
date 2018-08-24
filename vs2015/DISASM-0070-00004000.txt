@@ -1,0 +1,4096 @@
+0070:4000   xor  sp,[8B67] 3326678B
+0070:4004   push sp 54
+0070:4005   xor  ax,[bp+si] 3302
+0070:4007   pop  esi 665E
+0070:4009   pop  ebx 665B
+0070:400B   pop  bp 5D
+0070:400C   ret C3
+0070:400D   push edi 6657
+0070:400F   mov  edi,[bp+04] 668B7E04
+0070:4013   push esi 6656
+0070:4015   shl  edi,04 66C1E704
+0070:4019   movzx esi,bp 660FB7F5
+0070:401D   add  di,[bp+08] 037E08
+0070:4020   add  si,000A 83C60A
+0070:4023   mov  es,[0C2E] 8E062E0C
+0070:4027   ss:movsd 676636A5
+0070:402B   pop  esi 665E
+0070:402D   pop  edi 665F
+0070:402F   pop  bp 5D
+0070:4030   ret C3
+0070:4031   push bp 55
+0070:4032   mov  bp,sp 8BEC
+0070:4034   cmp  byte [002F],03 803E2F0003
+0070:4039   jnc  00180147 ($-54) 73AC
+0070:403B   push ds 1E
+0070:403C   call 001801C2 ($+23) E82300
+0070:403F   mov  ax,[bx] 8B07
+0070:4041   mov  dx,[bx+02] 8B5702
+0070:4044   pop  ds 1F
+0070:4045   pop  bp 5D
+0070:4046   ret C3
+0070:4047   push bp 55
+0070:4048   mov  bp,sp 8BEC
+0070:404A   cmp  byte [002F],03 803E2F0003
+0070:404F   jnc  0018016D ($-44) 73BC
+0070:4051   push ds 1E
+0070:4052   call 001801C2 ($+d) E80D00
+0070:4055   mov  ax,[bp+0A] 8B460A
+0070:4058   mov  dx,[bp+0C] 8B560C
+0070:405B   mov  [bx],ax 8907
+0070:405D   mov  [bx+02],dx 895702
+0070:4060   jmp  short 001801A4 ($-1e) EBE2
+0070:4062   mov  dx,[bp+04] 8B5604
+0070:4065   mov  cx,[bp+06] 8B4E06
+0070:4068   shl  dx,1 D1E2
+0070:406A   rcl  cx,1 D1D1
+0070:406C   shl  dx,1 D1E2
+0070:406E   rcl  cx,1 D1D1
+0070:4070   shl  dx,1 D1E2
+0070:4072   rcl  cx,1 D1D1
+0070:4074   shl  dx,1 D1E2
+0070:4076   rcl  cx,1 D1D1
+0070:4078   mov  bx,[0C38] 8B1E380C
+0070:407C   test bl,03 F6C303
+0070:407F   jne  001801F3 ($+12) 7512
+0070:4081   push 0008 6A08
+0070:4083   pop  ds 1F
+0070:4084   mov  [bx+02],dx 895702
+0070:4087   mov  [bx+04],cl 884F04
+0070:408A   mov  [bx+07],ch 886F07
+0070:408D   mov  ds,bx 8EDB
+0070:408F   mov  bx,[bp+08] 8B5E08
+0070:4092   ret C3
+0070:4093   mov  ax,0007 B80700
+0070:4096   push cs 0E
+0070:4097   call 0017C9F9 ($-3801) E8FFC7
+0070:409A   jmp  short 001801ED ($-f) EBF1
+0070:409C   mov  bx,sp 8BDC
+0070:409E   mov  ax,ss:[bx+02] 368B4702
+0070:40A2   mov  dx,ss:[bx+04] 368B5704
+0070:40A6   shr  dx,1 D1EA
+0070:40A8   rcr  ax,1 D1D8
+0070:40AA   shr  dx,1 D1EA
+0070:40AC   rcr  ax,1 D1D8
+0070:40AE   shr  dx,1 D1EA
+0070:40B0   rcr  ax,1 D1D8
+0070:40B2   shr  dx,1 D1EA
+0070:40B4   rcr  ax,1 D1D8
+0070:40B6   ret C3
+0070:40B7   mov  bx,sp 8BDC
+0070:40B9   mov  ax,ss:[bx+02] 368B4702
+0070:40BD   mov  dx,ss:[bx+04] 368B5704
+0070:40C1   shl  ax,1 D1E0
+0070:40C3   rcl  dx,1 D1D2
+0070:40C5   shl  ax,1 D1E0
+0070:40C7   rcl  dx,1 D1D2
+0070:40C9   shl  ax,1 D1E0
+0070:40CB   rcl  dx,1 D1D2
+0070:40CD   shl  ax,1 D1E0
+0070:40CF   rcl  dx,1 D1D2
+0070:40D1   ret C3
+0070:40D2   push bp 55
+0070:40D3   mov  bp,sp 8BEC
+0070:40D5   mov  ax,[bp+04] 8B4604
+0070:40D8   mov  dx,[bp+06] 8B5606
+0070:40DB   div  word [bp+08] F77608
+0070:40DE   mov  bx,[bp+0A] 8B5E0A
+0070:40E1   mov  ss:[bx],dx 368917
+0070:40E4   pop  bp 5D
+0070:40E5   ret C3
+0070:40E6   cli FA
+0070:40E7   mov  ax,[bp+04] 8B4604
+0070:40EA   stosw  AB
+0070:40EB   mov  ax,[bp] 8B4600
+0070:40EE   stosw  AB
+0070:40EF   mov  al,[bp+02] 8A4602
+0070:40F2   mov  ah,[bp+08] 8A6608
+0070:40F5   stosw  AB
+0070:40F6   mov  al,[bp+09] 8A4609
+0070:40F9   and  al,F0 24F0
+0070:40FB   mov  ah,[bp+06] 8A6606
+0070:40FE   and  ah,0F 80E40F
+0070:4101   or   al,ah 0AC4
+0070:4103   mov  ah,[bp+03] 8A6603
+0070:4106   stosw  AB
+0070:4107   ret C3
+0070:4108   mov  bx,sp 8BDC
+0070:410A   push bp 55
+0070:410B   push edi 6657
+0070:410D   mov  bp,ss:[bx+04] 368B6F04
+0070:4111   mov  bx,ss:[bx+02] 368B5F02
+0070:4115   cmp  byte [002E],00 803E2E0000
+0070:411A   je   00180290 ($+14) 7414
+0070:411C   and  bl,F8 80E3F8
+0070:411F   mov  di,bx 8BFB
+0070:4121   push 0008 6A08
+0070:4123   pop  es 07
+0070:4124   call 00180246 ($-41) E8BFFF
+0070:4127   pop  edi 665F
+0070:4129   pop  bp 5D
+0070:412A   pop  ax 58
+0070:412B   push ss 16
+0070:412C   pop  ss 17
+0070:412D   sti FB
+0070:412E   jmp  near ax FFE0
+0070:4130   push ds 1E
+0070:4131   pop  es 07
+0070:4132   xor  edi,edi 6633FF
+0070:4135   mov  di,08C0 BFC008
+0070:4138   push di 57
+0070:4139   call 00180246 ($-56) E8AAFF
+0070:413C   pop  di 5F
+0070:413D   mov  cx,ds 8CD9
+0070:413F   test byte [bp+08],08 F6460808
+0070:4143   je   001802A7 ($+2) 7402
+0070:4145   mov  cx,cs 8CC9
+0070:4147   lar  ax,cx 0F02C1
+0070:414A   and  ah,FE 80E4FE
+0070:414D   mov  es:[di+05],ah 26886505
+0070:4151   pop  edx 665A
+0070:4153   pop  bp 5D
+0070:4154   pop  cx 59
+0070:4155   mov  ax,000C B80C00
+0070:4158   push cs 0E
+0070:4159   call 0017C9F9 ($-38c3) E83DC7
+0070:415C   push ss 16
+0070:415D   pop  ss 17
+0070:415E   mov  edi,edx 668BFA
+0070:4161   cmc F5
+0070:4162   mov  ax,0000 B80000
+0070:4165   rcl  ax,1 D1D0
+0070:4167   sti FB
+0070:4168   jmp  near cx FFE1
+0070:416A   pop  si 5E
+0070:416B   xor  ax,ax 33C0
+0070:416D   ret C3
+0070:416E   mov  bx,sp 8BDC
+0070:4170   push si 56
+0070:4171   mov  si,ss:[bx+02] 368B7702
+0070:4175   cmp  si,[097C] 3B367C09
+0070:4179   jnc  001802CA ($-11) 73EF
+0070:417B   push ds 1E
+0070:417C   push bp 55
+0070:417D   mov  bp,ss:[bx+04] 368B6F04
+0070:4181   cmp  byte [002E],00 803E2E0000
+0070:4186   je   00180310 ($+28) 7428
+0070:4188   push 0008 6A08
+0070:418A   pop  ds 1F
+0070:418B   and  si,FFF8 83E6F8
+0070:418E   lodsw  AD
+0070:418F   mov  [bp+04],ax 894604
+0070:4192   lodsw  AD
+0070:4193   mov  [bp],ax 894600
+0070:4196   lodsw  AD
+0070:4197   mov  [bp+02],al 884602
+0070:419A   mov  [bp+08],ah 886608
+0070:419D   lodsw  AD
+0070:419E   and  al,F0 24F0
+0070:41A0   mov  [bp+09],al 884609
+0070:41A3   mov  [bp+03],ah 886603
+0070:41A6   mov  word [bp+06],0000 C746060000
+0070:41AB   inc  ax 40
+0070:41AC   pop  bp 5D
+0070:41AD   pop  ds 1F
+0070:41AE   pop  si 5E
+0070:41AF   ret C3
+0070:41B0   push ds 1E
+0070:41B1   pop  es 07
+0070:41B2   push edi 6657
+0070:41B4   xor  edi,edi 6633FF
+0070:41B7   mov  di,08C0 BFC008
+0070:41BA   mov  si,di 8BF7
+0070:41BC   mov  bx,ss:[bx+02] 368B5F02
+0070:41C0   mov  ax,000B B80B00
+0070:41C3   push cs 0E
+0070:41C4   call 0017C9F9 ($-392e) E8D2C6
+0070:41C7   pop  edi 665F
+0070:41C9   jnc  001802EE ($-3d) 73C3
+0070:41CB   xor  ax,ax 33C0
+0070:41CD   jmp  short 0018030C ($-23) EBDD
+0070:41CF   xor  ax,ax 33C0
+0070:41D1   mov  bx,sp 8BDC
+0070:41D3   mov  cx,ss:[bx+02] 368B4F02
+0070:41D7   push cs 0E
+0070:41D8   call 0017C9F9 ($-3942) E8BEC6
+0070:41DB   cmc F5
+0070:41DC   sbb  bx,bx 1BDB
+0070:41DE   and  ax,bx 23C3
+0070:41E0   ret C3
+0070:41E1   mov  bx,sp 8BDC
+0070:41E3   mov  bx,ss:[bx+02] 368B5F02
+0070:41E7   mov  ax,0001 B80100
+0070:41EA   push cs 0E
+0070:41EB   call 0017C9F9 ($-3955) E8ABC6
+0070:41EE   jmp  short 0018033B ($-15) EBEB
+0070:41F0   mov  di,ss 8CD7
+0070:41F2   lar  edi,di 660F02FF
+0070:41F6   bt   edi,16 660FBAE716
+0070:41FB   pop  di 5F
+0070:41FC   push dword [0C18] 66FF36180C
+0070:4201   push word [0C1C] FF361C0C
+0070:4205   mov  [0C18],esp 668926180C
+0070:420A   jc   00180372 ($+6) 7206
+0070:420C   mov  word [0C1A],0000 C7061A0C0000
+0070:4212   mov  [0C1C],ss 8C161C0C
+0070:4216   sub  word [0996],0180 812E96098001
+0070:421C   push ds 1E
+0070:421D   pop  ss 17
+0070:421E   movzx esp,[0996] 660FB7269609
+0070:4224   sub  sp,0010 83EC10
+0070:4227   jmp  near di FFE7
+0070:4229   add  [si],al 0004
+0070:422B   add  [bx+si],al 0000
+0070:422D   add  byte [bx+si],EA 8000EA
+0070:4230   cmp  ax,7042 3D4270
+0070:4233   add  [bx+si],al 0000
+0070:4235   push cx 51
+0070:4236   mov  cx,0120 B92001
+0070:4239   call 001814C4 ($+1128) E82811
+0070:423C   pop  cx 59
+0070:423D   jmp  0000:0000 66EA00000000
+0070:4243   add  byte [bx+si],06 800006
+0070:4246   add  al,00 0400
+0070:4248   add  [bx+si-1600],al 008000EA
+0070:424C   pop  cx 59
+0070:424D   inc  dx 42
+0070:424E   jo   001803B0 ($+0) 7000
+0070:4250   add  [bx+di-47],dl 0051B9
+0070:4253   and  [bp+si],ax 2102
+0070:4255   call 001814C4 ($+110c) E80C11
+0070:4258   pop  cx 59
+0070:4259   jmp  0000:0004 66EA04000000
+0070:425F   add  byte [bx+si],0C 80000C
+0070:4262   add  al,00 0400
+0070:4264   add  [bx+si-1600],al 008000EA
+0070:4268   jne  0018040C ($+42) 7542
+0070:426A   jo   001803CC ($+0) 7000
+0070:426C   add  [bx+di-47],dl 0051B9
+0070:426F   and  al,[si] 2204
+0070:4271   call 001814C4 ($+10f0) E8F010
+0070:4274   pop  cx 59
+0070:4275   jmp  0000:0008 66EA08000000
+0070:427B   add  byte [bx+si],12 800012
+0070:427E   add  al,00 0400
+0070:4280   add  [bx+si-1600],al 008000EA
+0070:4284   xchg cx,ax 91
+0070:4285   inc  dx 42
+0070:4286   jo   001803E8 ($+0) 7000
+0070:4288   add  [bx+di-47],dl 0051B9
+0070:428B   and  cx,[bx+si] 2308
+0070:428D   call 001814C4 ($+10d4) E8D410
+0070:4290   pop  cx 59
+0070:4291   jmp  0000:000C 66EA0C000000
+0070:4297   add  byte [bx+si],18 800018
+0070:429A   add  al,00 0400
+0070:429C   add  [bx+si-1600],al 008000EA
+0070:42A0   lodsw  AD
+0070:42A1   inc  dx 42
+0070:42A2   jo   00180404 ($+0) 7000
+0070:42A4   add  [bx+di-47],dl 0051B9
+0070:42A7   and  al,10 2410
+0070:42A9   call 001814C4 ($+10b8) E8B810
+0070:42AC   pop  cx 59
+0070:42AD   jmp  0000:0010 66EA10000000
+0070:42B3   add  byte [bx+si],1E 80001E
+0070:42B6   add  al,00 0400
+0070:42B8   add  [bx+si-1600],al 008000EA
+0070:42BC   push ax 50
+0070:42BD   or   al,18 0C18
+0070:42BF   add  [bx+si],al 0000
+0070:42C1   push cx 51
+0070:42C2   mov  cx,2025 B92520
+0070:42C5   call 0018145C ($+1034) E83410
+0070:42C8   pop  cx 59
+0070:42C9   jmp  0000:0014 66EA14000000
+0070:42CF   add  byte [bx+si],24 800024
+0070:42D2   add  al,00 0400
+0070:42D4   add  [bx+si-1600],al 008000EA
+0070:42D8   in   ax,42 E542
+0070:42DA   jo   0018043C ($+0) 7000
+0070:42DC   add  [bx+di-47],dl 0051B9
+0070:42DF   inc  ax 2640
+0070:42E1   call 001814C4 ($+1080) E88010
+0070:42E4   pop  cx 59
+0070:42E5   jmp  0000:0018 66EA18000000
+0070:42EB   add  byte [bx+si],2A 80002A
+0070:42EE   add  al,00 0400
+0070:42F0   add  [bx+si-1600],al 008000EA
+0070:42F4   add  [bp+di+70],ax 014370
+0070:42F7   add  [bx+si],al 0000
+0070:42F9   push cx 51
+0070:42FA   mov  cx,8027 B92780
+0070:42FD   call 001814C4 ($+1064) E86410
+0070:4300   pop  cx 59
+0070:4301   jmp  0000:001C 66EA1C000000
+0070:4307   add  byte [bx+si],30 800030
+0070:430A   add  al,00 0400
+0070:430C   add  [bx+si-1600],al 008000EA
+0070:4310   pop  sp 5C
+0070:4311   or   al,18 0C18
+0070:4313   add  [bx+si],al 0000
+0070:4315   push cx 51
+0070:4316   mov  cx,0148 B94801
+0070:4319   call 00181488 ($+100c) E80C10
+0070:431C   pop  cx 59
+0070:431D   jmp  0000:0020 66EA20000000
+0070:4323   add  byte [bx+si],36 800036
+0070:4326   add  al,00 0400
+0070:4328   add  [bx+si-1600],al 008000EA
+0070:432C   pusha  60
+0070:432D   or   al,18 0C18
+0070:432F   add  [bx+si],al 0000
+0070:4331   push cx 51
+0070:4332   mov  cx,0269 B96902
+0070:4335   call 00181488 ($+ff0) E8F00F
+0070:4338   pop  cx 59
+0070:4339   jmp  0000:0024 66EA24000000
+0070:433F   add  byte [bx+si],3C 80003C
+0070:4342   add  al,00 0400
+0070:4344   add  [bx+si-1600],al 008000EA
+0070:4348   or   al,18 640C18
+0070:434B   add  [bx+si],al 0000
+0070:434D   push cx 51
+0070:434E   mov  cx,046A B96A04
+0070:4351   call 00181488 ($+fd4) E8D40F
+0070:4354   pop  cx 59
+0070:4355   jmp  0000:0028 66EA28000000
+0070:435B   add  byte [bx+si],42 800042
+0070:435E   add  al,00 0400
+0070:4360   add  [bx+si-1600],al 008000EA
+0070:4364   push 180C 680C18
+0070:4367   add  [bx+si],al 0000
+0070:4369   push cx 51
+0070:436A   mov  cx,084B B94B08
+0070:436D   call 00181488 ($+fb8) E8B80F
+0070:4370   pop  cx 59
+0070:4371   jmp  0000:002C 66EA2C000000
+0070:4377   add  byte [bx+si],48 800048
+0070:437A   add  al,00 0400
+0070:437C   add  [bx+si-1600],al 008000EA
+0070:4380   insb 6C
+0070:4381   or   al,18 0C18
+0070:4383   add  [bx+si],al 0000
+0070:4385   push cx 51
+0070:4386   mov  cx,104C B94C10
+0070:4389   call 00181488 ($+f9c) E89C0F
+0070:438C   pop  cx 59
+0070:438D   jmp  0000:0030 66EA30000000
+0070:4393   add  byte [bx+si],4E 80004E
+0070:4396   add  al,00 0400
+0070:4398   add  [bx+si-1600],al 008000EA
+0070:439C   loop 0018051C ($+1e) E21E
+0070:439E   jo   00180500 ($+0) 7000
+0070:43A0   add  [bx+di-47],dl 0051B9
+0070:43A3   dec  bp 4D
+0070:43A4   and  al,ch 20E8
+0070:43A6   or   byte [bx],59 800F59
+0070:43A9   jmp  0000:0034 66EA34000000
+0070:43AF   add  byte [bx+si],54 800054
+0070:43B2   add  al,00 0400
+0070:43B4   add  [bx+si-1600],al 008000EA
+0070:43B8   fisubrw [si] DE2C
+0070:43BA   sbb  [bx+si],al 1800
+0070:43BC   add  [bx+di-47],dl 0051B9
+0070:43BF   dec  si 4E
+0070:43C0   inc  ax 40
+0070:43C1   call 00181488 ($+f64) E8640F
+0070:43C4   pop  cx 59
+0070:43C5   jmp  0000:0038 66EA38000000
+0070:43CB   add  byte [bx+si],5A 80005A
+0070:43CE   add  al,00 0400
+0070:43D0   add  [bx+si-1600],al 008000EA
+0070:43D4   loope 00180579 ($+43) E143
+0070:43D6   jo   00180538 ($+0) 7000
+0070:43D8   add  [bx+di-47],dl 0051B9
+0070:43DB   outsw 6F
+0070:43DC   sub  al,82 80E882
+0070:43DF   db 0F 0F
+0070:43E0   pop  cx 59
+0070:43E1   jmp  0000:003C 66EA3C000000
+0070:43E7   add  byte [bx+si],60 800060
+0070:43EA   add  al,00 0400
+0070:43EC   add  [bx+si-1600],al 008000EA
+0070:43F0   leave C9
+0070:43F1   push dx 52
+0070:43F2   jo   00180554 ($+0) 7000
+0070:43F4   add  [bx+di-47],dl 0051B9
+0070:43F7   xor  [bx+di],al 3001
+0070:43F9   call 0018142D ($+ed1) E8D10E
+0070:43FC   pop  cx 59
+0070:43FD   jmp  0000:0040 66EA40000000
+0070:4403   add  byte [bx+si],21 800021
+0070:4406   and  [bx+di],dh 2031
+0070:4408   xor  bl,[bx+si] 3218
+0070:440A   add  [si],al 0004
+0070:440C   add  [bx+si],ah 0020
+0070:440E   and  [bx+si],sp 2120
+0070:4410   xor  dh,[bx+si] 327000
+0070:4413   sbb  [di+01],dl 185501
+0070:4416   and  [bx+di],sp 2121
+0070:4418   add  [bx+di],ax 0101
+0070:441A   or   [bx+di],cx 0909
+0070:441C   xor  [bx+si],sp 3120
+0070:441E   add  [di],cl 000D
+0070:4420   mov  [di+40],ax 894540
+0070:4423   inc  si 46
+0070:4424   cwd 99
+0070:4425   inc  si 46
+0070:4426   call 0017F6CF ($-eba) E846F1
+0070:4429   inc  si 46
+0070:442A   add  [bx+11],ax 014711
+0070:442D   inc  di 47
+0070:442E   sub  al,[bx+45] 2A4745
+0070:4431   inc  di 47
+0070:4432   xchg si,ax 96
+0070:4433   inc  di 47
+0070:4434   mov  di,DE47 BF47DE
+0070:4437   inc  di 47
+0070:4438   out  dx,ax EF
+0070:4439   inc  di 47
+0070:443A   add  [bp+di],al 0003
+0070:443C   or   byte [bx+di-37],49 8249C949
+0070:4440   and  [bp+si+34],cx 214A34
+0070:4443   inc  bp 45
+0070:4444   jo   001805A6 ($+0) 7000
+0070:4446   add  [4811],ax 01061148
+0070:444A   sub  al,48 2C48
+0070:444C   inc  di 47
+0070:444D   dec  ax 48
+0070:444E   jne  001805F8 ($+48) 7548
+0070:4450   mov  ch,48 B548
+0070:4452   dec  byte [bx+si-68] FE4898
+0070:4455   or   ax,3D18 0D183D
+0070:4458   add  word [bx],4C8A 81078A4C
+0070:445C   mov  [B04C],al A24CB0
+0070:445F   dec  sp 4C
+0070:4460   nop 90
+0070:4461   dec  si 4E
+0070:4462   in   al,dx EC
+0070:4463   dec  si 4E
+0070:4464   std FD
+0070:4465   dec  di 4F
+0070:4466   and  dx,[bx+si+34] 235034
+0070:4469   inc  bp 45
+0070:446A   jo   001805CC ($+0) 7000
+0070:446C   add  [bx+di],ax 0101
+0070:446E   pusha  60
+0070:446F   push ax 50
+0070:4470   xor  al,45 3445
+0070:4472   jo   001805D4 ($+0) 7000
+0070:4474   add  [si],ax 0104
+0070:4476   dec  dx 3E4A
+0070:4478   adc  al,4B 144B
+0070:447A   dec  bx 654B
+0070:447C   cbw 98
+0070:447D   dec  bx 4B
+0070:447E   xor  al,45 3445
+0070:4480   jo   001805E2 ($+0) 7000
+0070:4482   add  [si],ax 0104
+0070:4484   inc  di 47
+0070:4485   inc  bp 45
+0070:4486   inc  di 47
+0070:4487   inc  bp 45
+0070:4488   inc  di 47
+0070:4489   inc  bp 45
+0070:448A   inc  di 47
+0070:448B   inc  bp 45
+0070:448C   xor  al,45 3445
+0070:448E   jo   001805F0 ($+0) 7000
+0070:4490   add  [bx+si],ax 0100
+0070:4492   xor  al,45 3445
+0070:4494   jo   001805F6 ($+0) 7000
+0070:4496   add  [bp+si],ax 0102
+0070:4498   mov  dl,[bx+si-60] 8A50A0
+0070:449B   push cx 51
+0070:449C   add  [bp+di],al 0003
+0070:449E   pop  ss 17
+0070:449F   push dx 52
+0070:44A0   das 2F
+0070:44A1   push dx 52
+0070:44A2   cmp  dl,[bp+si-34] 3A52CC
+0070:44A5   or   ax,3D18 0D183D
+0070:44A8   add  word [bx+si],4534 81003445
+0070:44AC   jo   0018060E ($+0) 7000
+0070:44AE   add  [bx+si],ax 0100
+0070:44B0   add  [bp+si],al 0002
+0070:44B2   dec  ax 48
+0070:44B3   push dx 52
+0070:44B4   jg   00180668 ($+52) 7F52
+0070:44B6   add  [bx+si],al 0000
+0070:44B8   and  [si+3C],al 20443C
+0070:44BB   inc  sp 44
+0070:44BC   dec  ax 48
+0070:44BD   inc  sp 44
+0070:44BE   pop  dx 5A
+0070:44BF   inc  sp 44
+0070:44C0   outsb 6E
+0070:44C1   inc  sp 44
+0070:44C2   jbe  00180668 ($+44) 7644
+0070:44C4   test [si-6E],al 844492
+0070:44C7   inc  sp 44
+0070:44C8   cbw 98
+0070:44C9   inc  sp 44
+0070:44CA   sahf 9E
+0070:44CB   inc  sp 44
+0070:44CC   stosb AA
+0070:44CD   inc  sp 44
+0070:44CE   mov  ax,B844 B844B8
+0070:44D1   inc  sp 44
+0070:44D2   mov  al,44 B044
+0070:44D4   mov  dl,44 B244
+0070:44D6   pushad  6660
+0070:44D8   push es 06
+0070:44D9   push ds 1E
+0070:44DA   mov  bx,ss 8CD3
+0070:44DC   mov  ebp,esp 668BEC
+0070:44DF   lar  ebx,bx 660F02DB
+0070:44E3   bt   ebx,16 660FBAE316
+0070:44E8   jc   00180650 ($+6) 7206
+0070:44EA   movzx ebp,sp 660FB7EC
+0070:44EE   xchg bx,bx 87DB
+0070:44F0   mov  bx,[ebp+0028] 678B5D28
+0070:44F4   cmp  bx,0071 83FB71
+0070:44F7   jc   00180664 ($+b) 720B
+0070:44F9   lar  ebx,bx 660F02DB
+0070:44FD   bt   ebx,16 660FBAE316
+0070:4502   xchg bx,bx 87DB
+0070:4504   sbb  bx,bx 1BDB
+0070:4506   push bx 53
+0070:4507   push FFFF 6AFF
+0070:4509   and  esi,[ebp-0004] 67662375FC
+0070:450E   and  edi,[ebp-0004] 6766237DFC
+0070:4513   cmp  ah,0F 80FC0F
+0070:4516   jnc  001806A2 ($+2a) 732A
+0070:4518   and  byte [ebp+002C],FE 6780652CFE
+0070:451D   xor  bx,bx 33DB
+0070:451F   mov  bl,ah 8ADC
+0070:4521   shl  bx,1 D1E3
+0070:4523   mov  si,cs:[bx+44B8] 2E8BB7B844
+0070:4528   xor  ah,ah 32E4
+0070:452A   mov  bx,ax 8BD8
+0070:452C   mov  ax,cs:[si-02] 2E8B44FE
+0070:4530   test al,al 84C0
+0070:4532   js   0018069E ($+a) 780A
+0070:4534   cmp  bl,ah 3ADC
+0070:4536   jnc  001806A2 ($+a) 730A
+0070:4538   shl  bx,1 D1E3
+0070:453A   cld FC
+0070:453B   jmp  near word cs:[bx+si] 2EFF20
+0070:453E   jmp  far word cs:[si-06] 2EFF6CFA
+0070:4542   or   byte [ebp+002C],01 67804D2C01
+0070:4547   mov  esp,ebp 668BE5
+0070:454A   pop  ds 1F
+0070:454B   pop  es 07
+0070:454C   popad  6661
+0070:454E   iret 66CF
+0070:4550   movzx ebx,[ebp+0014] 67660FB75D14
+0070:4556   mov  ax,0008 B80800
+0070:4559   mov  ds,ax 8ED8
+0070:455B   cmp  bx,[0008] 3B1E0800
+0070:455F   jnc  001806A2 ($-1f) 73E1
+0070:4561   and  bx,FFF8 83E3F8
+0070:4564   je   001806A2 ($-24) 74DC
+0070:4566   xor  cx,cx 33C9
+0070:4568   mov  cl,[bx+05] 8A4F05
+0070:456B   test cl,80 F6C180
+0070:456E   je   001806E5 ($+15) 7415
+0070:4570   push es 06
+0070:4571   push 0050 6A50
+0070:4573   pop  es 07
+0070:4574   push si 56
+0070:4575   mov  si,bx 8BF3
+0070:4577   shr  si,03 C1EE03
+0070:457A   mov  al,es:[si] 268A04
+0070:457D   pop  si 5E
+0070:457E   pop  es 07
+0070:457F   and  al,F0 24F0
+0070:4581   cmp  al,F0 3CF0
+0070:4583   je   001806E7 ($+2) 7402
+0070:4585   clc F8
+0070:4586   ret C3
+0070:4587   stc F9
+0070:4588   ret C3
+0070:4589   mov  si,[ebp+001C] 678B751C
+0070:458D   or   si,si 0BF6
+0070:458F   jle  001806A2 ($-4f) 7EB1
+0070:4591   push 4547 684745
+0070:4594   push 0020 6A20
+0070:4596   pop  es 07
+0070:4597   push 0008 6A08
+0070:4599   pop  ds 1F
+0070:459A   mov  cx,[0008] 8B0E0800
+0070:459E   mov  bx,[0002] 8B1E0200
+0070:45A2   shl  bx,03 C1E303
+0070:45A5   test byte es:[0014],80 26F606140080
+0070:45AB   je   00180712 ($+5) 7405
+0070:45AD   mov  bx,es:[0C0E] 268B1E0E0C
+0070:45B2   add  bx,0005 83C305
+0070:45B5   sub  cx,bx 2BCB
+0070:45B7   jbe  0018077D ($+64) 7664
+0070:45B9   shr  cx,03 C1E903
+0070:45BC   xor  ax,ax 33C0
+0070:45BE   xor  dx,dx 33D2
+0070:45C0   add  bx,0008 83C308
+0070:45C3   cmp  [bx],al 3807
+0070:45C5   loopne 00180720 ($-7) E0F9
+0070:45C7   jcxz 00180775 ($+4c) E34C
+0070:45C9   inc  dx 42
+0070:45CA   cmp  dx,si 3BD6
+0070:45CC   je   00180739 ($+b) 740B
+0070:45CE   add  bx,0008 83C308
+0070:45D1   cmp  [bx],al 3807
+0070:45D3   loope 00180729 ($-c) E1F4
+0070:45D5   jcxz 00180775 ($+3e) E33E
+0070:45D7   jmp  short 0018071E ($-1b) EBE5
+0070:45D9   and  bl,F8 80E3F8
+0070:45DC   mov  es:[0C0E],bx 26891E0E0C
+0070:45E1   mov  ah,93 B493
+0070:45E3   xchg [bx+04],ax 874704
+0070:45E6   test ah,ah 84E4
+0070:45E8   jne  00180761 ($+17) 7517
+0070:45EA   xor  al,al 32C0
+0070:45EC   mov  [bx],ax 8907
+0070:45EE   mov  [bx+02],ax 894702
+0070:45F1   mov  [bx+06],ax 894706
+0070:45F4   dec  dx 4A
+0070:45F5   je   0018075C ($+5) 7405
+0070:45F7   sub  bx,0008 83EB08
+0070:45FA   jmp  short 00180739 ($-23) EBDD
+0070:45FC   mov  [ebp+0020],bx 67895D20
+0070:4600   ret C3
+0070:4601   mov  [bx+04],ax 894704
+0070:4604   add  bx,0008 83C308
+0070:4607   cmp  dx,si 3BD6
+0070:4609   je   00180770 ($+5) 7405
+0070:460B   inc  dx 42
+0070:460C   xor  ax,ax 33C0
+0070:460E   jmp  short 00180761 ($-f) EBF1
+0070:4610   add  bx,0005 83C305
+0070:4613   jmp  short 0018071E ($-57) EBA9
+0070:4615   test byte es:[0014],80 26F606140080
+0070:461B   je   00180790 ($+13) 7413
+0070:461D   mov  ax,0078 B87800
+0070:4620   xchg es:[0C0E],ax 2687060E0C
+0070:4625   cmp  ax,0080 3D8000
+0070:4628   jc   0018078D ($+3) 7203
+0070:462A   jmp  001806FA ($-93) E96DFF
+0070:462D   jmp  001806A2 ($-ee) E912FF
+0070:4630   cmp  word [0002],0010 833E020010
+0070:4635   jbe  0018078D ($-a) 76F6
+0070:4637   mov  word [0002],0010 C70602001000
+0070:463D   jmp  001806FA ($-a6) E95AFF
+0070:4640   call 001806B0 ($-f3) E80DFF
+0070:4643   jc   0018078D ($-18) 72E8
+0070:4645   jcxz 0018078D ($-1a) E3E6
+0070:4647   cmp  bx,0080 81FB8000
+0070:464B   jc   0018078D ($-20) 72E0
+0070:464D   xor  ax,ax 33C0
+0070:464F   mov  [bx+05],al 884705
+0070:4652   push 0050 6A50
+0070:4654   pop  ds 1F
+0070:4655   shr  bx,03 C1EB03
+0070:4658   mov  [bx],al 8807
+0070:465A   mov  cx,[ebp] 678B4D00
+0070:465E   shr  cx,03 C1E903
+0070:4661   xor  cx,bx 33CB
+0070:4663   jnz  001807CB ($+4) 0F850400
+0070:4667   mov  [ebp],cx 67894D00
+0070:466B   mov  cx,[ebp+0002] 678B4D02
+0070:466F   shr  cx,03 C1E903
+0070:4672   xor  cx,bx 33CB
+0070:4674   jnz  001807DC ($+4) 0F850400
+0070:4678   mov  [ebp+0002],cx 67894D02
+0070:467C   mov  cx,fs 8CE1
+0070:467E   shr  cx,03 C1E903
+0070:4681   xor  cx,bx 33CB
+0070:4683   jnz  001807E9 ($+2) 0F850200
+0070:4687   mov  fs,cx 8EE1
+0070:4689   mov  cx,gs 8CE9
+0070:468B   shr  cx,03 C1E903
+0070:468E   xor  cx,bx 33CB
+0070:4690   jnz  001807F6 ($+2) 0F850200
+0070:4694   mov  gs,cx 8EE9
+0070:4696   jmp  001806A7 ($-152) E9AEFE
+0070:4699   push 0050 6A50
+0070:469B   mov  ax,0008 B80800
+0070:469E   pop  es 07
+0070:469F   lsl  cx,ax 0F03C8
+0070:46A2   xor  di,di 33FF
+0070:46A4   mov  ds,ax 8ED8
+0070:46A6   shr  cx,03 C1E903
+0070:46A9   mov  ax,[ebp+0014] 678B4514
+0070:46AD   mov  dx,0010 BA1000
+0070:46B0   mul  dx F7E2
+0070:46B2   xchg bx,ax 93
+0070:46B3   mov  al,F0 B0F0
+0070:46B5   repne scasb F2AE
+0070:46B7   jne  00180830 ($+17) 7517
+0070:46B9   mov  si,di 8BF7
+0070:46BB   dec  si 4E
+0070:46BC   shl  si,03 C1E603
+0070:46BF   cmp  [si+02],bx 395C02
+0070:46C2   jne  00180815 ($-f) 75F1
+0070:46C4   cmp  [si+04],dl 385404
+0070:46C7   jne  00180815 ($-14) 75EC
+0070:46C9   mov  [ebp+0020],si 67897520
+0070:46CD   jmp  001806A7 ($-189) E977FE
+0070:46D0   push dx 52
+0070:46D1   push bx 53
+0070:46D2   mov  si,0001 BE0100
+0070:46D5   call 001806F4 ($-144) E8BCFE
+0070:46D8   mov  word [bx],FFFF C707FFFF
+0070:46DC   pop  word [bx+02] 8F4702
+0070:46DF   pop  dx 5A
+0070:46E0   mov  [bx+04],dl 885704
+0070:46E3   mov  al,F0 B0F0
+0070:46E5   jmp  001807B2 ($-96) E96AFF
+0070:46E8   mov  dword [ebp+0020],0008 67C745200800
+0070:46EE   jmp  001806A7 ($-1aa) E956FE
+0070:46F1   mov  bx,[ebp+0014] 678B5D14
+0070:46F5   push 0050 6A50
+0070:46F7   pop  ds 1F
+0070:46F8   shr  bx,03 C1EB03
+0070:46FB   or   byte [bx],80 800F80
+0070:46FE   jmp  001806A7 ($-1ba) E946FE
+0070:4701   mov  bx,[ebp+0014] 678B5D14
+0070:4705   push 0050 6A50
+0070:4707   pop  ds 1F
+0070:4708   shr  bx,03 C1EB03
+0070:470B   and  byte [bx],7F 80277F
+0070:470E   jmp  001806A7 ($-1ca) E936FE
+0070:4711   call 001806B0 ($-1c4) E83CFE
+0070:4714   jcxz 001808F3 ($+7d) E37D
+0070:4716   mov  ax,[bx+02] 8B4702
+0070:4719   mov  [ebp+0018],ax 67894518
+0070:471D   mov  al,[bx+04] 8A4704
+0070:4720   mov  ah,[bx+07] 8A6707
+0070:4723   mov  [ebp+001C],ax 6789451C
+0070:4727   jmp  001806A7 ($-1e3) E91DFE
+0070:472A   call 001806B0 ($-1dd) E823FE
+0070:472D   jc   001808F3 ($+64) 7264
+0070:472F   jcxz 001808F3 ($+62) E362
+0070:4731   mov  ax,[ebp+0018] 678B4518
+0070:4735   mov  [bx+02],ax 894702
+0070:4738   mov  ax,[ebp+001C] 678B451C
+0070:473C   mov  [bx+04],al 884704
+0070:473F   mov  [bx+07],ah 886707
+0070:4742   jmp  001806A7 ($-1fe) E902FE
+0070:4745   call 001806B0 ($-1f8) E808FE
+0070:4748   jb   001808F3 ($+47) 0F824700
+0070:474C   jcxz 001808F3 ($+45) E345
+0070:474E   push 0020 6A20
+0070:4750   pop  es 07
+0070:4751   cmp  byte es:[002F],03 26803E2F0003
+0070:4757   jc   001808EA ($+31) 7231
+0070:4759   push eax 6650
+0070:475B   mov  ax,[ebp+001C] 678B451C
+0070:475F   mov  cx,ax 8BC8
+0070:4761   shl  eax,10 66C1E010
+0070:4765   mov  ax,[ebp+0018] 678B4518
+0070:4769   mov  dl,[bx+06] 8A5706
+0070:476C   and  dl,70 80E270
+0070:476F   test cx,FFF0 F7C1F0FF
+0070:4773   je   001808DC ($+7) 7407
+0070:4775   shr  eax,0C 66C1E80C
+0070:4779   or   dl,80 80CA80
+0070:477C   mov  [bx],ax 8907
+0070:477E   shr  eax,10 66C1E810
+0070:4782   or   al,dl 0AC2
+0070:4784   mov  [bx+06],al 884706
+0070:4787   jmp  001806A7 ($-243) E9BDFD
+0070:478A   mov  ax,[ebp+0018] 678B4518
+0070:478E   mov  [bx],ax 8907
+0070:4790   jmp  001806A7 ($-24c) E9B4FD
+0070:4793   jmp  001806A2 ($-254) E9ACFD
+0070:4796   mov  ax,cx 8BC1
+0070:4798   test al,80 A880
+0070:479A   jne  001808FF ($+3) 7503
+0070:479C   and  ax,0010 251000
+0070:479F   and  ax,2F10 25102F
+0070:47A2   cmp  ax,0010 3D1000
+0070:47A5   jne  001808F3 ($-14) 75EC
+0070:47A7   push cx 51
+0070:47A8   call 001806B0 ($-25b) E8A5FD
+0070:47AB   pop  cx 59
+0070:47AC   jc   001808F3 ($-1b) 72E5
+0070:47AE   mov  ax,[bx+05] 8B4705
+0070:47B1   and  ax,0F00 25000F
+0070:47B4   and  ch,F0 80E5F0
+0070:47B7   or   ax,cx 0BC1
+0070:47B9   mov  [bx+05],ax 894705
+0070:47BC   jmp  001806A7 ($-278) E988FD
+0070:47BF   call 001806B0 ($-272) E88EFD
+0070:47C2   jcxz 001808F3 ($-31) E3CF
+0070:47C4   mov  si,0001 BE0100
+0070:47C7   push bx 53
+0070:47C8   call 001806F4 ($-237) E8C9FD
+0070:47CB   pop  si 5E
+0070:47CC   mov  di,bx 8BFB
+0070:47CE   push ds 1E
+0070:47CF   pop  es 07
+0070:47D0   movsw A5
+0070:47D1   movsw A5
+0070:47D2   lodsw  AD
+0070:47D3   and  ah,E0 80E4E0
+0070:47D6   or   ah,12 80CC12
+0070:47D9   stosw  AB
+0070:47DA   movsw A5
+0070:47DB   jmp  001806A7 ($-297) E969FD
+0070:47DE   call 001806B0 ($-291) E86FFD
+0070:47E1   jcxz 001808F3 ($-50) E3B0
+0070:47E3   mov  esi,ebx 668BF3
+0070:47E6   movsd 6766A5
+0070:47E9   movsd 6766A5
+0070:47EC   jmp  001806A7 ($-2a8) E958FD
+0070:47EF   call 001806B0 ($-2a2) E85EFD
+0070:47F2   jc   001808F3 ($-61) 729F
+0070:47F4   jcxz 001808F3 ($-63) E39D
+0070:47F6   mov  esi,edi 668BF7
+0070:47F9   mov  edi,ebx 668BFB
+0070:47FC   push es 06
+0070:47FD   push ds 1E
+0070:47FE   pop  es 07
+0070:47FF   pop  ds 1F
+0070:4800   test byte [esi+0005],10 67F6460510
+0070:4805   jne  00180946 ($-21) 75DF
+0070:4807   test byte [esi+0005],7F 67F646057F
+0070:480C   je   00180946 ($-28) 74D8
+0070:480E   jmp  001806A2 ($-2cf) E931FD
+0070:4811   push 0038 6A38
+0070:4813   pop  ds 1F
+0070:4814   mov  si,[ebp+0014] 678B7514
+0070:4818   and  si,00FF 81E6FF00
+0070:481C   shl  si,02 C1E602
+0070:481F   lodsw  AD
+0070:4820   mov  [ebp+0018],ax 67894518
+0070:4824   lodsw  AD
+0070:4825   mov  [ebp+001C],ax 6789451C
+0070:4829   jmp  001806A7 ($-2e5) E91BFD
+0070:482C   push 0038 6A38
+0070:482E   pop  es 07
+0070:482F   mov  di,[ebp+0014] 678B7D14
+0070:4833   and  di,00FF 81E7FF00
+0070:4837   shl  di,02 C1E702
+0070:483A   mov  ax,[ebp+0018] 678B4518
+0070:483E   stosw  AB
+0070:483F   mov  ax,[ebp+001C] 678B451C
+0070:4843   stosw  AB
+0070:4844   jmp  001806A7 ($-300) E900FD
+0070:4847   cmp  byte [ebp+0014],10 67807D1410
+0070:484C   ja   001809D2 ($+24) 7724
+0070:484E   call 00180EA8 ($+4f7) E8F704
+0070:4851   call 00180F98 ($+5e4) E8E405
+0070:4854   mov  bl,[ebp+0014] 678A5D14
+0070:4858   xor  bh,bh 32FF
+0070:485A   imul bx,bx,1C 6BDB1C
+0070:485D   mov  eax,[bx+4229] 668B872942
+0070:4862   mov  [ebp+0018],eax 6766894518
+0070:4867   mov  ax,[bx+422D] 8B872D42
+0070:486B   mov  [ebp+001C],ax 6789451C
+0070:486F   jmp  001806A7 ($-32b) E9D5FC
+0070:4872   jmp  001806A2 ($-333) E9CDFC
+0070:4875   mov  bl,[ebp+0014] 678A5D14
+0070:4879   cmp  bl,10 80FB10
+0070:487C   ja   001809D2 ($-c) 77F4
+0070:487E   push 0020 6A20
+0070:4880   pop  ds 1F
+0070:4881   xor  bh,bh 32FF
+0070:4883   push bx 53
+0070:4884   push 0000 6A00
+0070:4886   call 00180EA8 ($+4bf) E8BF04
+0070:4889   call 00180F98 ($+5ac) E8AC05
+0070:488C   pop  bx 5B
+0070:488D   pop  di 5F
+0070:488E   imul di,di,1C 6BFF1C
+0070:4891   mov  eax,[ebp+0018] 67668B4518
+0070:4896   mov  [bx+di+4229],eax 6689812942
+0070:489B   mov  ax,[ebp+001C] 678B451C
+0070:489F   mov  [bx+di+422D],ax 89812D42
+0070:48A3   lar  eax,ax 660F02C0
+0070:48A7   bt   eax,16 660FBAE016
+0070:48AC   sbb  cx,cx 1BC9
+0070:48AE   and  [bx+di+422B],cx 21892B42
+0070:48B2   jmp  001806A7 ($-36e) E992FC
+0070:48B5   mov  al,[ebp+0014] 678A4514
+0070:48B9   xor  ah,ah 32E4
+0070:48BB   mov  si,ax 8BF0
+0070:48BD   cmp  al,10 3C10
+0070:48BF   jbe  00180A3B ($+1a) 761A
+0070:48C1   push 0010 6A10
+0070:48C3   pop  ds 1F
+0070:48C4   shl  si,03 C1E603
+0070:48C7   lodsw  AD
+0070:48C8   mov  [ebp+0018],ax 67894518
+0070:48CC   mov  ax,[si+04] 8B4404
+0070:48CF   mov  [ebp+001A],ax 6789451A
+0070:48D3   lodsw  AD
+0070:48D4   mov  [ebp+001C],ax 6789451C
+0070:48D8   jmp  001806A7 ($-394) E96CFC
+0070:48DB   call 00180EA8 ($+46a) E86A04
+0070:48DE   imul si,si,1C 6BF61C
+0070:48E1   mov  eax,[si+423F] 668B843F42
+0070:48E6   mov  [ebp+0018],eax 6766894518
+0070:48EB   mov  ax,[si+4243] 8B844342
+0070:48EF   mov  [ebp+001C],ax 6789451C
+0070:48F3   jmp  001806A7 ($-3af) E951FC
+0070:48F6   push di 57
+0070:48F7   push 0016 6A16
+0070:48F9   call 00180EA8 ($+44c) E84C04
+0070:48FC   jmp  short 001809EC ($-72) EB8E
+0070:48FE   mov  al,[ebp+0014] 678A4514
+0070:4902   xor  ah,ah 32E4
+0070:4904   mov  di,ax 8BF8
+0070:4906   cmp  al,10 3C10
+0070:4908   jbe  00180A56 ($-14) 76EC
+0070:490A   push 0010 6A10
+0070:490C   pop  es 07
+0070:490D   shl  di,03 C1E703
+0070:4910   mov  ax,[ebp+0018] 678B4518
+0070:4914   stosw  AB
+0070:4915   mov  ax,[ebp+001C] 678B451C
+0070:4919   stosw  AB
+0070:491A   lar  eax,ax 660F02C0
+0070:491E   bt   eax,16 660FBAE016
+0070:4923   sbb  cx,cx 1BC9
+0070:4925   and  cx,[ebp+001A] 67234D1A
+0070:4929   mov  es:[di+02],cx 26894D02
+0070:492D   jmp  001806A7 ($-3e9) E917FC
+0070:4930   inc  byte [1182] FE068211
+0070:4934   push edi 6657
+0070:4936   call 00180350 ($-749) E8B7F8
+0070:4939   pushfd  669C
+0070:493B   push cs 660E
+0070:493D   push 0000 6A00
+0070:493F   call 0017CDFE ($-3ca4) E85CC3
+0070:4942   lss  byte [0C18] 660FB226180C
+0070:4948   pushf  9C
+0070:4949   add  word [0996],0180 810696098001
+0070:494F   popf  9D
+0070:4950   pop  word [0C1C] 8F061C0C
+0070:4954   pop  dword [0C18] 668F06180C
+0070:4959   pop  edi 665F
+0070:495B   dec  byte [1182] FE0E8211
+0070:495F   ret C3
+0070:4960   push 0020 6A20
+0070:4962   pop  ds 1F
+0070:4963   mov  cl,03 B103
+0070:4965   xchg [0980],cl 860E8009
+0070:4969   mov  bx,[ebp+0014] 678B5D14
+0070:496D   call 00180A90 ($-40) E8C0FF
+0070:4970   mov  [0980],cl 880E8009
+0070:4974   jc   00180AD7 ($+1) 7201
+0070:4976   ret C3
+0070:4977   mov  [ebp+0020],ax 67894520
+0070:497B   mov  [ebp+0014],bx 67895D14
+0070:497F   jmp  001806A2 ($-440) E9C0FB
+0070:4982   mov  ah,48 B448
+0070:4984   call 00180AC0 ($-27) E8D9FF
+0070:4987   mov  [ebp+0018],ax 67894518
+0070:498B   xchg bx,ax 93
+0070:498C   push 0008 6A08
+0070:498E   pop  ds 1F
+0070:498F   mov  dl,[bx+04] 8A5704
+0070:4992   mov  ax,[bx+02] 8B4702
+0070:4995   mov  dh,00 B600
+0070:4997   mov  cx,0010 B91000
+0070:499A   div  cx F7F1
+0070:499C   mov  [ebp+0020],ax 67894520
+0070:49A0   push 0050 6A50
+0070:49A2   pop  ds 1F
+0070:49A3   shr  bx,03 C1EB03
+0070:49A6   or   byte [bx],F0 800FF0
+0070:49A9   inc  bx 43
+0070:49AA   test byte [bx-01],02 F647FF02
+0070:49AE   jne  00180B06 ($-a) 75F6
+0070:49B0   jmp  001806A7 ($-46c) E994FB
+0070:49B3   mov  bx,[ebp+0018] 678B5D18
+0070:49B7   call 001806B6 ($-464) E89CFB
+0070:49BA   jnc  00180ADF ($-3d) 73C3
+0070:49BC   push 0050 6A50
+0070:49BE   pop  ds 1F
+0070:49BF   mov  es,[ebp+0018] 678E4518
+0070:49C3   mov  bx,es 8CC3
+0070:49C5   shr  bx,03 C1EB03
+0070:49C8   ret C3
+0070:49C9   call 00180B13 ($-19) E8E7FF
+0070:49CC   and  byte [bx],0F 80270F
+0070:49CF   inc  bx 43
+0070:49D0   test byte [bx-01],02 F647FF02
+0070:49D4   jne  00180B2C ($-a) 75F6
+0070:49D6   mov  ah,49 B449
+0070:49D8   call 00180AC0 ($-7b) E885FF
+0070:49DB   mov  bx,[ebp+0018] 678B5D18
+0070:49DF   shr  bx,03 C1EB03
+0070:49E2   mov  cx,[ebp] 678B4D00
+0070:49E6   shr  cx,03 C1E903
+0070:49E9   xor  cx,bx 33CB
+0070:49EB   jnz  00180B53 ($+4) 0F850400
+0070:49EF   mov  [ebp],cx 67894D00
+0070:49F3   mov  cx,[ebp+0002] 678B4D02
+0070:49F7   shr  cx,03 C1E903
+0070:49FA   xor  cx,bx 33CB
+0070:49FC   jnz  00180B64 ($+4) 0F850400
+0070:4A00   mov  [ebp+0002],cx 67894D02
+0070:4A04   mov  cx,fs 8CE1
+0070:4A06   shr  cx,03 C1E903
+0070:4A09   xor  cx,bx 33CB
+0070:4A0B   jnz  00180B71 ($+2) 0F850200
+0070:4A0F   mov  fs,cx 8EE1
+0070:4A11   mov  cx,gs 8CE9
+0070:4A13   shr  cx,03 C1E903
+0070:4A16   xor  cx,bx 33CB
+0070:4A18   jnz  00180B7E ($+2) 0F850200
+0070:4A1C   mov  gs,cx 8EE9
+0070:4A1E   jmp  001806A7 ($-4da) E926FB
+0070:4A21   call 00180B13 ($-71) E88FFF
+0070:4A24   test byte [bx],02 F60702
+0070:4A27   jne  00180B9B ($+12) 7512
+0070:4A29   mov  bx,[ebp+0014] 678B5D14
+0070:4A2D   cmp  bx,1000 81FB0010
+0070:4A31   ja   00180B9B ($+8) 7708
+0070:4A33   mov  ah,4A B44A
+0070:4A35   call 00180AC0 ($-d8) E828FF
+0070:4A38   jmp  001806A7 ($-4f4) E90CFB
+0070:4A3B   jmp  00180ADF ($-bf) E941FF
+0070:4A3E   push 0020 6A20
+0070:4A40   pop  ds 1F
+0070:4A41   push edi 6657
+0070:4A43   call 00180350 ($-856) E8AAF7
+0070:4A46   call 0017E342 ($-2867) E899D7
+0070:4A49   lss  byte [0C18] 660FB226180C
+0070:4A4F   add  word [0996],0180 810696098001
+0070:4A55   pop  word [0C1C] 8F061C0C
+0070:4A59   pop  dword [0C18] 668F06180C
+0070:4A5E   pop  edi 665F
+0070:4A60   mov  bl,ah 8ADC
+0070:4A62   mov  bh,dl 8AFA
+0070:4A64   mov  cl,dh 8ACE
+0070:4A66   mov  ch,00 B500
+0070:4A68   push cx 51
+0070:4A69   push bx 53
+0070:4A6A   mov  dx,[11FC] 8B16FC11
+0070:4A6E   mov  ax,[11FA] A1FA11
+0070:4A71   mov  bl,ah 8ADC
+0070:4A73   mov  bh,dl 8AFA
+0070:4A75   mov  cl,dh 8ACE
+0070:4A77   call 00180C6A ($+90) E89000
+0070:4A7A   mov  es,[ebp+0002] 678E4502
+0070:4A7E   stosw  67AB
+0070:4A80   mov  ax,dx 8BC2
+0070:4A82   stosw  67AB
+0070:4A84   mov  ax,bx 8BC3
+0070:4A86   stosw  67AB
+0070:4A88   mov  ax,cx 8BC1
+0070:4A8A   stosw  67AB
+0070:4A8C   mov  ax,bx 8BC3
+0070:4A8E   stosw  67AB
+0070:4A90   mov  ax,cx 8BC1
+0070:4A92   stosw  67AB
+0070:4A94   mov  ax,[009D] A19D00
+0070:4A97   sub  ax,[0099] 2B069900
+0070:4A9B   mov  dl,[009F] 8A169F00
+0070:4A9F   sbb  dl,[009B] 1A169B00
+0070:4AA3   mov  dh,00 B600
+0070:4AA5   stosw  67AB
+0070:4AA7   mov  ax,dx 8BC2
+0070:4AA9   stosw  67AB
+0070:4AAB   mov  ax,bx 8BC3
+0070:4AAD   stosw  67AB
+0070:4AAF   pop  bx 5B
+0070:4AB0   pop  cx 59
+0070:4AB1   mov  ax,cx 8BC1
+0070:4AB3   stosw  67AB
+0070:4AB5   mov  ax,bx 8BC3
+0070:4AB7   stosw  67AB
+0070:4AB9   mov  ax,cx 8BC1
+0070:4ABB   stosw  67AB
+0070:4ABD   mov  ax,[009D] A19D00
+0070:4AC0   sub  ax,[0099] 2B069900
+0070:4AC4   mov  dl,[009F] 8A169F00
+0070:4AC8   sbb  dl,[009B] 1A169B00
+0070:4ACC   mov  dh,00 B600
+0070:4ACE   stosw  67AB
+0070:4AD0   mov  ax,dx 8BC2
+0070:4AD2   stosw  67AB
+0070:4AD4   mov  ax,bx 8BC3
+0070:4AD6   stosw  67AB
+0070:4AD8   mov  ax,cx 8BC1
+0070:4ADA   stosw  67AB
+0070:4ADC   mov  ax,FFFF B8FFFF
+0070:4ADF   mov  ecx,00000008 66B908000000
+0070:4AE5   repe stosw  F367AB
+0070:4AE8   jmp  001806A7 ($-5a4) E95CFA
+0070:4AEB   push 0008 6A08
+0070:4AED   pop  es 07
+0070:4AEE   mov  bx,0060 BB6000
+0070:4AF1   mov  es:[bx+02],ax 26894702
+0070:4AF5   mov  es:[bx+04],dl 26885704
+0070:4AF9   mov  es:[bx+07],dh 26887707
+0070:4AFD   mov  es,bx 8EC3
+0070:4AFF   ret C3
+0070:4B00   mov  cx,0004 B90400
+0070:4B03   shr  dx,1 D1EA
+0070:4B05   rcr  ax,1 D1D8
+0070:4B07   loop 00180C63 ($-6) E2FA
+0070:4B09   ret C3
+0070:4B0A   mov  cx,0004 B90400
+0070:4B0D   shl  ax,1 D1E0
+0070:4B0F   rcl  dx,1 D1D2
+0070:4B11   loop 00180C6D ($-6) E2FA
+0070:4B13   ret C3
+0070:4B14   push 0020 6A20
+0070:4B16   pop  ds 1F
+0070:4B17   mov  dx,[ebp+0014] 678B5514
+0070:4B1B   mov  ax,[ebp+001C] 678B451C
+0070:4B1F   push edi 6657
+0070:4B21   call 00180350 ($-934) E8CCF6
+0070:4B24   push dx 52
+0070:4B25   push ax 50
+0070:4B26   call 0017EAF9 ($-2190) E870DE
+0070:4B29   lss  byte [0C18] 660FB226180C
+0070:4B2F   add  word [0996],0180 810696098001
+0070:4B35   pop  word [0C1C] 8F061C0C
+0070:4B39   pop  dword [0C18] 668F06180C
+0070:4B3E   pop  edi 665F
+0070:4B40   mov  cx,dx 8BCA
+0070:4B42   or   cx,ax 0BC8
+0070:4B44   je   00180CC2 ($+1c) 741C
+0070:4B46   call 00180C6A ($-3f) E8C1FF
+0070:4B49   mov  [ebp+0014],dx 67895514
+0070:4B4D   mov  [ebp+001C],ax 6789451C
+0070:4B51   mov  ax,[0C10] A1100C
+0070:4B54   mov  [ebp+0004],ax 67894504
+0070:4B58   mov  ax,[0C12] A1120C
+0070:4B5B   mov  [ebp+0008],ax 67894508
+0070:4B5F   jmp  001806A7 ($-61b) E9E5F9
+0070:4B62   jmp  001806A2 ($-623) E9DDF9
+0070:4B65   push 0020 6A20
+0070:4B67   pop  ds 1F
+0070:4B68   mov  dx,[ebp+0008] 678B5508
+0070:4B6C   mov  ax,[ebp+0004] 678B4504
+0070:4B70   push edi 6657
+0070:4B72   call 00180350 ($-985) E87BF6
+0070:4B75   push dx 52
+0070:4B76   push ax 50
+0070:4B77   call 0017EC41 ($-2099) E867DF
+0070:4B7A   lss  byte [0C18] 660FB226180C
+0070:4B80   add  word [0996],0180 810696098001
+0070:4B86   pop  word [0C1C] 8F061C0C
+0070:4B8A   pop  dword [0C18] 668F06180C
+0070:4B8F   pop  edi 665F
+0070:4B91   or   ax,ax 0BC0
+0070:4B93   je   00180CC2 ($-33) 74CD
+0070:4B95   jmp  001806A7 ($-651) E9AFF9
+0070:4B98   push 0020 6A20
+0070:4B9A   pop  ds 1F
+0070:4B9B   mov  si,[ebp+0008] 678B7508
+0070:4B9F   mov  cx,[ebp+0004] 678B4D04
+0070:4BA3   mov  dx,[ebp+0014] 678B5514
+0070:4BA7   mov  ax,[ebp+001C] 678B451C
+0070:4BAB   push edi 6657
+0070:4BAD   call 00180350 ($-9c0) E840F6
+0070:4BB0   push dx 52
+0070:4BB1   push ax 50
+0070:4BB2   push si 56
+0070:4BB3   push cx 51
+0070:4BB4   call 0017EC9F ($-2078) E888DF
+0070:4BB7   lss  byte [0C18] 660FB226180C
+0070:4BBD   add  word [0996],0180 810696098001
+0070:4BC3   pop  word [0C1C] 8F061C0C
+0070:4BC7   pop  dword [0C18] 668F06180C
+0070:4BCC   pop  edi 665F
+0070:4BCE   mov  cx,ax 8BC8
+0070:4BD0   or   cx,dx 0BCA
+0070:4BD2   je   00180CC2 ($-72) 748E
+0070:4BD4   call 00180C6A ($-cd) E833FF
+0070:4BD7   mov  [ebp+0014],dx 67895514
+0070:4BDB   mov  [ebp+001C],ax 6789451C
+0070:4BDF   jmp  001806A7 ($-69b) E965F9
+0070:4BE2   mov  cx,0020 B92000
+0070:4BE5   mov  ds,cx 8ED9
+0070:4BE7   mov  ax,[0996] A19609
+0070:4BEA   mov  bx,ax 8BD8
+0070:4BEC   sub  bx,0156 81EB5601
+0070:4BF0   mov  [bx],ax 8907
+0070:4BF2   mov  [0996],bx 891E9609
+0070:4BF6   mov  [bx+02],ss 8C5702
+0070:4BF9   mov  [bx+0C],ebp 66896F0C
+0070:4BFD   mov  [bx+06],es 8C4706
+0070:4C00   mov  [bx+08],edi 66897F08
+0070:4C04   mov  word [bx+22],FFFF C74722FFFF
+0070:4C09   mov  cx,es:[edi+0030] 26678B4F30
+0070:4C0E   mov  esi,edi 668BF7
+0070:4C11   jcxz 00180D8B ($+18) E318
+0070:4C13   push cx 51
+0070:4C14   mov  ax,0010 B81000
+0070:4C17   mul  cx F7E1
+0070:4C19   movzx edi,es:[edi+002E] 2667660FB77F2E
+0070:4C20   push bx 53
+0070:4C21   call 00180C4B ($-139) E8C7FE
+0070:4C24   pop  bx 5B
+0070:4C25   pop  dx 5A
+0070:4C26   jmp  short 00180D97 ($+f) EB0F
+0070:4C28   jmp  001806A2 ($-6e9) E917F9
+0070:4C2B   sub  bx,0010 83EB10
+0070:4C2E   movzx edi,bx 660FB7FB
+0070:4C32   push ds 1E
+0070:4C33   pop  es 07
+0070:4C34   mov  dx,0308 BA0803
+0070:4C37   movzx ecx,[ebp+001C] 67660FB74D1C
+0070:4C3D   add  cx,cx 03C9
+0070:4C3F   cmp  cx,0040 83F940
+0070:4C42   ja   00180D88 ($-1c) 77E4
+0070:4C44   sub  bx,cx 2BD9
+0070:4C46   jcxz 00180DBD ($+15) E315
+0070:4C48   push esi 6656
+0070:4C4A   std FD
+0070:4C4B   lea  esi,[ebp+002F] 67668D752F
+0070:4C50   add  esi,ecx 6603F1
+0070:4C53   dec  di 4F
+0070:4C54   repe ss:movsb F36736A4
+0070:4C58   inc  di 6747
+0070:4C5A   cld FC
+0070:4C5B   pop  esi 665E
+0070:4C5D   lea  di,[di-32] 8D7DCE
+0070:4C60   ret C3
+0070:4C61   mov  ds,[ebp+0002] 678E5D02
+0070:4C65   mov  ax,[esi+002C] 678B462C
+0070:4C69   mov  es:[di+28],ax 26894528
+0070:4C6D   mov  ax,[esi+002A] 678B462A
+0070:4C71   mov  es:[di+26],ax 26894526
+0070:4C75   mov  cx,90CF B9CF90
+0070:4C78   pop  bp 5D
+0070:4C79   push 0020 6A20
+0070:4C7B   pop  ss 17
+0070:4C7C   lea  sp,[bx-32] 8D67CE
+0070:4C7F   push dx 52
+0070:4C80   push di 57
+0070:4C81   mov  dx,[esi+0020] 678B5620
+0070:4C85   and  dh,FE 80E6FE
+0070:4C88   jmp  near bp FFE5
+0070:4C8A   call 00180D42 ($-ab) E855FF
+0070:4C8D   add  bx,000C 83C30C
+0070:4C90   add  di,000C 83C70C
+0070:4C93   mov  cl,CD B1CD
+0070:4C95   mov  ch,[ebp+0014] 678A6D14
+0070:4C99   mov  ds,[ebp+0002] 678E5D02
+0070:4C9D   push 4CCF 68CF4C
+0070:4CA0   jmp  short 00180DD8 ($-2a) EBD6
+0070:4CA2   call 00180D42 ($-c3) E83DFF
+0070:4CA5   add  bx,0002 83C302
+0070:4CA8   add  di,0002 83C702
+0070:4CAB   push 4CBA 68BA4C
+0070:4CAE   jmp  short 00180DC1 ($-4f) EBB1
+0070:4CB0   call 00180D42 ($-d1) E82FFF
+0070:4CB3   call 00180DC1 ($-55) E8ABFF
+0070:4CB6   mov  es:[di+30],dx 26895530
+0070:4CBA   and  dh,FD 80E6FD
+0070:4CBD   mov  es:[di+2A],dx 2689552A
+0070:4CC1   mov  word es:[di+2C],1FBD 26C7452CBD1F
+0070:4CC7   mov  ax,ss:[09B6] 36A1B609
+0070:4CCB   mov  es:[di+2E],ax 2689452E
+0070:4CCF   mov  es:[di+24],dx 26895524
+0070:4CD3   mov  ax,[esi+0024] 678B4624
+0070:4CD7   stosw  AB
+0070:4CD8   mov  ax,[esi+0022] 678B4622
+0070:4CDC   stosw  AB
+0070:4CDD   xchg cx,ax 91
+0070:4CDE   mov  ecx,00000008 66B908000000
+0070:4CE4   movzx edi,di 660FB7FF
+0070:4CE8   repe movsd F36766A5
+0070:4CEC   xchg cx,ax 6791
+0070:4CEE   push ss 16
+0070:4CEF   pop  ds 1F
+0070:4CF0   mov  bp,[0996] 8B2E9609
+0070:4CF4   jmp  0018:1FA6 EAA61F1800
+0070:4CF9   mov  bp,[0996] 8B2E9609
+0070:4CFD   mov  ds,[bp+06] 8E5E06
+0070:4D00   mov  edi,[bp+08] 668B7E08
+0070:4D04   mov  [edi+0020],ax 67894720
+0070:4D08   pop  dword [edi+0024] 678F4724
+0070:4D0C   pop  dword [edi+0022] 678F4722
+0070:4D10   pop  dword [edi] 67668F07
+0070:4D14   pop  dword [edi+0004] 67668F4704
+0070:4D19   pop  dword [edi+0008] 67668F4708
+0070:4D1E   add  esp,0004 6683C404
+0070:4D22   pop  dword [edi+0010] 67668F4710
+0070:4D27   pop  dword [edi+0014] 67668F4714
+0070:4D2C   pop  dword [edi+0018] 67668F4718
+0070:4D31   pop  dword [edi+001C] 67668F471C
+0070:4D36   pop  word es:[0996] 268F069609
+0070:4D3B   mov  eax,[bp+0C] 668B460C
+0070:4D3F   pop  ss 17
+0070:4D40   xchg esp,eax 6694
+0070:4D42   mov  ebp,esp 668BEC
+0070:4D45   jmp  001806A7 ($-801) E9FFF7
+0070:4D48   push 0020 6A20
+0070:4D4A   pop  ds 1F
+0070:4D4B   push word [0C14] FF36140C
+0070:4D4F   push 0008 6A08
+0070:4D51   pop  ds 1F
+0070:4D52   mov  bx,cs 8CCB
+0070:4D54   mov  cx,[bx+02] 8B4F02
+0070:4D57   mov  al,[bx+04] 8A4704
+0070:4D5A   mov  ah,[bx+07] 8A6707
+0070:4D5D   pop  bx 5B
+0070:4D5E   add  bx,0008 83C308
+0070:4D61   mov  [bx+02],cx 894F02
+0070:4D64   mov  [bx+04],al 884704
+0070:4D67   mov  [bx+07],ah 886707
+0070:4D6A   mov  word [bx],FFFF C707FFFF
+0070:4D6E   mov  byte [bx+05],92 C6470592
+0070:4D72   mov  ds,bx 8EDB
+0070:4D74   ret C3
+0070:4D75   nop 90
+0070:4D76   push 533F 683F53
+0070:4D79   add  [bx+si],al 0000
+0070:4D7B   add  [bx+si+0E00],cl 0088000E
+0070:4D7F   sbb  al,[bx+si] 1A00
+0070:4D81   add  [bx+si+0000],bl 00980000
+0070:4D85   add  [bx+si],al 0000
+0070:4D87   add  [bx+si],al 0000
+0070:4D89   add  [bx+si],al 0000
+0070:4D8B   add  [bx+si],al 0000
+0070:4D8D   add  [bx+si],al 0000
+0070:4D8F   add  [bx+si],al 0000
+0070:4D91   add  [bx+si],al 0000
+0070:4D93   add  [bx+si],al 0000
+0070:4D95   add  [bx+si],al 0000
+0070:4D97   add  [bx+si],al 0000
+0070:4D99   add  [bx+si],al 0000
+0070:4D9B   add  [bx+si],al 0000
+0070:4D9D   add  [bx+si],al 0000
+0070:4D9F   add  [bx+si],al 0000
+0070:4DA1   add  [bx+si],al 0000
+0070:4DA3   add  [bx+si],al 0000
+0070:4DA5   add  [bx+si],al 0000
+0070:4DA7   add  [bx+si],al 0000
+0070:4DA9   add  [bx+si],al 0000
+0070:4DAB   add  [bx+si],al 0000
+0070:4DAD   add  [bx+si],al 0000
+0070:4DAF   add  [bx+si],al 0000
+0070:4DB1   add  [bx+si],al 0000
+0070:4DB3   add  [bx+si],al 0000
+0070:4DB5   add  [bx+si],al 0000
+0070:4DB7   add  [bx+si],al 0000
+0070:4DB9   add  [bx+si],al 0000
+0070:4DBB   add  [bx+si],al 0000
+0070:4DBD   add  [bx+si],al 0000
+0070:4DBF   add  [bx+si],al 0000
+0070:4DC1   add  [bx+si],al 0000
+0070:4DC3   add  [bx+si],al 0000
+0070:4DC5   add  [bx+si],al 0000
+0070:4DC7   add  [bx+si],al 0000
+0070:4DC9   add  [bx+si],al 0000
+0070:4DCB   add  [bx+si],al 0000
+0070:4DCD   add  [bx+si],al 0000
+0070:4DCF   add  [bx+si],al 0000
+0070:4DD1   add  [bx+si],al 0000
+0070:4DD3   add  [bx+si],al 0000
+0070:4DD5   add  [bx+si],al 0000
+0070:4DD7   add  [bx+si],al 0000
+0070:4DD9   add  [bx+si],al 0000
+0070:4DDB   add  [bx+si],al 0000
+0070:4DDD   add  [bx+si],al 0000
+0070:4DDF   add  [bx+si],al 0000
+0070:4DE1   add  [bx+si],al 0000
+0070:4DE3   add  [bx+si],al 0000
+0070:4DE5   add  [bx+si],al 0000
+0070:4DE7   add  [bx+si],al 0000
+0070:4DE9   add  [bx+si],al 0000
+0070:4DEB   add  [bx+si],al 0000
+0070:4DED   add  [bx+si],al 0000
+0070:4DEF   add  [bx+si],al 0000
+0070:4DF1   add  [bx+si],al 0000
+0070:4DF3   add  [bx+si],al 0000
+0070:4DF5   add  [bx+si],al 0000
+0070:4DF7   add  [bx+si],al 0000
+0070:4DF9   add  [bx+si],al 0000
+0070:4DFB   add  [bx+si],al 0000
+0070:4DFD   add  [bx+si],al 0000
+0070:4DFF   add  [bx+si],al 0000
+0070:4E01   add  [bx+si],al 0000
+0070:4E03   add  [bx+si],al 0000
+0070:4E05   add  [bx+si],al 0000
+0070:4E07   add  [bx+si],al 0000
+0070:4E09   add  [bx+si],al 0000
+0070:4E0B   add  [bx+si],al 0000
+0070:4E0D   add  [bx+si],al 0000
+0070:4E0F   add  [bx+si],al 0000
+0070:4E11   add  [bx+si],al 0000
+0070:4E13   add  [bx+si],al 0000
+0070:4E15   add  [bx+si],al 0000
+0070:4E17   add  [bx+si],al 0000
+0070:4E19   add  [bx+si],al 0000
+0070:4E1B   add  [bx+si],al 0000
+0070:4E1D   add  [bx+si],al 0000
+0070:4E1F   add  [bx+si],al 0000
+0070:4E21   add  [bx+si],al 0000
+0070:4E23   add  [bx+si],al 0000
+0070:4E25   add  [bx+si],al 0000
+0070:4E27   add  [bx+si],al 0000
+0070:4E29   add  [bx+si],al 0000
+0070:4E2B   add  [bx+si],al 0000
+0070:4E2D   add  [bx+si],al 0000
+0070:4E2F   add  [bx+si],al 0000
+0070:4E31   add  [bx+si],al 0000
+0070:4E33   add  [bx+si],al 0000
+0070:4E35   add  [bx+si],al 0000
+0070:4E37   add  [bp+di+763E],al 00833E76
+0070:4E3B   dec  bp 4D
+0070:4E3C   add  [di+4D],dh 00754D
+0070:4E3F   push ds 1E
+0070:4E40   push 0020 6A20
+0070:4E42   pop  ds 1F
+0070:4E43   mov  cl,00 B100
+0070:4E45   xchg [0980],cl 860E8009
+0070:4E49   mov  ah,48 B448
+0070:4E4B   mov  bx,0400 BB0004
+0070:4E4E   call 00180A90 ($-521) E8DFFA
+0070:4E51   mov  [0980],cl 880E8009
+0070:4E55   push ds 1E
+0070:4E56   pop  es 07
+0070:4E57   pop  ds 1F
+0070:4E58   jc   00180FED ($+33) 7233
+0070:4E5A   mov  si,ax 8BF0
+0070:4E5C   mov  di,es:[0C14] 268B3E140C
+0070:4E61   add  di,0010 83C710
+0070:4E64   mov  [4D76],di 893E764D
+0070:4E68   push 0008 6A08
+0070:4E6A   pop  es 07
+0070:4E6B   mov  cx,0004 B90400
+0070:4E6E   repe es:movsw F326A5
+0070:4E71   or   byte es:[di-02],40 26804DFE40
+0070:4E76   mov  cl,08 B108
+0070:4E78   sub  si,cx 2BF1
+0070:4E7A   repe es:movsb F326A4
+0070:4E7D   mov  es:[si-03],cl 26884CFD
+0070:4E81   push 0050 6A50
+0070:4E83   pop  es 07
+0070:4E84   shr  di,03 C1EF03
+0070:4E87   mov  byte es:[di-01],E1 26C645FFE1
+0070:4E8C   ret C3
+0070:4E8D   jmp  001806A2 ($-94e) E9B2F6
+0070:4E90   call 00180EA8 ($-14b) E8B5FE
+0070:4E93   call 00180F98 ($-5e) E8A2FF
+0070:4E96   mov  bx,4D6C BB6C4D
+0070:4E99   add  bx,000C 83C30C
+0070:4E9C   cmp  bx,4E38 81FB384E
+0070:4EA0   jnc  00180FED ($-15) 73EB
+0070:4EA2   cmp  word [bx+04],0000 837F0400
+0070:4EA6   jne  00180FF9 ($-f) 75F1
+0070:4EA8   mov  eax,[ebp+0008] 67668B4508
+0070:4EAD   mov  [bx],eax 668907
+0070:4EB0   mov  ax,[ebp] 678B4500
+0070:4EB4   mov  [bx+04],ax 894704
+0070:4EB7   mov  eax,[ebp+0004] 67668B4504
+0070:4EBC   and  eax,[ebp-0004] 67662345FC
+0070:4EC1   mov  [bx+06],eax 66894706
+0070:4EC5   mov  ax,[ebp+0002] 678B4502
+0070:4EC9   mov  [bx+0A],ax 89470A
+0070:4ECC   sub  bx,4D78 81EB784D
+0070:4ED0   xchg bx,ax 93
+0070:4ED1   mov  cl,0C B10C
+0070:4ED3   div  cl F6F1
+0070:4ED5   shl  ax,02 C1E002
+0070:4ED8   add  ax,1F60 05601F
+0070:4EDB   mov  [ebp+0018],ax 67894518
+0070:4EDF   push 0020 6A20
+0070:4EE1   pop  ds 1F
+0070:4EE2   mov  ax,[09B6] A1B609
+0070:4EE5   mov  [ebp+001C],ax 6789451C
+0070:4EE9   jmp  001806A7 ($-9a5) E95BF6
+0070:4EEC   push 0020 6A20
+0070:4EEE   pop  ds 1F
+0070:4EEF   cmp  cx,[09B6] 3B0EB609
+0070:4EF3   jne  0018106E ($+19) 7519
+0070:4EF5   sub  dx,1F60 81EA601F
+0070:4EF9   cmp  dx,003D 83FA3D
+0070:4EFC   jnc  0018106E ($+10) 7310
+0070:4EFE   call 00180EA8 ($-1b9) E847FE
+0070:4F01   mov  bx,dx 8BDA
+0070:4F03   add  bx,bx 03DB
+0070:4F05   mov  word [bx+4D7C],0000 C7877C4D0000
+0070:4F0B   jmp  001806A7 ($-9c7) E939F6
+0070:4F0E   jmp  001806A2 ($-9cf) E931F6
+0070:4F11   call 00180EA8 ($-1cc) E834FE
+0070:4F14   pop  bx 5B
+0070:4F15   xor  bh,bh 32FF
+0070:4F17   mov  dx,bx 8BD3
+0070:4F19   imul bx,bx,0C 6BDB0C
+0070:4F1C   shl  dx,03 C1E203
+0070:4F1F   les  edi,[bx+4D7E] 66C4BF7E4D
+0070:4F24   pop  bp 5D
+0070:4F25   inc  bp 45
+0070:4F26   inc  bp 45
+0070:4F27   mov  es:[edi+002E],bp 2667896F2E
+0070:4F2C   pop  ax 58
+0070:4F2D   mov  es:[edi+0030],ax 2667894730
+0070:4F32   pop  dword es:[edi+0020] 26678F4720
+0070:4F37   pop  dword es:[edi+0024] 26678F4724
+0070:4F3C   pop  dword es:[edi+0022] 26678F4722
+0070:4F41   movzx esi,sp 660FB7F4
+0070:4F45   mov  ecx,00000008 66B908000000
+0070:4F4B   repe ss:movsd F3676636A5
+0070:4F50   lea  edi,[edi-0020] 67668D7FE0
+0070:4F55   mov  si,ds 8CDE
+0070:4F57   add  si,dx 03F2
+0070:4F59   add  si,0018 83C618
+0070:4F5C   mov  cx,0010 B91000
+0070:4F5F   mul  cx F7E1
+0070:4F61   push 0008 6A08
+0070:4F63   pop  ds 1F
+0070:4F64   mov  [si+02],ax 894402
+0070:4F67   mov  [si+04],dl 885404
+0070:4F6A   mov  [si+07],dh 887407
+0070:4F6D   push 0020 6A20
+0070:4F6F   pop  ds 1F
+0070:4F70   add  word [0C16],0400 8106160C0004
+0070:4F76   mov  ss,cs:[4D76] 2E8E16764D
+0070:4F7B   movzx esp,[0C16] 660FB726160C
+0070:4F81   mov  ds,si 8EDE
+0070:4F83   movzx esi,bp 660FB7F5
+0070:4F87   pushfd  669C
+0070:4F89   push 0000 6A00
+0070:4F8B   push cs 0E
+0070:4F8C   push 0000 6A00
+0070:4F8E   push 4F97 68974F
+0070:4F91   jmp  far dword cs:[bx+4D78] 662EFFAF784D
+0070:4F97   cli FA
+0070:4F98   mov  bx,0020 BB2000
+0070:4F9B   mov  ss,bx 8ED3
+0070:4F9D   mov  sp,ss:[0996] 368B269609
+0070:4FA2   sub  sp,0180 81EC8001
+0070:4FA6   sub  word ss:[0C16],0400 36812E160C0004
+0070:4FAD   push es 06
+0070:4FAE   pop  ds 1F
+0070:4FAF   push dword [edi+001C] 6766FF771C
+0070:4FB4   push dword [edi+0018] 6766FF7718
+0070:4FB9   push dword [edi+0014] 6766FF7714
+0070:4FBE   push dword [edi+0010] 6766FF7710
+0070:4FC3   sub  esp,0004 6683EC04
+0070:4FC7   push dword [edi+0008] 6766FF7708
+0070:4FCC   push dword [edi+0004] 6766FF7704
+0070:4FD1   push dword [edi] 6766FF37
+0070:4FD5   push dword [edi+0022] 67FF7722
+0070:4FD9   push dword [edi+0024] 67FF7724
+0070:4FDD   push dword [edi+0020] 67FF7720
+0070:4FE1   push dword [edi+002C] 67FF772C
+0070:4FE5   push dword [edi+002A] 67FF772A
+0070:4FE9   mov  si,[edi+002E] 678B772E
+0070:4FED   mov  di,[edi+0030] 678B7F30
+0070:4FF1   sub  si,0006 83EE06
+0070:4FF4   mov  ds,bx 8EDB
+0070:4FF6   jmp  0018:2026 EA26201800
+0070:4FFB   retf 66CB
+0070:4FFD   mov  dword [ebp+0020],0000 67C745200000
+0070:5003   push 0020 6A20
+0070:5005   pop  ds 1F
+0070:5006   mov  ax,[09B6] A1B609
+0070:5009   mov  [ebp+0014],ax 67894514
+0070:500D   mov  dword [ebp+001C],204C 67C7451C4C20
+0070:5013   mov  [ebp+0008],cs 678C4D08
+0070:5017   mov  dword [ebp+0004],00004FFB 6766C74504FB4F0000
+0070:5020   jmp  001806A7 ($-adc) E924F5
+0070:5023   push 0020 6A20
+0070:5025   pop  ds 1F
+0070:5026   mov  ax,[09B6] A1B609
+0070:5029   mov  [ebp+0014],ax 67894514
+0070:502D   mov  dword [ebp+001C],204D 67C7451C4D20
+0070:5033   mov  [ebp+0008],cs 678C4D08
+0070:5037   mov  dword [ebp+0004],00005043 6766C7450443500000
+0070:5040   jmp  001806A7 ($-afc) E904F5
+0070:5043   pushf  9C
+0070:5044   cli FA
+0070:5045   push 0048 6A48
+0070:5047   pop  ds 1F
+0070:5048   pop  word [1FA4] 8F06A41F
+0070:504C   push 0020 6A20
+0070:504E   pop  ss 17
+0070:504F   mov  sp,ss:[0996] 368B269609
+0070:5054   sub  sp,0080 81EC8000
+0070:5058   push ss 16
+0070:5059   pop  ds 1F
+0070:505A   pusha  60
+0070:505B   jmp  0018:2078 EA78201800
+0070:5060   push 0020 6A20
+0070:5062   pop  ds 1F
+0070:5063   mov  dword [ebp+0020],005A 67C745205A00
+0070:5069   mov  cx,0001 B90100
+0070:506C   mov  ax,[002E] A12E00
+0070:506F   cmp  al,0B 3C0B
+0070:5071   je   001811D6 ($+3) 7403
+0070:5073   or   cl,02 80C902
+0070:5076   mov  [ebp+0014],cx 67894D14
+0070:507A   mov  [ebp+001C],ah 6788651C
+0070:507E   mov  ax,[0050] A15000
+0070:5081   xchg al,ah 86E0
+0070:5083   mov  [ebp+0018],ax 67894518
+0070:5087   jmp  001806A7 ($-b43) E9BDF4
+0070:508A   push 0020 6A20
+0070:508C   pop  ds 1F
+0070:508D   cmp  byte [002E],0B 803E2E000B
+0070:5092   jne  001811E7 ($-d) 75F3
+0070:5094   mov  bx,0FFF BBFF0F
+0070:5097   xor  ecx,ecx 6633C9
+0070:509A   mov  ax,[ebp+0004] 678B4504
+0070:509E   add  ax,bx 03C3
+0070:50A0   mov  dx,[ebp+0008] 678B5508
+0070:50A4   adc  dx,cx 13D1
+0070:50A6   test dh,FC F6C6FC
+0070:50A9   jnz  001812FD ($+f0) 0F85F000
+0070:50AD   inc  bx 43
+0070:50AE   div  bx F7F3
+0070:50B0   mov  [ebp+0010],ax 67894510
+0070:50B4   push 0038 6A38
+0070:50B6   pop  es 07
+0070:50B7   xchg dx,ax 92
+0070:50B8   shr  dx,0A C1EA0A
+0070:50BB   add  dx,0002 83C202
+0070:50BE   movzx edi,[00AA] 660FB73EAA00
+0070:50C4   shl  edi,04 66C1E704
+0070:50C8   xor  eax,eax 6633C0
+0070:50CB   add  di,0100 81C70001
+0070:50CF   mov  cx,bx 8BCB
+0070:50D1   sub  cx,di 2BCF
+0070:50D3   and  ch,0F 80E50F
+0070:50D6   shr  cx,02 C1E902
+0070:50D9   sub  cx,dx 2BCA
+0070:50DB   jbe  001812FD ($+be) 0F86BE00
+0070:50DF   repne scasd  F26766AF
+0070:50E3   mov  cx,dx 8BCA
+0070:50E5   repe scasd  F36766AF
+0070:50E9   jne  0018122F ($-1c) 75E4
+0070:50EB   shl  dx,02 C1E202
+0070:50EE   sub  di,dx 2BFA
+0070:50F0   push edi 6657
+0070:50F2   mov  cx,[ebp+0010] 678B4D10
+0070:50F6   shl  cx,02 C1E102
+0070:50F9   xor  bx,bx 33DB
+0070:50FB   mov  ax,0501 B80105
+0070:50FE   int  31 CD31
+0070:5100   push si 56
+0070:5101   push di 57
+0070:5102   pop  eax 6658
+0070:5104   pop  edi 665F
+0070:5106   jb   001812FD ($+93) 0F829300
+0070:510A   shl  eax,04 66C1E004
+0070:510E   mov  es:[edi-0004],eax 2667668947FC
+0070:5114   push edi 6657
+0070:5116   mov  di,bx 8BFB
+0070:5118   shl  edi,10 66C1E710
+0070:511C   mov  di,cx 8BF9
+0070:511E   push edi 6657
+0070:5120   mov  ax,[ebp+0014] 678B4514
+0070:5124   shl  eax,10 66C1E010
+0070:5128   mov  ax,[ebp+001C] 678B451C
+0070:512C   and  ah,F0 80E4F0
+0070:512F   mov  al,1F B01F
+0070:5131   mov  cx,[ebp+0010] 678B4D10
+0070:5135   mov  dx,cx 8BD1
+0070:5137   stosd  6766AB
+0070:513A   add  eax,00001000 67660500100000
+0070:5141   loop 00181297 ($-c) E2F4
+0070:5143   mov  cx,dx 8BCA
+0070:5145   neg  cx F7D9
+0070:5147   and  ch,03 80E503
+0070:514A   xor  ax,ax 33C0
+0070:514C   repe stosd  F36766AB
+0070:5150   mov  eax,003FF000 66B800F03F00
+0070:5156   pop  esi 665E
+0070:5158   shr  esi,0A 66C1EE0A
+0070:515C   cmp  dword [0098],00040000 66813E980000000400
+0070:5165   ja   001812D3 ($+c) 770C
+0070:5167   movzx eax,[00AA] 660FB706AA00
+0070:516D   inc  ah FEC4
+0070:516F   shl  eax,04 66C1E004
+0070:5173   add  esi,eax 6603F0
+0070:5176   pop  edi 665F
+0070:5178   mov  cx,dx 8BCA
+0070:517A   add  cx,03FF 81C1FF03
+0070:517E   shr  cx,0A C1E90A
+0070:5181   mov  ax,di 8BC7
+0070:5183   repe es:movsd F3676626A5
+0070:5188   shl  ax,04 C1E004
+0070:518B   mov  [ebp+0014],ax 67894514
+0070:518F   and  dword [ebp+001C],0FFF 6781651CFF0F
+0070:5195   clc F8
+0070:5196   jb   001806A2 ($-c58) 0F82A8F3
+0070:519A   jmp  001806A7 ($-c56) E9AAF3
+0070:519D   stc F9
+0070:519E   jmp  short 001812F6 ($-a) EBF6
+0070:51A0   push 0020 6A20
+0070:51A2   pop  ds 1F
+0070:51A3   cmp  byte [002E],0B 803E2E000B
+0070:51A8   jne  00181371 ($+67) 7567
+0070:51AA   movzx eax,[ebp+0014] 67660FB74514
+0070:51B0   cmp  ax,1000 3D0010
+0070:51B3   jc   00181374 ($+5f) 725F
+0070:51B5   test al,3F A83F
+0070:51B7   jne  00181374 ($+5b) 755B
+0070:51B9   test byte [ebp+001D],F0 67F6451DF0
+0070:51BE   jne  00181374 ($+54) 7554
+0070:51C0   movzx edi,[00AA] 660FB73EAA00
+0070:51C6   shl  edi,04 66C1E704
+0070:51CA   shr  ax,04 C1E804
+0070:51CD   lea  edi,[eax+edi-0004] 67668D7C38FC
+0070:51D3   push 0038 6A38
+0070:51D5   pop  es 07
+0070:51D6   mov  eax,es:[edi] 2667668B07
+0070:51DB   test al,0F A80F
+0070:51DD   jne  00181374 ($+35) 7535
+0070:51DF   cmp  dword es:[eax+0004],DEADDEAD 266766817804ADDEADDE
+0070:51E9   jne  00181374 ($+29) 7529
+0070:51EB   movzx ecx,es:[eax+000C] 2667660FB7480C
+0070:51F2   shr  eax,04 66C1E804
+0070:51F6   push eax 6650
+0070:51F8   add  cx,0200 81C10002
+0070:51FC   shr  cx,08 C1E908
+0070:51FF   xor  eax,eax 6633C0
+0070:5202   repe stosd  F36766AB
+0070:5206   pop  di 5F
+0070:5207   pop  si 5E
+0070:5208   mov  ax,0502 B80205
+0070:520B   int  31 CD31
+0070:520D   jb   001806A2 ($-ccf) 0F8231F3
+0070:5211   jmp  001806A7 ($-ccd) E933F3
+0070:5214   stc F9
+0070:5215   jmp  short 0018136D ($-a) EBF6
+0070:5217   mov  al,[ebp+002D] 678A452D
+0070:521B   mov  ah,al 8AE0
+0070:521D   and  ah,FD 80E4FD
+0070:5220   mov  [ebp+002D],ah 6788652D
+0070:5224   shr  al,1 D0E8
+0070:5226   and  al,01 2401
+0070:5228   mov  [ebp+0020],al 67884520
+0070:522C   jmp  001806A7 ($-ce8) E918F3
+0070:522F   mov  al,[ebp+002D] 678A452D
+0070:5233   mov  ah,al 8AE0
+0070:5235   or   ah,02 80CC02
+0070:5238   jmp  short 00181380 ($-1a) EBE6
+0070:523A   mov  al,[ebp+002D] 678A452D
+0070:523E   jmp  short 00181384 ($-1c) EBE4
+0070:5240   smsw ax 0F01E0
+0070:5243   and  al,02 2402
+0070:5245   mov  [0C1E],al A21E0C
+0070:5248   push 0020 6A20
+0070:524A   pop  ds 1F
+0070:524B   mov  ax,[0040] A14000
+0070:524E   and  ax,0004 250400
+0070:5251   cmp  [0C1E],ah 38261E0C
+0070:5255   jl   001813A0 ($-17) 7CE9
+0070:5257   or   al,[0C1E] 0A061E0C
+0070:525B   shr  ax,1 D1E8
+0070:525D   cmp  [003E],ah 38263E00
+0070:5261   je   001813D8 ($+15) 7415
+0070:5263   or   al,04 0C04
+0070:5265   smsw cx 0F01E1
+0070:5268   mov  ch,02 B502
+0070:526A   test cl,10 F6C110
+0070:526D   je   001813D3 ($+4) 7404
+0070:526F   mov  ch,[002F] 8A2E2F00
+0070:5273   shl  ch,04 C0E504
+0070:5276   or   al,ch 0AC5
+0070:5278   mov  [ebp+0020],ax 67894520
+0070:527C   jmp  001806A7 ($-d38) E9C8F2
+0070:527F   push 0020 6A20
+0070:5281   pop  ds 1F
+0070:5282   mov  ax,[ebp+0014] 678B4514
+0070:5286   shl  ax,1 D1E0
+0070:5288   mov  bl,al 8AD8
+0070:528A   and  al,02 2402
+0070:528C   mov  [0C1E],al A21E0C
+0070:528F   and  bl,04 80E304
+0070:5292   mov  ax,[0040] A14000
+0070:5295   and  al,FB 24FB
+0070:5297   or   al,bl 0AC3
+0070:5299   mov  [0040],ax A34000
+0070:529C   smsw cx 0F01E1
+0070:529F   and  cl,FB 80E1FB
+0070:52A2   or   cl,al 0AC8
+0070:52A4   lmsw cx 0F01F1
+0070:52A7   jmp  001806A7 ($-d63) E99DF2
+0070:52AA   popa  61
+0070:52AB   cmp  word cs:[4D76],0000 2E833E764D00
+0070:52B1   je   00181416 ($+3) 7403
+0070:52B3   jmp  00180501 ($-f15) E9EBF0
+0070:52B6   jmp  0017E042 ($-33d7) E929CC
+0070:52B9   add  sp,0008 83C408
+0070:52BC   call 00181628 ($+209) E80902
+0070:52BF   ret C3
+0070:52C0   add  sp,0008 83C408
+0070:52C3   call 00181628 ($+202) E80202
+0070:52C6   ret  0004 C20400
+0070:52C9   int  02 CD02
+0070:52CB   iret 66CF
+0070:52CD   push ebx 6653
+0070:52CF   push ds 1E
+0070:52D0   mov  bx,ss 8CD3
+0070:52D2   lar  ebx,bx 660F02DB
+0070:52D6   shr  ebx,17 66C1EB17
+0070:52DA   jnc  0018143D ($+1) 7301
+0070:52DC   mov  ebx,esp 668BDC
+0070:52DF   lds  ebx,ss:[ebx+000A] 366766C55B0A
+0070:52E5   mov  bl,[ebx] 678A1B
+0070:52E8   cmp  bl,9B 80FB9B
+0070:52EB   je   00181453 ($+6) 7406
+0070:52ED   and  bl,F8 80E3F8
+0070:52F0   cmp  bl,D8 80FBD8
+0070:52F3   pop  ds 1F
+0070:52F4   pop  ebx 665B
+0070:52F6   je   00181459 ($+1) 7401
+0070:52F8   ret C3
+0070:52F9   jmp  0018154E ($+f2) E9F200
+0070:52FC   push ebx 6653
+0070:52FE   mov  bx,ss 8CD3
+0070:5300   lar  ebx,bx 660F02DB
+0070:5304   shr  ebx,17 66C1EB17
+0070:5308   jnc  0018146B ($+1) 7301
+0070:530A   mov  ebx,esp 668BDC
+0070:530D   push ds 1E
+0070:530E   lds  ebx,ss:[ebx+0008] 366766C55B08
+0070:5314   cmp  byte [ebx],62 67803B62
+0070:5318   pop  ds 1F
+0070:5319   pop  ebx 665B
+0070:531B   je   00181459 ($-24) 74DC
+0070:531D   ret C3
+0070:531E   mov  dx,[004C] 8B164C00
+0070:5322   jmp  short 001814AC ($+28) EB28
+0070:5324   pop  ds 1F
+0070:5325   pop  dx 5A
+0070:5326   pop  ax 58
+0070:5327   ret C3
+0070:5328   test cl,C0 F6C1C0
+0070:532B   je   001814C4 ($+37) 7437
+0070:532D   push ax 50
+0070:532E   mov  al,cl 8AC1
+0070:5330   push dx 52
+0070:5331   and  al,1F 241F
+0070:5333   mov  dx,0018 BA1800
+0070:5336   push ds 1E
+0070:5337   mov  ds,dx 8EDA
+0070:5339   cmp  al,[0008] 3A060800
+0070:533D   je   00181484 ($-1b) 74E5
+0070:533F   mov  ax,0020 B82000
+0070:5342   mov  ds,ax 8ED8
+0070:5344   test cl,cl 84C9
+0070:5346   js   0018147E ($-2a) 78D6
+0070:5348   mov  dx,[004A] 8B164A00
+0070:534C   test byte [1582],01 F606821501
+0070:5351   jne  00181484 ($-2f) 75D1
+0070:5353   mov  al,0B B00B
+0070:5355   out  dx,al EE
+0070:5356   pop  ds 1F
+0070:5357   jmp  short 001814B9 ($+0) EB00
+0070:5359   jmp  short 001814BB ($+0) EB00
+0070:535B   in   al,dx EC
+0070:535C   pop  dx 5A
+0070:535D   test ch,al 84C5
+0070:535F   pop  ax 58
+0070:5360   je   001814C4 ($+2) 7402
+0070:5362   ret C3
+0070:5363   nop 90
+0070:5364   and  cx,003F 83E13F
+0070:5367   push ebp 6655
+0070:5369   push eax 6650
+0070:536B   mov  bp,ss 8CD5
+0070:536D   lar  ebp,bp 660F02ED
+0070:5371   shr  ebp,17 66C1ED17
+0070:5375   jnc  001814D8 ($+1) 7301
+0070:5377   mov  ebp,esp 668BEC
+0070:537A   mov  eax,[ebp+000C] 67668B450C
+0070:537F   mov  ebp,[ebp+0010] 67668B6D10
+0070:5384   cmp  cl,08 80F908
+0070:5387   jne  001814F3 ($+a) 750A
+0070:5389   or   eax,eax 660BC0
+0070:538C   je   0018154A ($+5c) 745C
+0070:538E   pop  eax 6658
+0070:5390   pop  ebp 665D
+0070:5392   ret C3
+0070:5393   push esi 6656
+0070:5395   mov  esi,eax 668BF0
+0070:5398   cmp  esi,0002 6683FE02
+0070:539C   jb   00181548 ($+48) 0F824800
+0070:53A0   lar  ax,bp 0F02C5
+0070:53A3   jnz  00181548 ($+41) 0F854100
+0070:53A7   mov  al,ah 8AC4
+0070:53A9   and  al,8A 248A
+0070:53AB   cmp  al,8A 3C8A
+0070:53AD   jnz  00181548 ($+37) 0F853700
+0070:53B1   shr  ah,05 C0EC05
+0070:53B4   and  ah,03 80E403
+0070:53B7   push bx 53
+0070:53B8   mov  bx,cs 8CCB
+0070:53BA   and  bl,03 80E303
+0070:53BD   mov  al,bl 8AC3
+0070:53BF   pop  bx 5B
+0070:53C0   cmp  al,ah 3AC4
+0070:53C2   ja   00181548 ($+22) 0F872200
+0070:53C6   lsl  eax,bp 660F03C5
+0070:53CA   cmp  esi,eax 663BF0
+0070:53CD   ja   00181548 ($+17) 0F871700
+0070:53D1   mov  ah,cl 8AE1
+0070:53D3   and  ah,1F 80E41F
+0070:53D6   mov  al,CD B0CD
+0070:53D8   push ds 1E
+0070:53D9   mov  ds,bp 8EDD
+0070:53DB   cmp  ax,[esi-0002] 673B46FE
+0070:53DF   pop  ds 1F
+0070:53E0   pop  esi 665E
+0070:53E2   jnz  0018154A ($+4) 0F850400
+0070:53E6   jmp  short 001814EE ($-5a) EBA6
+0070:53E8   pop  esi 665E
+0070:53EA   pop  eax 6658
+0070:53EC   pop  ebp 665D
+0070:53EE   test cl,20 F6C120
+0070:53F1   je   00181555 ($+2) 7402
+0070:53F3   push eax 6650
+0070:53F5   pushad  6660
+0070:53F7   push ds 1E
+0070:53F8   mov  bx,ss 8CD3
+0070:53FA   push es 06
+0070:53FB   lar  eax,bx 660F02C3
+0070:53FF   mov  ebp,esp 668BEC
+0070:5402   bt   eax,16 660FBAE016
+0070:5407   jc   0018156D ($+4) 7204
+0070:5409   movzx ebp,sp 660FB7EC
+0070:540D   mov  dx,[ebp+0026] 678B5526
+0070:5411   and  ecx,0020 6683E120
+0070:5415   je   0018158A ($+13) 7413
+0070:5417   xchg [ebp+0024],eax 6766874524
+0070:541C   xchg [ebp+0028],eax 6766874528
+0070:5421   xchg [ebp+0024],eax 6766874524
+0070:5426   mov  dx,[ebp+0026] 678B5526
+0070:542A   mov  [ebp+001C],dx 6789551C
+0070:542E   cld FC
+0070:542F   mov  cx,cs:[4D76] 2E8B0E764D
+0070:5434   mov  si,[ebp+0024] 678B7524
+0070:5438   jcxz 00181612 ($+78) E378
+0070:543A   mov  es,cx 8EC1
+0070:543C   push 0020 6A20
+0070:543E   pop  ds 1F
+0070:543F   add  word [0C16],0400 8106160C0004
+0070:5445   movzx edi,[0C16] 660FB73E160C
+0070:544B   cmp  di,4000 81FF0040
+0070:544F   ja   0018160C ($+5b) 775B
+0070:5451   sub  di,002E 83EF2E
+0070:5454   lea  ax,[si-0D] 8D44F3
+0070:5457   mov  es:[di+2A],ax 2689452A
+0070:545B   mov  es:[di+28],ax 26894528
+0070:545F   movzx eax,di 660FB7C7
+0070:5463   xchg [ebp+0004],ax 67874504
+0070:5467   stosw  AB
+0070:5468   inc  si 46
+0070:5469   mov  [ebp+0024],si 67897524
+0070:546D   add  si,FFEC 83C6EC
+0070:5470   mov  cx,0004 B90400
+0070:5473   repe cs:movsw F32EA5
+0070:5476   mov  ax,54A3 B8A354
+0070:5479   stosd  66AB
+0070:547B   mov  ax,cs 8CC8
+0070:547D   stosd  66AB
+0070:547F   mov  cl,04 B104
+0070:5481   lea  esi,[ebp+0028] 67668D7528
+0070:5486   repe ss:movsd F3676636A5
+0070:548B   xchg esi,eax 676696
+0070:548E   stosd  66AB
+0070:5490   mov  ax,ss 8CD0
+0070:5492   stosw  AB
+0070:5493   pop  es 07
+0070:5494   pop  ds 1F
+0070:5495   popad  6661
+0070:5497   mov  ss,cs:[4D76] 2E8E16764D
+0070:549C   movzx esp,di 660FB7E7
+0070:54A0   pop  di 5F
+0070:54A1   retf 66CB
+0070:54A3   call 00181628 ($+22) E82200
+0070:54A6   add  esp,0006 6683C406
+0070:54AA   iret 66CF
+0070:54AC   sub  word [0C16],0400 812E160C0004
+0070:54B2   add  dword [ebp+0024],FFF3 67834524F3
+0070:54B7   test byte cs:[si-05],20 2EF644FB20
+0070:54BC   pop  es 07
+0070:54BD   pop  ds 1F
+0070:54BE   popad  6661
+0070:54C0   je   00181625 ($+3) 7403
+0070:54C2   ret  0006 C20600
+0070:54C5   ret  0002 C20200
+0070:54C8   cli FA
+0070:54C9   cld FC
+0070:54CA   pushad  6660
+0070:54CC   push es 06
+0070:54CD   mov  bp,sp 8BEC
+0070:54CF   les  edi,[bp+34] 66C47E34
+0070:54D3   sub  edi,0018 6683EF18
+0070:54D7   mov  eax,edi 668BC7
+0070:54DA   xchg [bp+02],eax 66874602
+0070:54DE   stosd  6766AB
+0070:54E1   nop 6790
+0070:54E3   mov  ax,[bp+3C] 8B463C
+0070:54E6   mov  ax,[bp+3A] 8B463A
+0070:54E9   lea  esi,[bp+22] 668D7622
+0070:54ED   mov  ecx,00000004 66B904000000
+0070:54F3   ss:movsw 6736A5
+0070:54F6   stosw  67AB
+0070:54F8   repe ss:movsd F3676636A5
+0070:54FD   push 0020 6A20
+0070:54FF   pop  es 07
+0070:5500   sub  word es:[0C16],0400 26812E160C0004
+0070:5507   pop  es 07
+0070:5508   popad  6661
+0070:550A   add  sp,0016 83C416
+0070:550D   pop  ss 17
+0070:550E   mov  esp,edi 668BE7
+0070:5511   pop  edi 665F
+0070:5513   ret C3
+0070:5514   inc  ebx 6643
+0070:5516   jmp  short 00181692 ($+1a) EB1A
+0070:5518   push ax 50
+0070:5519   push ebx 6653
+0070:551B   push ds 1E
+0070:551C   push ebp 6655
+0070:551E   mov  bp,ss 8CD5
+0070:5520   lar  ebp,bp 660F02ED
+0070:5524   shr  ebp,17 66C1ED17
+0070:5528   jnc  0018168B ($+1) 7301
+0070:552A   mov  ebp,esp 668BEC
+0070:552D   lds  ebx,[ebp+000C] 6766C55D0C
+0070:5532   mov  ax,[ebx] 678B03
+0070:5535   cmp  al,26 3C26
+0070:5537   je   00181674 ($-25) 74DB
+0070:5539   cmp  al,36 3C36
+0070:553B   je   00181674 ($-29) 74D7
+0070:553D   cmp  al,2E 3C2E
+0070:553F   je   00181674 ($-2d) 74D3
+0070:5541   cmp  al,3E 3C3E
+0070:5543   je   00181674 ($-31) 74CF
+0070:5545   cmp  al,64 3C64
+0070:5547   jc   001816AD ($+4) 7204
+0070:5549   cmp  al,67 3C67
+0070:554B   jbe  00181674 ($-39) 76C7
+0070:554D   cmp  ax,E3DB 3DDBE3
+0070:5550   je   001816D7 ($+25) 7425
+0070:5552   cmp  ax,E0DF 3DDFE0
+0070:5555   je   001816D7 ($+20) 7420
+0070:5557   or   al,04 0C04
+0070:5559   cmp  al,DD 3CDD
+0070:555B   jne  001816E8 ($+2b) 752B
+0070:555D   mov  al,ah 8AC4
+0070:555F   and  ah,38 80E438
+0070:5562   cmp  ah,38 80FC38
+0070:5565   jne  001816E8 ($+21) 7521
+0070:5567   cmp  al,3E 3C3E
+0070:5569   je   001816D3 ($+8) 7408
+0070:556B   and  al,C0 24C0
+0070:556D   je   001816D7 ($+8) 7408
+0070:556F   jpe  001816D7 ($+6) 7A06
+0070:5571   jns  001816D5 ($+2) 7902
+0070:5573   inc  ebx 6643
+0070:5575   inc  ebx 6643
+0070:5577   inc  ebx 6643
+0070:5579   inc  ebx 6643
+0070:557B   mov  [ebp+000C],ebx 6766895D0C
+0070:5580   pop  ebp 665D
+0070:5582   pop  ds 1F
+0070:5583   pop  ebx 665B
+0070:5585   pop  ax 58
+0070:5586   iret 66CF
+0070:5588   pop  ebp 665D
+0070:558A   pop  ds 1F
+0070:558B   pop  ebx 665B
+0070:558D   pop  ax 58
+0070:558E   jmp  0018:207D EA7D201800
+0070:5593   push si 56
+0070:5594   push di 57
+0070:5595   push ds 1E
+0070:5596   mov  ax,0006 B80600
+0070:5599   mov  bx,cs 8CCB
+0070:559B   int  31 CD31
+0070:559D   inc  ax 40
+0070:559E   mov  bx,0060 BB6000
+0070:55A1   int  31 CD31
+0070:55A3   mov  ax,[0050] A15000
+0070:55A6   mov  ds,bx 8EDB
+0070:55A8   xchg bx,ax 93
+0070:55A9   mov  si,4405 BE0544
+0070:55AC   mov  di,4229 BF2942
+0070:55AF   xor  cx,cx 33C9
+0070:55B1   lodsb AC
+0070:55B2   xchg dx,ax 92
+0070:55B3   mov  dh,dl 8AF2
+0070:55B5   and  dl,20 80E220
+0070:55B8   mov  ax,52C0 B8C052
+0070:55BB   jne  00181720 ($+3) 7503
+0070:55BD   mov  ax,52B9 B8B952
+0070:55C0   mov  [di],ax 8905
+0070:55C2   mov  word [di+02],0000 C745020000
+0070:55C7   mov  [di+04],cs 8C4D04
+0070:55CA   mov  ah,40 B440
+0070:55CC   mov  al,cl 8AC1
+0070:55CE   sub  al,bl 2AC3
+0070:55D0   cmp  al,08 3C08
+0070:55D2   jc   0018173C ($+8) 7208
+0070:55D4   mov  al,cl 8AC1
+0070:55D6   sub  al,bh 2AC7
+0070:55D8   shl  ah,1 D0E4
+0070:55DA   jne  00181730 ($-c) 75F4
+0070:55DC   or   dl,ah 0AD4
+0070:55DE   or   dl,cl 0AD1
+0070:55E0   mov  [di+0E],dl 88550E
+0070:55E3   cmp  cl,08 80F908
+0070:55E6   jc   0018175F ($+17) 7217
+0070:55E8   cmp  cl,0F 80F90F
+0070:55EB   je   0018175F ($+12) 7412
+0070:55ED   test ah,ah 84E4
+0070:55EF   mov  ax,5328 B82853
+0070:55F2   jne  00181757 ($+3) 7503
+0070:55F4   mov  ax,53EE B8EE53
+0070:55F7   sub  ax,di 2BC7
+0070:55F9   sub  ax,0013 2D1300
+0070:55FC   mov  [di+11],ax 894511
+0070:55FF   imul ax,cx,04 6BC104
+0070:5602   test dh,01 F6C601
+0070:5605   jnz  0018177D ($+14) 0F851400
+0070:5609   test dh,02 F6C602
+0070:560C   jz   00181775 ($+5) 0F840500
+0070:5610   lodsw  AD
+0070:5611   xchg dx,ax 92
+0070:5612   lodsw  AD
+0070:5613   jmp  short 00181782 ($+d) EB0D
+0070:5615   add  ax,0C3C 053C0C
+0070:5618   mov  dx,0018 BA1800
+0070:561B   jmp  short 00181782 ($+5) EB05
+0070:561D   add  ax,0000 050000
+0070:5620   mov  dx,cs 8CCA
+0070:5622   mov  [di+16],ax 894516
+0070:5625   mov  word [di+18],0000 C745180000
+0070:562A   mov  [di+1A],dx 89551A
+0070:562D   inc  cx 41
+0070:562E   add  di,001C 83C71C
+0070:5631   cmp  cx,0010 83F910
+0070:5634   jbe  00181711 ($-87) 0F8679FF
+0070:5638   push ds 1E
+0070:5639   pop  es 07
+0070:563A   pop  ds 1F
+0070:563B   test byte [0047],01 F606470001
+0070:5640   je   001817B9 ($+17) 7417
+0070:5642   mov  di,43F0 BFF043
+0070:5645   mov  ax,52C9 B8C952
+0070:5648   stosw  AB
+0070:5649   mov  ax,0070 B87000
+0070:564C   stosw  AB
+0070:564D   mov  di,43FA BFFA43
+0070:5650   mov  ax,0ED1 B8D10E
+0070:5653   stosw  AB
+0070:5654   mov  ax,1A83 B8831A
+0070:5657   jmp  short 001817C1 ($+8) EB08
+0070:5659   cmp  bh,10 80FF10
+0070:565C   jne  001817CB ($+d) 750D
+0070:565E   mov  ax,7D80 B8807D
+0070:5661   mov  di,43FF BFFF43
+0070:5664   stosw  AB
+0070:5665   inc  di 47
+0070:5666   inc  di 47
+0070:5667   mov  ax,0070 B87000
+0070:566A   stosw  AB
+0070:566B   pop  di 5F
+0070:566C   pop  si 5E
+0070:566D   jmp  0018:2089 EA89201800
+0070:5672   add  [bx+si],al 0000
+0070:5674   add  [bx+si],al 0000
+0070:5676   add  [bx+si],al 0000
+0070:5678   add  [bx+si],al 0000
+0070:567A   add  [bx+si],al 0000
+0070:567C   add  [bx+si],al 0000
+0070:567E   add  [bx+si],al 0000
+0070:5680   and  [bx+si],al 2000
+0070:5682   call 0017FCB2 ($-1b33) E8CDE4
+0070:5685   add  sp,0006 83C406
+0070:5688   pop  cx 59
+0070:5689   sub  sp,0004 83EC04
+0070:568C   push word [0C26] FF36260C
+0070:5690   push cx 51
+0070:5691   retf CB
+0070:5692   push es 06
+0070:5693   push ds 1E
+0070:5694   pusha  60
+0070:5695   push 0000 6A00
+0070:5697   push 0000 6A00
+0070:5699   mov  bp,sp 8BEC
+0070:569B   push ss 16
+0070:569C   push bp 55
+0070:569D   push ss 16
+0070:569E   push bp 55
+0070:569F   mov  bx,[bp+18] 8B5E18
+0070:56A2   mov  al,cs:[bx] 2E8A07
+0070:56A5   xor  ah,ah 32E4
+0070:56A7   push ax 50
+0070:56A8   mov  ds,cs:[5680] 2E8E1E8056
+0070:56AD   call far word [0022] FF1E2200
+0070:56B1   add  sp,000E 83C40E
+0070:56B4   mov  [bp+20],ax 894620
+0070:56B7   popa  61
+0070:56B8   pop  ds 1F
+0070:56B9   pop  es 07
+0070:56BA   inc  sp 44
+0070:56BB   inc  sp 44
+0070:56BC   iret 66CF
+0070:56BE   pushf  9C
+0070:56BF   sub  sp,0008 83EC08
+0070:56C2   push bp 55
+0070:56C3   push bx 53
+0070:56C4   push ax 50
+0070:56C5   push ds 1E
+0070:56C6   mov  bp,sp 8BEC
+0070:56C8   mov  bx,[bp+12] 8B5E12
+0070:56CB   mov  ax,[bp+10] 8B4610
+0070:56CE   mov  [bp+12],ax 894612
+0070:56D1   mov  [bp+0C],ax 89460C
+0070:56D4   mov  [bp+10],cs 8C4E10
+0070:56D7   mov  word [bp+0E],56F2 C7460EF256
+0070:56DC   mov  ds,cs:[5680] 2E8E1E8056
+0070:56E1   mov  ax,[bx+03] 8B4703
+0070:56E4   mov  [bp+0A],ax 89460A
+0070:56E7   mov  ax,[bx+01] 8B4701
+0070:56EA   mov  [bp+08],ax 894608
+0070:56ED   pop  ds 1F
+0070:56EE   pop  ax 58
+0070:56EF   pop  bx 5B
+0070:56F0   pop  bp 5D
+0070:56F1   iret CF
+0070:56F2   iret 66CF
+0070:56F4   push bp 55
+0070:56F5   mov  bp,sp 8BEC
+0070:56F7   mov  bx,[bp+06] 8B5E06
+0070:56FA   mov  cx,[bp+04] 8B4E04
+0070:56FD   pop  bp 5D
+0070:56FE   mov  ax,0501 B80105
+0070:5701   push esi 6656
+0070:5703   push edi 6657
+0070:5705   int  31 CD31
+0070:5707   mov  [1202],di 893E0212
+0070:570B   mov  [1204],si 89360412
+0070:570F   pop  edi 665F
+0070:5711   pop  esi 665E
+0070:5713   jc   00181879 ($+4) 7204
+0070:5715   mov  dx,bx 8BD3
+0070:5717   xchg cx,ax 91
+0070:5718   ret C3
+0070:5719   xor  ax,ax 33C0
+0070:571B   cwd 99
+0070:571C   ret C3
+0070:571D   push edi 6657
+0070:571F   xor  edi,edi 6633FF
+0070:5722   sub  sp,0030 83EC30
+0070:5725   mov  di,sp 8BFC
+0070:5727   push ss 16
+0070:5728   pop  es 07
+0070:5729   mov  ax,0500 B80005
+0070:572C   int  31 CD31
+0070:572E   mov  cx,ss:[di+08] 368B4D08
+0070:5732   mov  ax,ss:[di] 368B05
+0070:5735   mov  dx,ss:[di+02] 368B5502
+0070:5739   add  sp,0030 83C430
+0070:573C   pop  edi 665F
+0070:573E   jc   00181879 ($-27) 72D9
+0070:5740   mov  [11DE],cx 890EDE11
+0070:5744   ret C3
+0070:5745   add  [bx+si],al 0000
+0070:5747   add  [bx+si],al 0000
+0070:5749   add  [bx+si],al 0000
+0070:574B   add  [bx+si],al 0000
+0070:574D   add  [bx+si],al 0000
+0070:574F   add  [bx+di-75],dl 00518B
+0070:5752   push cs 0E
+0070:5753   out  dx,al EE
+0070:5754   or   ax,7549 0D4975
+0070:5757   inc  bx 43
+0070:5758   mov  ax,DE04 B804DE
+0070:575B   call far dword [0D5A] 66FF1E5A0D
+0070:5760   cli FA
+0070:5761   or   ah,ah 0AE4
+0070:5763   mov  ax,0000 B80000
+0070:5766   jne  001818F9 ($+31) 7531
+0070:5768   cmp  edi,ebx 663BFB
+0070:576B   jnc  001818F9 ($+2c) 732C
+0070:576D   test byte es:[edi+0001],08 2667F6470108
+0070:5773   je   001818DB ($+6) 7406
+0070:5775   add  edi,0004 6683C704
+0070:5779   jmp  short 001818C8 ($-13) EBED
+0070:577B   xchg edx,eax 6692
+0070:577D   mov  edx,00001000 66BA00100000
+0070:5783   or   ax,0807 0D0708
+0070:5786   stosd  6766AB
+0070:5789   add  eax,edx 676603C2
+0070:578D   inc  word [0DF6] FF06F60D
+0070:5791   add  [0AA8],edx 660116A80A
+0070:5796   dec  cx 49
+0070:5797   jns  001818E6 ($-13) 79ED
+0070:5799   pop  cx 59
+0070:579A   retf CB
+0070:579B   mov  ax,DF00 B800DF
+0070:579E   jmp  short 001818BB ($-45) EBBB
+0070:57A0   test byte [1582],01 F606821501
+0070:57A5   jnz  00181991 ($+88) 0F858800
+0070:57A9   push cs 0E
+0070:57AA   call 001818B0 ($-5d) E8A3FF
+0070:57AD   or   ax,ax 0BC0
+0070:57AF   jz   0018198E ($+7b) 0F847B00
+0070:57B3   pop  ax 58
+0070:57B4   inc  ax 40
+0070:57B5   push ax 50
+0070:57B6   jmp  short 0018197B ($+63) EB63
+0070:57B8   pop  ax 58
+0070:57B9   push cs 0E
+0070:57BA   push ax 50
+0070:57BB   push bp 55
+0070:57BC   mov  bp,sp 8BEC
+0070:57BE   pushad  6660
+0070:57C0   push fs 0FA0
+0070:57C2   push gs 0FA8
+0070:57C4   push 0000 6A00
+0070:57C6   call 0018:2AEB 9AEB2A1800
+0070:57CB   mov  edi,[bp+06] 668B7E06
+0070:57CF   shr  edi,06 66C1EF06
+0070:57D3   add  edi,esi 6603FE
+0070:57D6   mov  ecx,[bp+0A] 668B4E0A
+0070:57DA   shr  ecx,06 66C1E906
+0070:57DE   add  ecx,esi 6603CE
+0070:57E1   mov  ebx,[009C] 668B1E9C00
+0070:57E6   movsx eax,[0DF0] 660FBF06F00D
+0070:57EC   not  eax 66F7D0
+0070:57EF   add  ebx,eax 6603D8
+0070:57F2   and  bx,[0DF0] 231EF00D
+0070:57F6   shr  ebx,06 66C1EB06
+0070:57FA   add  ebx,esi 6603DE
+0070:57FD   cmp  ecx,ebx 663BCB
+0070:5800   jnc  00181991 ($+2f) 732F
+0070:5802   mov  ax,FFFC B8FCFF
+0070:5805   and  di,ax 23F8
+0070:5807   and  cx,ax 23C8
+0070:5809   mov  ax,es:[edi] 26678B07
+0070:580D   and  ax,[0DF2] 2306F20D
+0070:5811   cmp  ax,[0DF2] 3B06F20D
+0070:5815   jne  00181900 ($-77) 7589
+0070:5817   add  edi,0004 6683C704
+0070:581B   cmp  edi,ecx 663BF9
+0070:581E   jbe  00181969 ($-17) 76E9
+0070:5820   call 00181996 ($+13) E81300
+0070:5823   pop  word [bp-04] 8F46FC
+0070:5826   pop  gs 0FA9
+0070:5828   pop  fs 0FA1
+0070:582A   popad  6661
+0070:582C   pop  bp 5D
+0070:582D   retf CB
+0070:582E   call 00181996 ($+5) E80500
+0070:5831   pop  ax 58
+0070:5832   push FFFF 6AFF
+0070:5834   jmp  short 00181983 ($-13) EBED
+0070:5836   sub  edi,esi 662BFE
+0070:5839   shl  edi,06 66C1E706
+0070:583D   movzx eax,[00A2] 660FB706A200
+0070:5843   shl  eax,04 66C1E004
+0070:5847   movzx ebx,[00A0] 660FB71EA000
+0070:584D   lea  ebx,[eax+ebx+0014] 67668D5C1814
+0070:5853   mov  esi,es:[ebx] 2667668B33
+0070:5858   mov  eax,[00AC] 66A1AC00
+0070:585C   cmp  eax,esi 663BC6
+0070:585F   ja   001819C3 ($+2) 7702
+0070:5861   xchg esi,eax 6696
+0070:5863   cmp  eax,edi 663BC7
+0070:5866   ja   001819CA ($+2) 7702
+0070:5868   xchg edi,eax 6697
+0070:586A   mov  es:[ebx],eax 2667668903
+0070:586F   mov  [00AC],eax 66A3AC00
+0070:5873   ret C3
+0070:5874   pop  ax 58
+0070:5875   push cs 0E
+0070:5876   push ax 50
+0070:5877   jmp  0018:2B47 EA472B1800
+0070:587C   mov  al,[1582] A08215
+0070:587F   and  al,01 2401
+0070:5881   cbw 98
+0070:5882   ret C3
+0070:5883   pushad  6660
+0070:5885   mov  bp,sp 8BEC
+0070:5887   push 0038 6A38
+0070:5889   pop  es 07
+0070:588A   movzx ebx,[00AA] 660FB71EAA00
+0070:5890   shl  ebx,04 66C1E304
+0070:5894   mov  esi,003FF000 66BE00F03F00
+0070:589A   cmp  byte [0DFF],00 803EFF0D00
+0070:589F   jne  00181A0B ($+a) 750A
+0070:58A1   mov  esi,ebx 668BF3
+0070:58A4   add  esi,00001000 6681C600100000
+0070:58AB   mov  edi,[00AC] 668B3EAC00
+0070:58B0   inc  edi 6647
+0070:58B2   shr  edi,06 66C1EF06
+0070:58B6   mov  ecx,[bp+26] 668B4E26
+0070:58BA   shr  ecx,0A 66C1E90A
+0070:58BE   add  cx,di 03CF
+0070:58C0   mov  eax,[bp+22] 668B4622
+0070:58C4   add  eax,00001000 660500100000
+0070:58CA   dec  eax 6648
+0070:58CC   and  ax,F000 2500F0
+0070:58CF   or   ax,0C07 0D070C
+0070:58D2   cmp  di,cx 3BF9
+0070:58D4   jnc  00181A7B ($+45) 7345
+0070:58D6   mov  edx,edi 668BD7
+0070:58D9   shr  edx,0C 66C1EA0C
+0070:58DD   test byte es:[ebx+edx*4],01 2667F6049301
+0070:58E3   jne  00181A61 ($+1c) 751C
+0070:58E5   sub  cx,0004 83E904
+0070:58E8   mov  es:[ebx+edx*4],eax 266766890493
+0070:58EE   cmp  byte [0DFF],00 803EFF0D00
+0070:58F3   je   00181A73 ($+1e) 741E
+0070:58F5   mov  es:[esi+edx*4+00000FFC],eax 266766898496FC0F0000
+0070:58FF   jmp  short 00181A73 ($+12) EB12
+0070:5901   mov  es:[esi+edi],eax 26676689043E
+0070:5907   add  di,0004 83C704
+0070:590A   add  dword [0AA8],00001000 668106A80A00100000
+0070:5913   add  eax,00001000 660500100000
+0070:5919   jmp  short 00181A32 ($-49) EBB7
+0070:591B   shl  edi,06 66C1E706
+0070:591F   xchg [00AC],edi 66873EAC00
+0070:5924   shl  edi,04 66C1E704
+0070:5928   mov  [bp+1C],di 897E1C
+0070:592B   shr  edi,10 66C1EF10
+0070:592F   mov  [bp+14],di 897E14
+0070:5932   popad  6661
+0070:5934   ret C3
+0070:5935   xor  cx,cx 33C9
+0070:5937   mov  ch,[0E00] 8A2E000E
+0070:593B   jcxz 00181AB4 ($+17) E317
+0070:593D   cmp  [0DFF],cl 380EFF0D
+0070:5941   je   00181AA6 ($+3) 7403
+0070:5943   mov  cx,FFF8 B9F8FF
+0070:5946   push eax 6650
+0070:5948   mov  eax,[00AC] 66A1AC00
+0070:594C   shr  eax,06 66C1E806
+0070:5950   sub  cx,ax 2BC8
+0070:5952   pop  eax 6658
+0070:5954   xchg cx,ax 91
+0070:5955   ret C3
+0070:5956   xchg bx,bx 87DB
+0070:5958   xchg bx,bx 87DB
+0070:595A   xchg bx,bx 87DB
+0070:595C   xchg bx,bx 87DB
+0070:595E   xchg bx,bx 87DB
+0070:5960   call 0017C560 ($-5563) E89DAA
+0070:5963   inc  dx 6742
+0070:5965   push di 57
+0070:5966   add  byte [bx+di],30 800130
+0070:5969   add  [bx+si],al 0000
+0070:596B   add  [bx+si],al 0000
+0070:596D   add  [bx+di],al 0001
+0070:596F   add  [bp+si+65],dh 005555
+0070:5972   push bp 55
+0070:5973   push bp 55
+0070:5974   push bp 55
+0070:5975   push bp 55
+0070:5976   push bp 55
+0070:5977   push bp 55
+0070:5978   push bp 55
+0070:5979   push bp 55
+0070:597A   push bp 55
+0070:597B   push bp 55
+0070:597C   push bp 55
+0070:597D   push bp 55
+0070:597E   push bp 55
+0070:597F   push bp 55
+0070:5980   push bp 55
+0070:5981   push bp 55
+0070:5982   push bp 55
+0070:5983   push bp 55
+0070:5984   push bp 55
+0070:5985   push bp 55
+0070:5986   push bp 55
+0070:5987   push bp 55
+0070:5988   push bp 55
+0070:5989   push bp 55
+0070:598A   push bp 55
+0070:598B   push bp 55
+0070:598C   push bp 55
+0070:598D   push bp 55
+0070:598E   push bp 55
+0070:598F   push bp 55
+0070:5990   push bp 55
+0070:5991   push bp 55
+0070:5992   push bp 55
+0070:5993   push bp 55
+0070:5994   push bp 55
+0070:5995   push bp 55
+0070:5996   push bp 55
+0070:5997   push bp 55
+0070:5998   push bp 55
+0070:5999   push bp 55
+0070:599A   push bp 55
+0070:599B   push bp 55
+0070:599C   push bp 55
+0070:599D   push bp 55
+0070:599E   push bp 55
+0070:599F   push bp 55
+0070:59A0   push bp 55
+0070:59A1   push bp 55
+0070:59A2   push bp 55
+0070:59A3   push bp 55
+0070:59A4   push bp 55
+0070:59A5   push bp 55
+0070:59A6   push bp 55
+0070:59A7   push bp 55
+0070:59A8   push bp 55
+0070:59A9   push bp 55
+0070:59AA   push bp 55
+0070:59AB   push bp 55
+0070:59AC   push bp 55
+0070:59AD   push bp 55
+0070:59AE   push bp 55
+0070:59AF   push bp 55
+0070:59B0   push bp 55
+0070:59B1   push bp 55
+0070:59B2   push bp 55
+0070:59B3   push bp 55
+0070:59B4   push bp 55
+0070:59B5   push bp 55
+0070:59B6   push bp 55
+0070:59B7   push bp 55
+0070:59B8   push bp 55
+0070:59B9   push bp 55
+0070:59BA   push bp 55
+0070:59BB   push bp 55
+0070:59BC   push bp 55
+0070:59BD   push bp 55
+0070:59BE   push bp 55
+0070:59BF   push bp 55
+0070:59C0   push bp 55
+0070:59C1   push bp 55
+0070:59C2   push bp 55
+0070:59C3   push bp 55
+0070:59C4   push bp 55
+0070:59C5   push bp 55
+0070:59C6   push bp 55
+0070:59C7   push bp 55
+0070:59C8   push bp 55
+0070:59C9   push bp 55
+0070:59CA   push bp 55
+0070:59CB   push bp 55
+0070:59CC   push bp 55
+0070:59CD   push bp 55
+0070:59CE   push bp 55
+0070:59CF   push bp 55
+0070:59D0   push bp 55
+0070:59D1   push bp 55
+0070:59D2   push bp 55
+0070:59D3   push bp 55
+0070:59D4   push bp 55
+0070:59D5   push bp 55
+0070:59D6   push bp 55
+0070:59D7   push bp 55
+0070:59D8   push bp 55
+0070:59D9   push bp 55
+0070:59DA   push bp 55
+0070:59DB   push bp 55
+0070:59DC   push bp 55
+0070:59DD   push bp 55
+0070:59DE   push bp 55
+0070:59DF   push bp 55
+0070:59E0   push bp 55
+0070:59E1   push bp 55
+0070:59E2   push bp 55
+0070:59E3   push bp 55
+0070:59E4   push bp 55
+0070:59E5   push bp 55
+0070:59E6   push bp 55
+0070:59E7   push bp 55
+0070:59E8   push bp 55
+0070:59E9   push bp 55
+0070:59EA   push bp 55
+0070:59EB   push bp 55
+0070:59EC   push bp 55
+0070:59ED   push bp 55
+0070:59EE   push bp 55
+0070:59EF   push bp 55
+0070:59F0   push bp 55
+0070:59F1   push bp 55
+0070:59F2   push bp 55
+0070:59F3   push bp 55
+0070:59F4   push bp 55
+0070:59F5   push bp 55
+0070:59F6   push bp 55
+0070:59F7   push bp 55
+0070:59F8   push bp 55
+0070:59F9   push bp 55
+0070:59FA   push bp 55
+0070:59FB   push bp 55
+0070:59FC   push bp 55
+0070:59FD   push bp 55
+0070:59FE   push bp 55
+0070:59FF   push bp 55
+0070:5A00   push bp 55
+0070:5A01   push bp 55
+0070:5A02   push bp 55
+0070:5A03   push bp 55
+0070:5A04   push bp 55
+0070:5A05   push bp 55
+0070:5A06   push bp 55
+0070:5A07   push bp 55
+0070:5A08   push bp 55
+0070:5A09   push bp 55
+0070:5A0A   push bp 55
+0070:5A0B   push bp 55
+0070:5A0C   push bp 55
+0070:5A0D   push bp 55
+0070:5A0E   push bp 55
+0070:5A0F   push bp 55
+0070:5A10   push bp 55
+0070:5A11   push bp 55
+0070:5A12   push bp 55
+0070:5A13   push bp 55
+0070:5A14   push bp 55
+0070:5A15   push bp 55
+0070:5A16   push bp 55
+0070:5A17   push bp 55
+0070:5A18   push bp 55
+0070:5A19   push bp 55
+0070:5A1A   push bp 55
+0070:5A1B   push bp 55
+0070:5A1C   push bp 55
+0070:5A1D   push bp 55
+0070:5A1E   push bp 55
+0070:5A1F   push bp 55
+0070:5A20   push bp 55
+0070:5A21   push bp 55
+0070:5A22   push bp 55
+0070:5A23   push bp 55
+0070:5A24   push bp 55
+0070:5A25   push bp 55
+0070:5A26   push bp 55
+0070:5A27   push bp 55
+0070:5A28   push bp 55
+0070:5A29   push bp 55
+0070:5A2A   push bp 55
+0070:5A2B   push bp 55
+0070:5A2C   push bp 55
+0070:5A2D   push bp 55
+0070:5A2E   push bp 55
+0070:5A2F   push bp 55
+0070:5A30   push bp 55
+0070:5A31   push bp 55
+0070:5A32   push bp 55
+0070:5A33   push bp 55
+0070:5A34   push bp 55
+0070:5A35   push bp 55
+0070:5A36   push bp 55
+0070:5A37   push bp 55
+0070:5A38   push bp 55
+0070:5A39   push bp 55
+0070:5A3A   push bp 55
+0070:5A3B   push bp 55
+0070:5A3C   push bp 55
+0070:5A3D   push bp 55
+0070:5A3E   push bp 55
+0070:5A3F   push bp 55
+0070:5A40   push bp 55
+0070:5A41   push bp 55
+0070:5A42   push bp 55
+0070:5A43   push bp 55
+0070:5A44   push bp 55
+0070:5A45   push bp 55
+0070:5A46   push bp 55
+0070:5A47   push bp 55
+0070:5A48   push bp 55
+0070:5A49   push bp 55
+0070:5A4A   push bp 55
+0070:5A4B   push bp 55
+0070:5A4C   push bp 55
+0070:5A4D   push bp 55
+0070:5A4E   push bp 55
+0070:5A4F   push bp 55
+0070:5A50   push bp 55
+0070:5A51   push bp 55
+0070:5A52   push bp 55
+0070:5A53   push bp 55
+0070:5A54   push bp 55
+0070:5A55   push bp 55
+0070:5A56   push bp 55
+0070:5A57   push bp 55
+0070:5A58   push bp 55
+0070:5A59   push bp 55
+0070:5A5A   push bp 55
+0070:5A5B   push bp 55
+0070:5A5C   push bp 55
+0070:5A5D   push bp 55
+0070:5A5E   push bp 55
+0070:5A5F   push bp 55
+0070:5A60   push bp 55
+0070:5A61   push bp 55
+0070:5A62   push bp 55
+0070:5A63   push bp 55
+0070:5A64   push bp 55
+0070:5A65   push bp 55
+0070:5A66   push bp 55
+0070:5A67   push bp 55
+0070:5A68   push bp 55
+0070:5A69   push bp 55
+0070:5A6A   push bp 55
+0070:5A6B   push bp 55
+0070:5A6C   push bp 55
+0070:5A6D   push bp 55
+0070:5A6E   push bp 55
+0070:5A6F   push bp 55
+0070:5A70   push bp 55
+0070:5A71   push bp 55
+0070:5A72   push bp 55
+0070:5A73   push bp 55
+0070:5A74   push bp 55
+0070:5A75   push bp 55
+0070:5A76   push bp 55
+0070:5A77   push bp 55
+0070:5A78   push bp 55
+0070:5A79   push bp 55
+0070:5A7A   push bp 55
+0070:5A7B   push bp 55
+0070:5A7C   push bp 55
+0070:5A7D   push bp 55
+0070:5A7E   push bp 55
+0070:5A7F   push bp 55
+0070:5A80   push bp 55
+0070:5A81   push bp 55
+0070:5A82   push bp 55
+0070:5A83   push bp 55
+0070:5A84   push bp 55
+0070:5A85   push bp 55
+0070:5A86   push bp 55
+0070:5A87   push bp 55
+0070:5A88   push bp 55
+0070:5A89   push bp 55
+0070:5A8A   push bp 55
+0070:5A8B   push bp 55
+0070:5A8C   push bp 55
+0070:5A8D   push bp 55
+0070:5A8E   push bp 55
+0070:5A8F   push bp 55
+0070:5A90   push bp 55
+0070:5A91   push bp 55
+0070:5A92   push bp 55
+0070:5A93   push bp 55
+0070:5A94   push bp 55
+0070:5A95   push bp 55
+0070:5A96   push bp 55
+0070:5A97   push bp 55
+0070:5A98   push bp 55
+0070:5A99   push bp 55
+0070:5A9A   push bp 55
+0070:5A9B   push bp 55
+0070:5A9C   push bp 55
+0070:5A9D   push bp 55
+0070:5A9E   push bp 55
+0070:5A9F   push bp 55
+0070:5AA0   push bp 55
+0070:5AA1   push bp 55
+0070:5AA2   push bp 55
+0070:5AA3   push bp 55
+0070:5AA4   push bp 55
+0070:5AA5   push bp 55
+0070:5AA6   push bp 55
+0070:5AA7   push bp 55
+0070:5AA8   push bp 55
+0070:5AA9   push bp 55
+0070:5AAA   push bp 55
+0070:5AAB   push bp 55
+0070:5AAC   push bp 55
+0070:5AAD   push bp 55
+0070:5AAE   push bp 55
+0070:5AAF   push bp 55
+0070:5AB0   push bp 55
+0070:5AB1   push bp 55
+0070:5AB2   push bp 55
+0070:5AB3   push bp 55
+0070:5AB4   push bp 55
+0070:5AB5   push bp 55
+0070:5AB6   push bp 55
+0070:5AB7   push bp 55
+0070:5AB8   push bp 55
+0070:5AB9   push bp 55
+0070:5ABA   push bp 55
+0070:5ABB   push bp 55
+0070:5ABC   push bp 55
+0070:5ABD   push bp 55
+0070:5ABE   push bp 55
+0070:5ABF   push bp 55
+0070:5AC0   push bp 55
+0070:5AC1   push bp 55
+0070:5AC2   push bp 55
+0070:5AC3   push bp 55
+0070:5AC4   push bp 55
+0070:5AC5   push bp 55
+0070:5AC6   push bp 55
+0070:5AC7   push bp 55
+0070:5AC8   push bp 55
+0070:5AC9   push bp 55
+0070:5ACA   push bp 55
+0070:5ACB   push bp 55
+0070:5ACC   push bp 55
+0070:5ACD   push bp 55
+0070:5ACE   push bp 55
+0070:5ACF   push bp 55
+0070:5AD0   push bp 55
+0070:5AD1   push bp 55
+0070:5AD2   push bp 55
+0070:5AD3   push bp 55
+0070:5AD4   push bp 55
+0070:5AD5   push bp 55
+0070:5AD6   push bp 55
+0070:5AD7   push bp 55
+0070:5AD8   push bp 55
+0070:5AD9   push bp 55
+0070:5ADA   push bp 55
+0070:5ADB   push bp 55
+0070:5ADC   push bp 55
+0070:5ADD   push bp 55
+0070:5ADE   push bp 55
+0070:5ADF   push bp 55
+0070:5AE0   push bp 55
+0070:5AE1   push bp 55
+0070:5AE2   push bp 55
+0070:5AE3   push bp 55
+0070:5AE4   push bp 55
+0070:5AE5   push bp 55
+0070:5AE6   push bp 55
+0070:5AE7   push bp 55
+0070:5AE8   push bp 55
+0070:5AE9   push bp 55
+0070:5AEA   push bp 55
+0070:5AEB   push bp 55
+0070:5AEC   push bp 55
+0070:5AED   push bp 55
+0070:5AEE   push bp 55
+0070:5AEF   push bp 55
+0070:5AF0   push bp 55
+0070:5AF1   push bp 55
+0070:5AF2   push bp 55
+0070:5AF3   push bp 55
+0070:5AF4   push bp 55
+0070:5AF5   push bp 55
+0070:5AF6   push bp 55
+0070:5AF7   push bp 55
+0070:5AF8   push bp 55
+0070:5AF9   push bp 55
+0070:5AFA   push bp 55
+0070:5AFB   push bp 55
+0070:5AFC   push bp 55
+0070:5AFD   push bp 55
+0070:5AFE   push bp 55
+0070:5AFF   push bp 55
+0070:5B00   push bp 55
+0070:5B01   push bp 55
+0070:5B02   push bp 55
+0070:5B03   push bp 55
+0070:5B04   push bp 55
+0070:5B05   push bp 55
+0070:5B06   push bp 55
+0070:5B07   push bp 55
+0070:5B08   push bp 55
+0070:5B09   push bp 55
+0070:5B0A   push bp 55
+0070:5B0B   push bp 55
+0070:5B0C   push bp 55
+0070:5B0D   push bp 55
+0070:5B0E   push bp 55
+0070:5B0F   push bp 55
+0070:5B10   push bp 55
+0070:5B11   push bp 55
+0070:5B12   push bp 55
+0070:5B13   push bp 55
+0070:5B14   push bp 55
+0070:5B15   push bp 55
+0070:5B16   push bp 55
+0070:5B17   push bp 55
+0070:5B18   push bp 55
+0070:5B19   push bp 55
+0070:5B1A   push bp 55
+0070:5B1B   push bp 55
+0070:5B1C   push bp 55
+0070:5B1D   push bp 55
+0070:5B1E   push bp 55
+0070:5B1F   push bp 55
+0070:5B20   push bp 55
+0070:5B21   push bp 55
+0070:5B22   push bp 55
+0070:5B23   push bp 55
+0070:5B24   push bp 55
+0070:5B25   push bp 55
+0070:5B26   push bp 55
+0070:5B27   push bp 55
+0070:5B28   push bp 55
+0070:5B29   push bp 55
+0070:5B2A   push bp 55
+0070:5B2B   push bp 55
+0070:5B2C   push bp 55
+0070:5B2D   push bp 55
+0070:5B2E   push bp 55
+0070:5B2F   push bp 55
+0070:5B30   push bp 55
+0070:5B31   push bp 55
+0070:5B32   push bp 55
+0070:5B33   push bp 55
+0070:5B34   push bp 55
+0070:5B35   push bp 55
+0070:5B36   push bp 55
+0070:5B37   push bp 55
+0070:5B38   push bp 55
+0070:5B39   push bp 55
+0070:5B3A   push bp 55
+0070:5B3B   push bp 55
+0070:5B3C   push bp 55
+0070:5B3D   push bp 55
+0070:5B3E   push bp 55
+0070:5B3F   push bp 55
+0070:5B40   push bp 55
+0070:5B41   push bp 55
+0070:5B42   push bp 55
+0070:5B43   push bp 55
+0070:5B44   push bp 55
+0070:5B45   push bp 55
+0070:5B46   push bp 55
+0070:5B47   push bp 55
+0070:5B48   push bp 55
+0070:5B49   push bp 55
+0070:5B4A   push bp 55
+0070:5B4B   push bp 55
+0070:5B4C   push bp 55
+0070:5B4D   push bp 55
+0070:5B4E   push bp 55
+0070:5B4F   push bp 55
+0070:5B50   push bp 55
+0070:5B51   push bp 55
+0070:5B52   push bp 55
+0070:5B53   push bp 55
+0070:5B54   push bp 55
+0070:5B55   push bp 55
+0070:5B56   push bp 55
+0070:5B57   push bp 55
+0070:5B58   push bp 55
+0070:5B59   push bp 55
+0070:5B5A   push bp 55
+0070:5B5B   push bp 55
+0070:5B5C   push bp 55
+0070:5B5D   push bp 55
+0070:5B5E   push bp 55
+0070:5B5F   push bp 55
+0070:5B60   push bp 55
+0070:5B61   push bp 55
+0070:5B62   push bp 55
+0070:5B63   push bp 55
+0070:5B64   push bp 55
+0070:5B65   push bp 55
+0070:5B66   push bp 55
+0070:5B67   push bp 55
+0070:5B68   push bp 55
+0070:5B69   push bp 55
+0070:5B6A   push bp 55
+0070:5B6B   push bp 55
+0070:5B6C   push bp 55
+0070:5B6D   push bp 55
+0070:5B6E   push bp 55
+0070:5B6F   push bp 55
+0070:5B70   push bp 55
+0070:5B71   push bp 55
+0070:5B72   push bp 55
+0070:5B73   push bp 55
+0070:5B74   push bp 55
+0070:5B75   push bp 55
+0070:5B76   push bp 55
+0070:5B77   push bp 55
+0070:5B78   push bp 55
+0070:5B79   push bp 55
+0070:5B7A   push bp 55
+0070:5B7B   push bp 55
+0070:5B7C   push bp 55
+0070:5B7D   push bp 55
+0070:5B7E   push bp 55
+0070:5B7F   push bp 55
+0070:5B80   push bp 55
+0070:5B81   push bp 55
+0070:5B82   push bp 55
+0070:5B83   push bp 55
+0070:5B84   push bp 55
+0070:5B85   push bp 55
+0070:5B86   push bp 55
+0070:5B87   push bp 55
+0070:5B88   push bp 55
+0070:5B89   push bp 55
+0070:5B8A   push bp 55
+0070:5B8B   push bp 55
+0070:5B8C   push bp 55
+0070:5B8D   push bp 55
+0070:5B8E   push bp 55
+0070:5B8F   push bp 55
+0070:5B90   push bp 55
+0070:5B91   push bp 55
+0070:5B92   push bp 55
+0070:5B93   push bp 55
+0070:5B94   push bp 55
+0070:5B95   push bp 55
+0070:5B96   push bp 55
+0070:5B97   push bp 55
+0070:5B98   push bp 55
+0070:5B99   push bp 55
+0070:5B9A   push bp 55
+0070:5B9B   push bp 55
+0070:5B9C   push bp 55
+0070:5B9D   push bp 55
+0070:5B9E   push bp 55
+0070:5B9F   push bp 55
+0070:5BA0   push bp 55
+0070:5BA1   push bp 55
+0070:5BA2   push bp 55
+0070:5BA3   push bp 55
+0070:5BA4   push bp 55
+0070:5BA5   push bp 55
+0070:5BA6   push bp 55
+0070:5BA7   push bp 55
+0070:5BA8   push bp 55
+0070:5BA9   push bp 55
+0070:5BAA   push bp 55
+0070:5BAB   push bp 55
+0070:5BAC   push bp 55
+0070:5BAD   push bp 55
+0070:5BAE   push bp 55
+0070:5BAF   push bp 55
+0070:5BB0   push bp 55
+0070:5BB1   push bp 55
+0070:5BB2   push bp 55
+0070:5BB3   push bp 55
+0070:5BB4   push bp 55
+0070:5BB5   push bp 55
+0070:5BB6   push bp 55
+0070:5BB7   push bp 55
+0070:5BB8   push bp 55
+0070:5BB9   push bp 55
+0070:5BBA   push bp 55
+0070:5BBB   push bp 55
+0070:5BBC   push bp 55
+0070:5BBD   push bp 55
+0070:5BBE   push bp 55
+0070:5BBF   push bp 55
+0070:5BC0   push bp 55
+0070:5BC1   push bp 55
+0070:5BC2   push bp 55
+0070:5BC3   push bp 55
+0070:5BC4   push bp 55
+0070:5BC5   push bp 55
+0070:5BC6   push bp 55
+0070:5BC7   push bp 55
+0070:5BC8   push bp 55
+0070:5BC9   push bp 55
+0070:5BCA   push bp 55
+0070:5BCB   push bp 55
+0070:5BCC   push bp 55
+0070:5BCD   push bp 55
+0070:5BCE   push bp 55
+0070:5BCF   push bp 55
+0070:5BD0   push bp 55
+0070:5BD1   push bp 55
+0070:5BD2   push bp 55
+0070:5BD3   push bp 55
+0070:5BD4   push bp 55
+0070:5BD5   push bp 55
+0070:5BD6   push bp 55
+0070:5BD7   push bp 55
+0070:5BD8   push bp 55
+0070:5BD9   push bp 55
+0070:5BDA   push bp 55
+0070:5BDB   push bp 55
+0070:5BDC   push bp 55
+0070:5BDD   push bp 55
+0070:5BDE   push bp 55
+0070:5BDF   push bp 55
+0070:5BE0   push bp 55
+0070:5BE1   push bp 55
+0070:5BE2   push bp 55
+0070:5BE3   push bp 55
+0070:5BE4   push bp 55
+0070:5BE5   push bp 55
+0070:5BE6   push bp 55
+0070:5BE7   push bp 55
+0070:5BE8   push bp 55
+0070:5BE9   push bp 55
+0070:5BEA   push bp 55
+0070:5BEB   push bp 55
+0070:5BEC   push bp 55
+0070:5BED   push bp 55
+0070:5BEE   push bp 55
+0070:5BEF   push bp 55
+0070:5BF0   push bp 55
+0070:5BF1   push bp 55
+0070:5BF2   push bp 55
+0070:5BF3   push bp 55
+0070:5BF4   push bp 55
+0070:5BF5   push bp 55
+0070:5BF6   push bp 55
+0070:5BF7   push bp 55
+0070:5BF8   push bp 55
+0070:5BF9   push bp 55
+0070:5BFA   push bp 55
+0070:5BFB   push bp 55
+0070:5BFC   push bp 55
+0070:5BFD   push bp 55
+0070:5BFE   push bp 55
+0070:5BFF   push bp 55
+0070:5C00   push bp 55
+0070:5C01   push bp 55
+0070:5C02   push bp 55
+0070:5C03   push bp 55
+0070:5C04   push bp 55
+0070:5C05   push bp 55
+0070:5C06   push bp 55
+0070:5C07   push bp 55
+0070:5C08   push bp 55
+0070:5C09   push bp 55
+0070:5C0A   push bp 55
+0070:5C0B   push bp 55
+0070:5C0C   push bp 55
+0070:5C0D   push bp 55
+0070:5C0E   push bp 55
+0070:5C0F   push bp 55
+0070:5C10   push bp 55
+0070:5C11   push bp 55
+0070:5C12   push bp 55
+0070:5C13   push bp 55
+0070:5C14   push bp 55
+0070:5C15   push bp 55
+0070:5C16   push bp 55
+0070:5C17   push bp 55
+0070:5C18   push bp 55
+0070:5C19   push bp 55
+0070:5C1A   push bp 55
+0070:5C1B   push bp 55
+0070:5C1C   push bp 55
+0070:5C1D   push bp 55
+0070:5C1E   push bp 55
+0070:5C1F   push bp 55
+0070:5C20   push bp 55
+0070:5C21   push bp 55
+0070:5C22   push bp 55
+0070:5C23   push bp 55
+0070:5C24   push bp 55
+0070:5C25   push bp 55
+0070:5C26   push bp 55
+0070:5C27   push bp 55
+0070:5C28   push bp 55
+0070:5C29   push bp 55
+0070:5C2A   push bp 55
+0070:5C2B   push bp 55
+0070:5C2C   push bp 55
+0070:5C2D   push bp 55
+0070:5C2E   push bp 55
+0070:5C2F   push bp 55
+0070:5C30   push bp 55
+0070:5C31   push bp 55
+0070:5C32   push bp 55
+0070:5C33   push bp 55
+0070:5C34   push bp 55
+0070:5C35   push bp 55
+0070:5C36   push bp 55
+0070:5C37   push bp 55
+0070:5C38   push bp 55
+0070:5C39   push bp 55
+0070:5C3A   push bp 55
+0070:5C3B   push bp 55
+0070:5C3C   push bp 55
+0070:5C3D   push bp 55
+0070:5C3E   push bp 55
+0070:5C3F   push bp 55
+0070:5C40   push bp 55
+0070:5C41   push bp 55
+0070:5C42   push bp 55
+0070:5C43   push bp 55
+0070:5C44   push bp 55
+0070:5C45   push bp 55
+0070:5C46   push bp 55
+0070:5C47   push bp 55
+0070:5C48   push bp 55
+0070:5C49   push bp 55
+0070:5C4A   push bp 55
+0070:5C4B   push bp 55
+0070:5C4C   push bp 55
+0070:5C4D   push bp 55
+0070:5C4E   push bp 55
+0070:5C4F   push bp 55
+0070:5C50   push bp 55
+0070:5C51   push bp 55
+0070:5C52   push bp 55
+0070:5C53   push bp 55
+0070:5C54   push bp 55
+0070:5C55   push bp 55
+0070:5C56   push bp 55
+0070:5C57   push bp 55
+0070:5C58   push bp 55
+0070:5C59   push bp 55
+0070:5C5A   push bp 55
+0070:5C5B   push bp 55
+0070:5C5C   push bp 55
+0070:5C5D   push bp 55
+0070:5C5E   push bp 55
+0070:5C5F   push bp 55
+0070:5C60   push bp 55
+0070:5C61   push bp 55
+0070:5C62   push bp 55
+0070:5C63   push bp 55
+0070:5C64   push bp 55
+0070:5C65   push bp 55
+0070:5C66   push bp 55
+0070:5C67   push bp 55
+0070:5C68   push bp 55
+0070:5C69   push bp 55
+0070:5C6A   push bp 55
+0070:5C6B   push bp 55
+0070:5C6C   push bp 55
+0070:5C6D   push bp 55
+0070:5C6E   push bp 55
+0070:5C6F   push bp 55
+0070:5C70   push bp 55
+0070:5C71   push bp 55
+0070:5C72   push bp 55
+0070:5C73   push bp 55
+0070:5C74   push bp 55
+0070:5C75   push bp 55
+0070:5C76   push bp 55
+0070:5C77   push bp 55
+0070:5C78   push bp 55
+0070:5C79   push bp 55
+0070:5C7A   push bp 55
+0070:5C7B   push bp 55
+0070:5C7C   push bp 55
+0070:5C7D   push bp 55
+0070:5C7E   push bp 55
+0070:5C7F   push bp 55
+0070:5C80   push bp 55
+0070:5C81   push bp 55
+0070:5C82   push bp 55
+0070:5C83   push bp 55
+0070:5C84   push bp 55
+0070:5C85   push bp 55
+0070:5C86   push bp 55
+0070:5C87   push bp 55
+0070:5C88   push bp 55
+0070:5C89   push bp 55
+0070:5C8A   push bp 55
+0070:5C8B   push bp 55
+0070:5C8C   push bp 55
+0070:5C8D   push bp 55
+0070:5C8E   push bp 55
+0070:5C8F   push bp 55
+0070:5C90   push bp 55
+0070:5C91   push bp 55
+0070:5C92   push bp 55
+0070:5C93   push bp 55
+0070:5C94   push bp 55
+0070:5C95   push bp 55
+0070:5C96   push bp 55
+0070:5C97   push bp 55
+0070:5C98   push bp 55
+0070:5C99   push bp 55
+0070:5C9A   push bp 55
+0070:5C9B   push bp 55
+0070:5C9C   push bp 55
+0070:5C9D   push bp 55
+0070:5C9E   push bp 55
+0070:5C9F   push bp 55
+0070:5CA0   push bp 55
+0070:5CA1   push bp 55
+0070:5CA2   push bp 55
+0070:5CA3   push bp 55
+0070:5CA4   push bp 55
+0070:5CA5   push bp 55
+0070:5CA6   push bp 55
+0070:5CA7   push bp 55
+0070:5CA8   push bp 55
+0070:5CA9   push bp 55
+0070:5CAA   push bp 55
+0070:5CAB   push bp 55
+0070:5CAC   push bp 55
+0070:5CAD   push bp 55
+0070:5CAE   push bp 55
+0070:5CAF   push bp 55
+0070:5CB0   push bp 55
+0070:5CB1   push bp 55
+0070:5CB2   push bp 55
+0070:5CB3   push bp 55
+0070:5CB4   push bp 55
+0070:5CB5   push bp 55
+0070:5CB6   push bp 55
+0070:5CB7   push bp 55
+0070:5CB8   push bp 55
+0070:5CB9   push bp 55
+0070:5CBA   push bp 55
+0070:5CBB   push bp 55
+0070:5CBC   push bp 55
+0070:5CBD   push bp 55
+0070:5CBE   push bp 55
+0070:5CBF   push bp 55
+0070:5CC0   push bp 55
+0070:5CC1   push bp 55
+0070:5CC2   push bp 55
+0070:5CC3   push bp 55
+0070:5CC4   push bp 55
+0070:5CC5   push bp 55
+0070:5CC6   push bp 55
+0070:5CC7   push bp 55
+0070:5CC8   push bp 55
+0070:5CC9   push bp 55
+0070:5CCA   push bp 55
+0070:5CCB   push bp 55
+0070:5CCC   push bp 55
+0070:5CCD   push bp 55
+0070:5CCE   push bp 55
+0070:5CCF   push bp 55
+0070:5CD0   push bp 55
+0070:5CD1   push bp 55
+0070:5CD2   push bp 55
+0070:5CD3   push bp 55
+0070:5CD4   push bp 55
+0070:5CD5   push bp 55
+0070:5CD6   push bp 55
+0070:5CD7   push bp 55
+0070:5CD8   push bp 55
+0070:5CD9   push bp 55
+0070:5CDA   push bp 55
+0070:5CDB   push bp 55
+0070:5CDC   push bp 55
+0070:5CDD   push bp 55
+0070:5CDE   push bp 55
+0070:5CDF   push bp 55
+0070:5CE0   push bp 55
+0070:5CE1   push bp 55
+0070:5CE2   push bp 55
+0070:5CE3   push bp 55
+0070:5CE4   push bp 55
+0070:5CE5   push bp 55
+0070:5CE6   push bp 55
+0070:5CE7   push bp 55
+0070:5CE8   push bp 55
+0070:5CE9   push bp 55
+0070:5CEA   push bp 55
+0070:5CEB   push bp 55
+0070:5CEC   push bp 55
+0070:5CED   push bp 55
+0070:5CEE   push bp 55
+0070:5CEF   push bp 55
+0070:5CF0   push bp 55
+0070:5CF1   push bp 55
+0070:5CF2   push bp 55
+0070:5CF3   push bp 55
+0070:5CF4   push bp 55
+0070:5CF5   push bp 55
+0070:5CF6   push bp 55
+0070:5CF7   push bp 55
+0070:5CF8   push bp 55
+0070:5CF9   push bp 55
+0070:5CFA   push bp 55
+0070:5CFB   push bp 55
+0070:5CFC   push bp 55
+0070:5CFD   push bp 55
+0070:5CFE   push bp 55
+0070:5CFF   push bp 55
+0070:5D00   push bp 55
+0070:5D01   push bp 55
+0070:5D02   push bp 55
+0070:5D03   push bp 55
+0070:5D04   push bp 55
+0070:5D05   push bp 55
+0070:5D06   push bp 55
+0070:5D07   push bp 55
+0070:5D08   push bp 55
+0070:5D09   push bp 55
+0070:5D0A   push bp 55
+0070:5D0B   push bp 55
+0070:5D0C   push bp 55
+0070:5D0D   push bp 55
+0070:5D0E   push bp 55
+0070:5D0F   push bp 55
+0070:5D10   push bp 55
+0070:5D11   push bp 55
+0070:5D12   push bp 55
+0070:5D13   push bp 55
+0070:5D14   push bp 55
+0070:5D15   push bp 55
+0070:5D16   push bp 55
+0070:5D17   push bp 55
+0070:5D18   push bp 55
+0070:5D19   push bp 55
+0070:5D1A   push bp 55
+0070:5D1B   push bp 55
+0070:5D1C   push bp 55
+0070:5D1D   push bp 55
+0070:5D1E   push bp 55
+0070:5D1F   push bp 55
+0070:5D20   push bp 55
+0070:5D21   push bp 55
+0070:5D22   push bp 55
+0070:5D23   push bp 55
+0070:5D24   push bp 55
+0070:5D25   push bp 55
+0070:5D26   push bp 55
+0070:5D27   push bp 55
+0070:5D28   push bp 55
+0070:5D29   push bp 55
+0070:5D2A   push bp 55
+0070:5D2B   push bp 55
+0070:5D2C   push bp 55
+0070:5D2D   push bp 55
+0070:5D2E   push bp 55
+0070:5D2F   push bp 55
+0070:5D30   push bp 55
+0070:5D31   push bp 55
+0070:5D32   push bp 55
+0070:5D33   push bp 55
+0070:5D34   push bp 55
+0070:5D35   push bp 55
+0070:5D36   push bp 55
+0070:5D37   push bp 55
+0070:5D38   push bp 55
+0070:5D39   push bp 55
+0070:5D3A   push bp 55
+0070:5D3B   push bp 55
+0070:5D3C   push bp 55
+0070:5D3D   push bp 55
+0070:5D3E   push bp 55
+0070:5D3F   push bp 55
+0070:5D40   push bp 55
+0070:5D41   push bp 55
+0070:5D42   push bp 55
+0070:5D43   push bp 55
+0070:5D44   push bp 55
+0070:5D45   push bp 55
+0070:5D46   push bp 55
+0070:5D47   push bp 55
+0070:5D48   push bp 55
+0070:5D49   push bp 55
+0070:5D4A   push bp 55
+0070:5D4B   push bp 55
+0070:5D4C   push bp 55
+0070:5D4D   push bp 55
+0070:5D4E   push bp 55
+0070:5D4F   push bp 55
+0070:5D50   push bp 55
+0070:5D51   push bp 55
+0070:5D52   push bp 55
+0070:5D53   push bp 55
+0070:5D54   push bp 55
+0070:5D55   push bp 55
+0070:5D56   push bp 55
+0070:5D57   push bp 55
+0070:5D58   push bp 55
+0070:5D59   push bp 55
+0070:5D5A   push bp 55
+0070:5D5B   push bp 55
+0070:5D5C   push bp 55
+0070:5D5D   push bp 55
+0070:5D5E   push bp 55
+0070:5D5F   push bp 55
+0070:5D60   push bp 55
+0070:5D61   push bp 55
+0070:5D62   push bp 55
+0070:5D63   push bp 55
+0070:5D64   push bp 55
+0070:5D65   push bp 55
+0070:5D66   push bp 55
+0070:5D67   push bp 55
+0070:5D68   push bp 55
+0070:5D69   push bp 55
+0070:5D6A   push bp 55
+0070:5D6B   push bp 55
+0070:5D6C   push bp 55
+0070:5D6D   push bp 55
+0070:5D6E   push bp 55
+0070:5D6F   push bp 55
+0070:5D70   push bp 55
+0070:5D71   push bp 55
+0070:5D72   push bp 55
+0070:5D73   push bp 55
+0070:5D74   push bp 55
+0070:5D75   push bp 55
+0070:5D76   push bp 55
+0070:5D77   push bp 55
+0070:5D78   push bp 55
+0070:5D79   push bp 55
+0070:5D7A   push bp 55
+0070:5D7B   push bp 55
+0070:5D7C   push bp 55
+0070:5D7D   push bp 55
+0070:5D7E   push bp 55
+0070:5D7F   push bp 55
+0070:5D80   push bp 55
+0070:5D81   push bp 55
+0070:5D82   push bp 55
+0070:5D83   push bp 55
+0070:5D84   push bp 55
+0070:5D85   push bp 55
+0070:5D86   push bp 55
+0070:5D87   push bp 55
+0070:5D88   push bp 55
+0070:5D89   push bp 55
+0070:5D8A   push bp 55
+0070:5D8B   push bp 55
+0070:5D8C   push bp 55
+0070:5D8D   push bp 55
+0070:5D8E   push bp 55
+0070:5D8F   push bp 55
+0070:5D90   push bp 55
+0070:5D91   push bp 55
+0070:5D92   push bp 55
+0070:5D93   push bp 55
+0070:5D94   push bp 55
+0070:5D95   push bp 55
+0070:5D96   push bp 55
+0070:5D97   push bp 55
+0070:5D98   push bp 55
+0070:5D99   push bp 55
+0070:5D9A   push bp 55
+0070:5D9B   push bp 55
+0070:5D9C   push bp 55
+0070:5D9D   push bp 55
+0070:5D9E   push bp 55
+0070:5D9F   push bp 55
+0070:5DA0   push bp 55
+0070:5DA1   push bp 55
+0070:5DA2   push bp 55
+0070:5DA3   push bp 55
+0070:5DA4   push bp 55
+0070:5DA5   push bp 55
+0070:5DA6   push bp 55
+0070:5DA7   push bp 55
+0070:5DA8   push bp 55
+0070:5DA9   push bp 55
+0070:5DAA   push bp 55
+0070:5DAB   push bp 55
+0070:5DAC   push bp 55
+0070:5DAD   push bp 55
+0070:5DAE   push bp 55
+0070:5DAF   push bp 55
+0070:5DB0   push bp 55
+0070:5DB1   push bp 55
+0070:5DB2   push bp 55
+0070:5DB3   push bp 55
+0070:5DB4   push bp 55
+0070:5DB5   push bp 55
+0070:5DB6   push bp 55
+0070:5DB7   push bp 55
+0070:5DB8   push bp 55
+0070:5DB9   push bp 55
+0070:5DBA   push bp 55
+0070:5DBB   push bp 55
+0070:5DBC   push bp 55
+0070:5DBD   push bp 55
+0070:5DBE   push bp 55
+0070:5DBF   push bp 55
+0070:5DC0   push bp 55
+0070:5DC1   push bp 55
+0070:5DC2   push bp 55
+0070:5DC3   push bp 55
+0070:5DC4   push bp 55
+0070:5DC5   push bp 55
+0070:5DC6   push bp 55
+0070:5DC7   push bp 55
+0070:5DC8   push bp 55
+0070:5DC9   push bp 55
+0070:5DCA   push bp 55
+0070:5DCB   push bp 55
+0070:5DCC   push bp 55
+0070:5DCD   push bp 55
+0070:5DCE   push bp 55
+0070:5DCF   push bp 55
+0070:5DD0   push bp 55
+0070:5DD1   push bp 55
+0070:5DD2   push bp 55
+0070:5DD3   push bp 55
+0070:5DD4   push bp 55
+0070:5DD5   push bp 55
+0070:5DD6   push bp 55
+0070:5DD7   push bp 55
+0070:5DD8   push bp 55
+0070:5DD9   push bp 55
+0070:5DDA   push bp 55
+0070:5DDB   push bp 55
+0070:5DDC   push bp 55
+0070:5DDD   push bp 55
+0070:5DDE   push bp 55
+0070:5DDF   push bp 55
+0070:5DE0   push bp 55
+0070:5DE1   push bp 55
+0070:5DE2   push bp 55
+0070:5DE3   push bp 55
+0070:5DE4   push bp 55
+0070:5DE5   push bp 55
+0070:5DE6   push bp 55
+0070:5DE7   push bp 55
+0070:5DE8   push bp 55
+0070:5DE9   push bp 55
+0070:5DEA   push bp 55
+0070:5DEB   push bp 55
+0070:5DEC   push bp 55
+0070:5DED   push bp 55
+0070:5DEE   push bp 55
+0070:5DEF   push bp 55
+0070:5DF0   push bp 55
+0070:5DF1   push bp 55
+0070:5DF2   push bp 55
+0070:5DF3   push bp 55
+0070:5DF4   push bp 55
+0070:5DF5   push bp 55
+0070:5DF6   push bp 55
+0070:5DF7   push bp 55
+0070:5DF8   push bp 55
+0070:5DF9   push bp 55
+0070:5DFA   push bp 55
+0070:5DFB   push bp 55
+0070:5DFC   push bp 55
+0070:5DFD   push bp 55
+0070:5DFE   push bp 55
+0070:5DFF   push bp 55
+0070:5E00   push bp 55
+0070:5E01   push bp 55
+0070:5E02   push bp 55
+0070:5E03   push bp 55
+0070:5E04   push bp 55
+0070:5E05   push bp 55
+0070:5E06   push bp 55
+0070:5E07   push bp 55
+0070:5E08   push bp 55
+0070:5E09   push bp 55
+0070:5E0A   push bp 55
+0070:5E0B   push bp 55
+0070:5E0C   push bp 55
+0070:5E0D   push bp 55
+0070:5E0E   push bp 55
+0070:5E0F   push bp 55
+0070:5E10   push bp 55
+0070:5E11   push bp 55
+0070:5E12   push bp 55
+0070:5E13   push bp 55
+0070:5E14   push bp 55
+0070:5E15   push bp 55
+0070:5E16   push bp 55
+0070:5E17   push bp 55
+0070:5E18   push bp 55
+0070:5E19   push bp 55
+0070:5E1A   push bp 55
+0070:5E1B   push bp 55
+0070:5E1C   push bp 55
+0070:5E1D   push bp 55
+0070:5E1E   push bp 55
+0070:5E1F   push bp 55
+0070:5E20   push bp 55
+0070:5E21   push bp 55
+0070:5E22   push bp 55
+0070:5E23   push bp 55
+0070:5E24   push bp 55
+0070:5E25   push bp 55
+0070:5E26   push bp 55
+0070:5E27   push bp 55
+0070:5E28   push bp 55
+0070:5E29   push bp 55
+0070:5E2A   push bp 55
+0070:5E2B   push bp 55
+0070:5E2C   push bp 55
+0070:5E2D   push bp 55
+0070:5E2E   push bp 55
+0070:5E2F   push bp 55
+0070:5E30   push bp 55
+0070:5E31   push bp 55
+0070:5E32   push bp 55
+0070:5E33   push bp 55
+0070:5E34   push bp 55
+0070:5E35   push bp 55
+0070:5E36   push bp 55
+0070:5E37   push bp 55
+0070:5E38   push bp 55
+0070:5E39   push bp 55
+0070:5E3A   push bp 55
+0070:5E3B   push bp 55
+0070:5E3C   push bp 55
+0070:5E3D   push bp 55
+0070:5E3E   push bp 55
+0070:5E3F   push bp 55
+0070:5E40   push bp 55
+0070:5E41   push bp 55
+0070:5E42   push bp 55
+0070:5E43   push bp 55
+0070:5E44   push bp 55
+0070:5E45   push bp 55
+0070:5E46   push bp 55
+0070:5E47   push bp 55
+0070:5E48   push bp 55
+0070:5E49   push bp 55
+0070:5E4A   push bp 55
+0070:5E4B   push bp 55
+0070:5E4C   push bp 55
+0070:5E4D   push bp 55
+0070:5E4E   push bp 55
+0070:5E4F   push bp 55
+0070:5E50   push bp 55
+0070:5E51   push bp 55
+0070:5E52   push bp 55
+0070:5E53   push bp 55
+0070:5E54   push bp 55
+0070:5E55   push bp 55
+0070:5E56   push bp 55
+0070:5E57   push bp 55
+0070:5E58   push bp 55
+0070:5E59   push bp 55
+0070:5E5A   push bp 55
+0070:5E5B   push bp 55
+0070:5E5C   push bp 55
+0070:5E5D   push bp 55
+0070:5E5E   push bp 55
+0070:5E5F   push bp 55
+0070:5E60   push bp 55
+0070:5E61   push bp 55
+0070:5E62   push bp 55
+0070:5E63   push bp 55
+0070:5E64   push bp 55
+0070:5E65   push bp 55
+0070:5E66   push bp 55
+0070:5E67   push bp 55
+0070:5E68   push bp 55
+0070:5E69   push bp 55
+0070:5E6A   push bp 55
+0070:5E6B   push bp 55
+0070:5E6C   push bp 55
+0070:5E6D   push bp 55
+0070:5E6E   push bp 55
+0070:5E6F   push bp 55
+0070:5E70   push bp 55
+0070:5E71   push bp 55
+0070:5E72   push bp 55
+0070:5E73   push bp 55
+0070:5E74   push bp 55
+0070:5E75   push bp 55
+0070:5E76   push bp 55
+0070:5E77   push bp 55
+0070:5E78   push bp 55
+0070:5E79   push bp 55
+0070:5E7A   push bp 55
+0070:5E7B   push bp 55
+0070:5E7C   push bp 55
+0070:5E7D   push bp 55
+0070:5E7E   push bp 55
+0070:5E7F   push bp 55
+0070:5E80   push bp 55
+0070:5E81   push bp 55
+0070:5E82   push bp 55
+0070:5E83   push bp 55
+0070:5E84   push bp 55
+0070:5E85   push bp 55
+0070:5E86   push bp 55
+0070:5E87   push bp 55
+0070:5E88   push bp 55
+0070:5E89   push bp 55
+0070:5E8A   push bp 55
+0070:5E8B   push bp 55
+0070:5E8C   push bp 55
+0070:5E8D   push bp 55
+0070:5E8E   push bp 55
+0070:5E8F   push bp 55
+0070:5E90   push bp 55
+0070:5E91   push bp 55
+0070:5E92   push bp 55
+0070:5E93   push bp 55
+0070:5E94   push bp 55
+0070:5E95   push bp 55
+0070:5E96   push bp 55
+0070:5E97   push bp 55
+0070:5E98   push bp 55
+0070:5E99   push bp 55
+0070:5E9A   push bp 55
+0070:5E9B   push bp 55
+0070:5E9C   push bp 55
+0070:5E9D   push bp 55
+0070:5E9E   push bp 55
+0070:5E9F   push bp 55
+0070:5EA0   push bp 55
+0070:5EA1   push bp 55
+0070:5EA2   push bp 55
+0070:5EA3   push bp 55
+0070:5EA4   push bp 55
+0070:5EA5   push bp 55
+0070:5EA6   push bp 55
+0070:5EA7   push bp 55
+0070:5EA8   push bp 55
+0070:5EA9   push bp 55
+0070:5EAA   push bp 55
+0070:5EAB   push bp 55
+0070:5EAC   push bp 55
+0070:5EAD   push bp 55
+0070:5EAE   push bp 55
+0070:5EAF   push bp 55
+0070:5EB0   push bp 55
+0070:5EB1   push bp 55
+0070:5EB2   push bp 55
+0070:5EB3   push bp 55
+0070:5EB4   push bp 55
+0070:5EB5   push bp 55
+0070:5EB6   push bp 55
+0070:5EB7   push bp 55
+0070:5EB8   push bp 55
+0070:5EB9   push bp 55
+0070:5EBA   push bp 55
+0070:5EBB   push bp 55
+0070:5EBC   push bp 55
+0070:5EBD   push bp 55
+0070:5EBE   push bp 55
+0070:5EBF   push bp 55
+0070:5EC0   push bp 55
+0070:5EC1   push bp 55
+0070:5EC2   push bp 55
+0070:5EC3   push bp 55
+0070:5EC4   push bp 55
+0070:5EC5   push bp 55
+0070:5EC6   push bp 55
+0070:5EC7   push bp 55
+0070:5EC8   push bp 55
+0070:5EC9   push bp 55
+0070:5ECA   push bp 55
+0070:5ECB   push bp 55
+0070:5ECC   push bp 55
+0070:5ECD   push bp 55
+0070:5ECE   push bp 55
+0070:5ECF   push bp 55
+0070:5ED0   push bp 55
+0070:5ED1   push bp 55
+0070:5ED2   push bp 55
+0070:5ED3   push bp 55
+0070:5ED4   push bp 55
+0070:5ED5   push bp 55
+0070:5ED6   push bp 55
+0070:5ED7   push bp 55
+0070:5ED8   push bp 55
+0070:5ED9   push bp 55
+0070:5EDA   push bp 55
+0070:5EDB   push bp 55
+0070:5EDC   push bp 55
+0070:5EDD   push bp 55
+0070:5EDE   push bp 55
+0070:5EDF   push bp 55
+0070:5EE0   push bp 55
+0070:5EE1   push bp 55
+0070:5EE2   push bp 55
+0070:5EE3   push bp 55
+0070:5EE4   push bp 55
+0070:5EE5   push bp 55
+0070:5EE6   push bp 55
+0070:5EE7   push bp 55
+0070:5EE8   push bp 55
+0070:5EE9   push bp 55
+0070:5EEA   push bp 55
+0070:5EEB   push bp 55
+0070:5EEC   push bp 55
+0070:5EED   push bp 55
+0070:5EEE   push bp 55
+0070:5EEF   push bp 55
+0070:5EF0   push bp 55
+0070:5EF1   push bp 55
+0070:5EF2   push bp 55
+0070:5EF3   push bp 55
+0070:5EF4   push bp 55
+0070:5EF5   push bp 55
+0070:5EF6   push bp 55
+0070:5EF7   push bp 55
+0070:5EF8   push bp 55
+0070:5EF9   push bp 55
+0070:5EFA   push bp 55
+0070:5EFB   push bp 55
+0070:5EFC   push bp 55
+0070:5EFD   push bp 55
+0070:5EFE   push bp 55
+0070:5EFF   push bp 55
+0070:5F00   push bp 55
+0070:5F01   push bp 55
+0070:5F02   push bp 55
+0070:5F03   push bp 55
+0070:5F04   push bp 55
+0070:5F05   push bp 55
+0070:5F06   push bp 55
+0070:5F07   push bp 55
+0070:5F08   push bp 55
+0070:5F09   push bp 55
+0070:5F0A   push bp 55
+0070:5F0B   push bp 55
+0070:5F0C   push bp 55
+0070:5F0D   push bp 55
+0070:5F0E   push bp 55
+0070:5F0F   push bp 55
+0070:5F10   push bp 55
+0070:5F11   push bp 55
+0070:5F12   push bp 55
+0070:5F13   push bp 55
+0070:5F14   push bp 55
+0070:5F15   push bp 55
+0070:5F16   push bp 55
+0070:5F17   push bp 55
+0070:5F18   push bp 55
+0070:5F19   push bp 55
+0070:5F1A   push bp 55
+0070:5F1B   push bp 55
+0070:5F1C   push bp 55
+0070:5F1D   push bp 55
+0070:5F1E   push bp 55
+0070:5F1F   push bp 55
+0070:5F20   push bp 55
+0070:5F21   push bp 55
+0070:5F22   push bp 55
+0070:5F23   push bp 55
+0070:5F24   push bp 55
+0070:5F25   push bp 55
+0070:5F26   push bp 55
+0070:5F27   push bp 55
+0070:5F28   push bp 55
+0070:5F29   push bp 55
+0070:5F2A   push bp 55
+0070:5F2B   push bp 55
+0070:5F2C   push bp 55
+0070:5F2D   push bp 55
+0070:5F2E   push bp 55
+0070:5F2F   push bp 55
+0070:5F30   push bp 55
+0070:5F31   push bp 55
+0070:5F32   push bp 55
+0070:5F33   push bp 55
+0070:5F34   push bp 55
+0070:5F35   push bp 55
+0070:5F36   push bp 55
+0070:5F37   push bp 55
+0070:5F38   push bp 55
+0070:5F39   push bp 55
+0070:5F3A   push bp 55
+0070:5F3B   push bp 55
+0070:5F3C   push bp 55
+0070:5F3D   push bp 55
+0070:5F3E   push bp 55
+0070:5F3F   push bp 55
+0070:5F40   push bp 55
+0070:5F41   push bp 55
+0070:5F42   push bp 55
+0070:5F43   push bp 55
+0070:5F44   push bp 55
+0070:5F45   push bp 55
+0070:5F46   push bp 55
+0070:5F47   push bp 55
+0070:5F48   push bp 55
+0070:5F49   push bp 55
+0070:5F4A   push bp 55
+0070:5F4B   push bp 55
+0070:5F4C   push bp 55
+0070:5F4D   push bp 55
+0070:5F4E   push bp 55
+0070:5F4F   push bp 55
+0070:5F50   push bp 55
+0070:5F51   push bp 55
+0070:5F52   push bp 55
+0070:5F53   push bp 55
+0070:5F54   push bp 55
+0070:5F55   push bp 55
+0070:5F56   push bp 55
+0070:5F57   push bp 55
+0070:5F58   push bp 55
+0070:5F59   push bp 55
+0070:5F5A   push bp 55
+0070:5F5B   push bp 55
+0070:5F5C   push bp 55
+0070:5F5D   push bp 55
+0070:5F5E   push bp 55
+0070:5F5F   push bp 55
+0070:5F60   push bp 55
+0070:5F61   push bp 55
+0070:5F62   push bp 55
+0070:5F63   push bp 55
+0070:5F64   push bp 55
+0070:5F65   push bp 55
+0070:5F66   push bp 55
+0070:5F67   push bp 55
+0070:5F68   push bp 55
+0070:5F69   push bp 55
+0070:5F6A   push bp 55
+0070:5F6B   push bp 55
+0070:5F6C   push bp 55
+0070:5F6D   push bp 55
+0070:5F6E   push bp 55
+0070:5F6F   push bp 55
+0070:5F70   push bp 55
+0070:5F71   push bp 55
+0070:5F72   push bp 55
+0070:5F73   push bp 55
+0070:5F74   push bp 55
+0070:5F75   push bp 55
+0070:5F76   push bp 55
+0070:5F77   push bp 55
+0070:5F78   push bp 55
+0070:5F79   push bp 55
+0070:5F7A   push bp 55
+0070:5F7B   push bp 55
+0070:5F7C   push bp 55
+0070:5F7D   push bp 55
+0070:5F7E   push bp 55
+0070:5F7F   push bp 55
+0070:5F80   push bp 55
+0070:5F81   push bp 55
+0070:5F82   push bp 55
+0070:5F83   push bp 55
+0070:5F84   push bp 55
+0070:5F85   push bp 55
+0070:5F86   push bp 55
+0070:5F87   push bp 55
+0070:5F88   push bp 55
+0070:5F89   push bp 55
+0070:5F8A   push bp 55
+0070:5F8B   push bp 55
+0070:5F8C   push bp 55
+0070:5F8D   push bp 55
+0070:5F8E   push bp 55
+0070:5F8F   push bp 55
+0070:5F90   push bp 55
+0070:5F91   push bp 55
+0070:5F92   push bp 55
+0070:5F93   push bp 55
+0070:5F94   push bp 55
+0070:5F95   push bp 55
+0070:5F96   push bp 55
+0070:5F97   push bp 55
+0070:5F98   push bp 55
+0070:5F99   push bp 55
+0070:5F9A   push bp 55
+0070:5F9B   push bp 55
+0070:5F9C   push bp 55
+0070:5F9D   push bp 55
+0070:5F9E   push bp 55
+0070:5F9F   push bp 55
+0070:5FA0   push bp 55
+0070:5FA1   push bp 55
+0070:5FA2   push bp 55
+0070:5FA3   push bp 55
+0070:5FA4   push bp 55
+0070:5FA5   push bp 55
+0070:5FA6   push bp 55
+0070:5FA7   push bp 55
+0070:5FA8   push bp 55
+0070:5FA9   push bp 55
+0070:5FAA   push bp 55
+0070:5FAB   push bp 55
+0070:5FAC   push bp 55
+0070:5FAD   push bp 55
+0070:5FAE   push bp 55
+0070:5FAF   push bp 55
+0070:5FB0   push bp 55
+0070:5FB1   push bp 55
+0070:5FB2   push bp 55
+0070:5FB3   push bp 55
+0070:5FB4   push bp 55
+0070:5FB5   push bp 55
+0070:5FB6   push bp 55
+0070:5FB7   push bp 55
+0070:5FB8   push bp 55
+0070:5FB9   push bp 55
+0070:5FBA   push bp 55

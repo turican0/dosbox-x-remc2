@@ -1,0 +1,44 @@
+sub_54600
+sub_5BDC0
+sub_6EDE0
+sub_6EF10
+
+sub_75044 -x
+
+sub_75AE0 -x
+
+sub_8C140 -x
+
+ebx 355264
+esi 3532c1
+edi 2B9EE0
+ebp 355280
+
+ebp 355264
+esi 00000021
+ebp 355264
+ebp 355244
+edx 355244
+call 0028C566
+
+call 0028C59E
+
+Bit8u num=Fetchb(); -21
+flags unknown -0
+
+CPU_SW_Interrupt(num,GETIP);GETIP=oldeip
+CPU_Interrupt(num,CPU_INT_SOFTWARE,oldeip);
+
+sub_56210
+	sub_89B60(7u);//26AB60
+	sub_86A00();
+		sub_85E40
+ 			int386 - inicializace pro 256
+		sub_85FD0
+			sub_85EB0
+				int386 31,100 - inicializace pro 2
+			sub_85EB0
+				int386 31,100 - inicializace pro 256
+		sub_86010()
+			int386 31,300 pro BX=2F,CX=1D8 - simulate real mode interupt//CD-ROM - INSTALLATION CHECK
+		sub_86BD0//267BD0
