@@ -70,4 +70,4 @@
   SDL_dibvideo.c
   SDL_dx5events.c
   Generování kódu...
-  SDL.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Debug\SDL.lib
+  SDL.vcxproj -> C:\prenos\dosbox-x-remc2\vs2015\..\obj\SDL\Win32\Debug\SDL.lib
