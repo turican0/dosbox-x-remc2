@@ -1,0 +1,547 @@
+﻿  25_com.cpp
+  28_com.cpp
+  50_com.cpp
+  append_exe.cpp
+  buffers_com.cpp
+  copy_exe.cpp
+  cwsdpmi_exe.cpp
+  debug_exe.cpp
+  device_com.cpp
+  dos32a_exe.cpp
+  dos4gw_exe.cpp
+  dosidle_exe.cpp
+  edit_com.cpp
+  fcbs_com.cpp
+  find_exe.cpp
+  hexmem16_exe.cpp
+  hexmem32_exe.cpp
+  lastdriv_com.cpp
+  mem_com.cpp
+  move_exe.cpp
+  Kompilování...
+  tree_exe.cpp
+  xcopy_exe.cpp
+  callback.cpp
+  core_dyn_x86.cpp
+  core_full.cpp
+  core_normal.cpp
+  core_normal_286.cpp
+  core_normal_8086.cpp
+  core_prefetch.cpp
+  core_simple.cpp
+  cpu.cpp
+  flags.cpp
+  mmx.cpp
+  modrm.cpp
+  paging.cpp
+  debug.cpp
+  debug_disasm.cpp
+  debug_gui.cpp
+  debug_win32.cpp
+  dosbox.cpp
+  Kompilování...
+  cdrom.cpp
+  cdrom_aspi_win32.cpp
+  cdrom_image.cpp
+  cdrom_ioctl_win32.cpp
+  dos.cpp
+  dos_classes.cpp
+  dos_devices.cpp
+  dos_execute.cpp
+  dos_files.cpp
+  dos_ioctl.cpp
+  dos_keyboard_layout.cpp
+  dos_memory.cpp
+  dos_misc.cpp
+  dos_mscdex.cpp
+  dos_programs.cpp
+..\src\dos\dos_programs.cpp(756): warning C4018: >: signed/unsigned – neshoda
+  dos_tables.cpp
+  drives.cpp
+  drive_cache.cpp
+  drive_fat.cpp
+  drive_iso.cpp
+  Kompilování...
+  drive_local.cpp
+  drive_virtual.cpp
+  fpu.cpp
+  bitop.cpp
+  ptrop.cpp
+  8255.cpp
+  pc98.cpp
+  pc98_fm.cpp
+  vga_pc98_cg.cpp
+  vga_pc98_crtc.cpp
+  vga_pc98_dac.cpp
+  vga_pc98_egc.cpp
+  vga_pc98_gdc.cpp
+  bios_memdisk.cpp
+  bios_vhd.cpp
+  shiftjis.cpp
+  AReverbModel.cpp
+  avi_rw_iobuf.cpp
+  avi_writer.cpp
+  BReverbModel.cpp
+  Kompilování...
+  DelayReverb.cpp
+  direct3d.cpp
+  File.cpp
+  FileStream.cpp
+  FreeverbModel.cpp
+  allpass.cpp
+  comb.cpp
+  revmodel.cpp
+  guid.cpp
+  hq2x_d3d.cpp
+  ksdataformat.cpp
+  LA32Ramp.cpp
+  LA32WaveGenerator.cpp
+  LegacyWaveGenerator.cpp
+  menu.cpp
+  midi.cpp
+  Part.cpp
+  Partial.cpp
+  PartialManager.cpp
+  Poly.cpp
+  Kompilování...
+  render.cpp
+  render_scalers.cpp
+  riff.cpp
+  riff_wav_writer.cpp
+  ROMInfo.cpp
+  ScalingEffect.cpp
+  sdlmain.cpp
+..\src\gui\sdlmain.cpp(5231): warning C4244: =: const long se převádí na Sint16; může dojít ke ztrátě dat.
+..\src\gui\sdlmain.cpp(5232): warning C4244: =: const long se převádí na Sint16; může dojít ke ztrátě dat.
+  sdl_gui.cpp
+  sdl_mapper.cpp
+  sha1.cpp
+  Synth.cpp
+  Tables.cpp
+  TVA.cpp
+  TVF.cpp
+  TVP.cpp
+  adlib.cpp
+  cmos.cpp
+  dbopl.cpp
+  disney.cpp
+  dma.cpp
+  Kompilování...
+  dongle.cpp
+  floppy.cpp
+  gameblaster.cpp
+  gus.cpp
+  hardopl.cpp
+  hardware.cpp
+  ide.cpp
+  innova.cpp
+  iohandler.cpp
+  ipx.cpp
+  ipxserver.cpp
+  joystick.cpp
+  keyboard.cpp
+  memory.cpp
+  mixer.cpp
+  mpu401.cpp
+  ne2000.cpp
+  nukedopl.cpp
+  opl.cpp
+  directlpt_win32.cpp
+  Kompilování...
+  filelpt.cpp
+  parport.cpp
+  printer.cpp
+  printer_charmaps.cpp
+  pci_bus.cpp
+  pcspeaker.cpp
+  pic.cpp
+  ps1_sound.cpp
+  envelope.cpp
+  extfilt.cpp
+  filter.cpp
+  pot.cpp
+  sid.cpp
+  version.cpp
+  voice.cpp
+  wave.cpp
+  wave6581_PST.cpp
+  wave6581_PS_.cpp
+  wave6581_P_T.cpp
+  wave6581__ST.cpp
+  Kompilování...
+  wave8580_PST.cpp
+  wave8580_PS_.cpp
+  wave8580_P_T.cpp
+  wave8580__ST.cpp
+  sblaster.cpp
+  directserial.cpp
+  libserial.cpp
+  misc_util.cpp
+  nullmodem.cpp
+  serialdummy.cpp
+  seriallog.cpp
+  serialmouse.cpp
+  serialport.cpp
+  softmodem.cpp
+  tandy_sound.cpp
+  timer.cpp
+  vga.cpp
+  vga_attr.cpp
+  vga_crtc.cpp
+  vga_dac.cpp
+  Kompilování...
+  vga_draw.cpp
+  vga_gfx.cpp
+  vga_memory.cpp
+  vga_misc.cpp
+  vga_other.cpp
+  vga_paradise.cpp
+  vga_s3.cpp
+  vga_seq.cpp
+  vga_tseng.cpp
+  vga_xga.cpp
+  voodoo.cpp
+  voodoo_emu.cpp
+  voodoo_interface.cpp
+  voodoo_opengl.cpp
+  voodoo_vogl.cpp
+  bios.cpp
+  bios_disk.cpp
+  bios_keyboard.cpp
+  ems.cpp
+  int10.cpp
+  Kompilování...
+  int10_char.cpp
+  int10_memory.cpp
+  int10_misc.cpp
+  int10_modes.cpp
+  int10_pal.cpp
+  int10_put_pixel.cpp
+  int10_vesa.cpp
+  int10_video_state.cpp
+  int10_vptable.cpp
+  mouse.cpp
+  xms.cpp
+  gui_tk.cpp
+  porttalk.cpp
+  cross.cpp
+  messages.cpp
+  programs.cpp
+  qcow2_disk.cpp
+  regionalloctracking.cpp
+  setup.cpp
+  support.cpp
+  Kompilování...
+  output_direct3d.cpp
+  output_opengl.cpp
+  output_surface.cpp
+  output_surface_sdl.cpp
+  output_surface_sdl2.cpp
+  output_tools.cpp
+  output_tools_xbrz.cpp
+  shell.cpp
+  shell_batch.cpp
+  shell_cmds.cpp
+  shell_misc.cpp
+  xbrz.cpp
+  board26k.c
+  board86.c
+  parts.c
+  keydisp.c
+  adpcmc.c
+  adpcmg.c
+  fmboard.c
+  fmtimer.c
+  getsmix.c
+  getsnd.c
+  getwave.c
+  opngenc.c
+  opngeng.c
+  pcm86c.c
+  pcm86g.c
+  psggenc.c
+  psggeng.c
+  rhythmc.c
+  sound.c
+  soundrom.c
+  Kompilování...
+  tms3631c.c
+  tms3631g.c
+  dosio.c
+  
+  Hledají se knihovny.
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+  
+  Hledání knihoven se dokončilo.
+     Vytváří se knihovna C:\prenos\dosbox-x-master\vs2015\..\obj\dosbox-x\Win32\Release\/dosbox-x.lib a objekt C:\prenos\dosbox-x-master\vs2015\..\obj\dosbox-x\Win32\Release\/dosbox-x.exp.
+  
+  Hledají se knihovny.
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+  
+  Hledání knihoven se dokončilo.
+  Vytváří se kód.
+  All 15202 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Vytváření kódu se dokončilo.
+  
+  Hledají se knihovny.
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+  
+  Hledání knihoven se dokončilo.
+  
+  Hledají se knihovny.
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\LIBCMT.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\OLDNAMES.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libconcrt.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libvcruntime.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\10\lib\10.0.10240.0\ucrt\x86\libucrt.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winmm.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\imm32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\opengl32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\dxguid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\version.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Iphlpapi.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpdcurses\Win32\Release\libpdcurses.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\Ws2_32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL\Win32\Release\SDL.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\kernel32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\user32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\gdi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\winspool.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\comdlg32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\advapi32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\shell32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\ole32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\oleaut32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\uuid.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbc32.lib:
+      Hledá se C:\Program Files (x86)\Windows Kits\8.1\lib\winv6.3\um\x86\odbccp32.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\zlib\Win32\Release\zlib.lib:
+      Hledá se C:\prenos\dosbox-x-master\vs2015\..\obj\libpng\Win32\Release\libpng.lib:
+      Hledá se C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.12.25827\lib\x86\libcpmt.lib:
+  
+  Hledání knihoven se dokončilo.
+  dosbox-x.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\bin\Win32\Release\dosbox-x.exe
+          1 file(s) copied.
+          1 file(s) copied.
+          1 file(s) copied.

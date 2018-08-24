@@ -1,0 +1,3 @@
+﻿cl : příkazový řádek warning D9035: Možnost QIfist je zastaralá a v příští verzi se odebere.
+  SDL_windows_main.c
+  SDLmain.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\obj\SDL2main\Win32\Debug SDL2\SDL2main.lib

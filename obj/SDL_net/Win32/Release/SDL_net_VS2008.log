@@ -1,0 +1,6 @@
+﻿  SDLnet.c
+  SDLnetselect.c
+  SDLnetTCP.c
+  SDLnetUDP.c
+  LINK : NaÜel se modul .net MSIL nebo modul zkompilovanř pomocÝ /GL. PropojenÝ se restartuje s parametrem /LTCG. Vřkon linkeru m¨×ete zlepÜit p°idßnÝm parametru /LTCG na p°Ýkazovř °ßdek propojenÝ.
+  SDL_net_VS2008.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Release\SDL_net.lib

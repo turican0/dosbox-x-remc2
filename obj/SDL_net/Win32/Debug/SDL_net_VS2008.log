@@ -1,0 +1,6 @@
+﻿  SDLnet.c
+  SDLnetselect.c
+  SDLnetTCP.c
+  SDLnetUDP.c
+  Generování kódu...
+  SDL_net_VS2008.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\obj\SDL_net\Win32\Debug\SDL_net.lib

@@ -1,0 +1,3 @@
+﻿  SDL_win32_main.c
+  LINK : NaÜel se modul .net MSIL nebo modul zkompilovanř pomocÝ /GL. PropojenÝ se restartuje s parametrem /LTCG. Vřkon linkeru m¨×ete zlepÜit p°idßnÝm parametru /LTCG na p°Ýkazovř °ßdek propojenÝ.
+  SDLmain.vcxproj -> C:\prenos\dosbox-x-master\vs2015\..\obj\SDLmain\Win32\Release\SDLmain.lib
