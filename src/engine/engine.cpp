@@ -53,7 +53,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
-unsigned long findvaradr = 0x2af350;
+unsigned long findvaradr = 0x1a7368;
 
 
 unsigned long prepreprepreprelastsel;
@@ -122,10 +122,10 @@ void enginestep() {
                     fprintf(fptestep, "ADR%04X:%08X/%08X\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                     fprintf(fptestep, "NEW VALUE%04X:%08X - %04X,%04X\n", findvarseg, findvaradr, oldmem, actmem);
                     pause = true;
-                    oldmem = actmem;
                     fclose(fptestep);
                     sprintf(charbuffer, "NEW VALUE%04X:%08X - %04X,%04X\n", findvarseg, findvaradr, oldmem, actmem);
                     writesubcall(charbuffer, 0);
+                    oldmem = actmem;
             }            
         }
         if(pause)
@@ -587,10 +587,17 @@ void writecall(Bitu selector, Bitu offset) {
             case 0x002589E0:writesubcall("sub_779E0_0x002589E0\n", 4);break;
             case 0x0025BDE0:writesubcall("sub_7ADE0_0x0025BDE0\n", 4);break;
 
-            case 0x0025c5a0:writesubcall("sub_7B5A0_0x0025c5a0\n", 5);break;
-            case 0x0026dd27:writesubcall("sub_8CD27_0x0026dd27\n", 5);break;
-            case 0x0027B166:writesubcall("unknown_libname_2_findfirst_0x0027B166\n", 5);break;
-            case 0x0027b1b3:writesubcall("unknown_libname_4_0x0027b1b3\n", 5);break;
+            case 0x235600:writesubcall("sub_54600_mouse_reset\n", 5);break;
+            case 0x24FBF0:writesubcall("sub_6EBF0\n", 5);break;
+
+            case 0x0025c5a0:writesubcall("sub_7B5A0_0x0025c5a0\n", 6);break;
+            case 0x0026dd27:writesubcall("sub_8CD27_0x0026dd27\n", 6);break;
+            case 0x0027B166:writesubcall("unknown_libname_2_findfirst_0x0027B166\n", 6);break;
+            case 0x0027b1b3:writesubcall("unknown_libname_4_0x0027b1b3\n", 6);break;
+
+
+
+            case 0x00222a90:writesubcall("sub_41A90_VGA_pallette_install\n", 10);break;
             }
         }
         }
@@ -602,7 +609,7 @@ void writecall(Bitu selector, Bitu offset) {
 long testcount = 0;
 
 
-
+long xcounter = 0;
 int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
     if (callindex > 0)
     {
@@ -693,19 +700,21 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 }
             case 0x256200: {
                 //saveactstate();
-                DEBUG_EnableDebugger();
+                //DEBUG_EnableDebugger();
                 break;
             }
             case 0x222a90: {
 
-                fopen_s(&fptestep, findname, "a+");
+                /*fopen_s(&fptestep, findname, "a+");
                 fprintf(fptestep, "0x222a90PAL%04X:%08X\n", 0x0168, reg_esp + 0x10);
-                fclose(fptestep);
+                fclose(fptestep);*/
                 //saveactstate();
+                if(xcounter>87)
                 DEBUG_EnableDebugger();
+                xcounter++;
                 break;
             }
-            case 0x222a9b: {
+            case 0x271b27: {
             //case 0x264b50: {
             //case 0x23cf50: {
             //case 0x00271D6E: {
@@ -723,7 +732,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x00234E60: {
             //case 0x00235200: {
             //case 0x00267A00: {
-                saveactstate();
+                //saveactstate();
                 DEBUG_EnableDebugger();
                 break;
             }
