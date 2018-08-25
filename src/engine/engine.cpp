@@ -692,6 +692,20 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                     
                 }
             case 0x256200: {
+                //saveactstate();
+                DEBUG_EnableDebugger();
+                break;
+            }
+            case 0x222a90: {
+
+                fopen_s(&fptestep, findname, "a+");
+                fprintf(fptestep, "0x222a90PAL%04X:%08X\n", 0x0168, reg_esp + 0x10);
+                fclose(fptestep);
+                //saveactstate();
+                DEBUG_EnableDebugger();
+                break;
+            }
+            case 0x222a9b: {
             //case 0x264b50: {
             //case 0x23cf50: {
             //case 0x00271D6E: {
