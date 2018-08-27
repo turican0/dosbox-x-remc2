@@ -714,7 +714,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 xcounter++;
                 break;
             }
-            case 0x25b110: {
+            case 0x270935: {
             //case 0x264b50: {
             //case 0x23cf50: {
             //case 0x00271D6E: {
@@ -733,7 +733,8 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x00235200: {
             //case 0x00267A00: {
                 //saveactstate();
-                DEBUG_EnableDebugger();
+                if(reg_edx&0xff00)
+                    DEBUG_EnableDebugger();
                 break;
             }
             case 0x00279D52: {//int386
