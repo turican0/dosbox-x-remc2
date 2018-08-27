@@ -86,3 +86,11 @@ NEW VALUE0168:001A7368 - 1D17281C,0000
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
+NEW VALUE0168:001A7368 - 0000,181B090C
+      sub_7B5A0_0x0025c5a0
+      sub_8CD27_0x0026dd27
+      unknown_libname_2_findfirst_0x0027B166
+      unknown_libname_2_findfirst_0x0027B166
+      unknown_libname_4_0x0027b1b3
+      sub_7B5A0_0x0025c5a0
+      sub_8CD27_0x0026dd27
