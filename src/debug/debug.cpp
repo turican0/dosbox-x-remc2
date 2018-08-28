@@ -49,6 +49,8 @@ using namespace std;
 #include "keyboard.h"
 #include "setup.h"
 
+#include "engine/engine.h"
+
 #ifdef WIN32
 void WIN32_Console();
 #else
@@ -1274,6 +1276,8 @@ bool ParseCommand(char* str) {
         return true;
     };
 
+    if (command == "SAVESTATE") { saveactstate(); return true; }
+
     if (command == "DISASM") { // Diasm
         Bit16u seg = (Bit16u)GetHexValue(found, found); found++;
         Bit32u ofs = GetHexValue(found, found); found++;
@@ -1723,6 +1727,7 @@ bool ParseCommand(char* str) {
         DEBUG_ShowMsg("MEMDUMPF/MEMDUMPF16/MEMDUMPF32 [seg]:[off] [len] - Write memory(formated) to file memdumpf.txt.\n");
 		DEBUG_ShowMsg("MEMDUMPBIN [s]:[o] [len]  - Write memory to file memdump.bin.\n");
         DEBUG_ShowMsg("MEMDUMPBINX [o] [len]  - Write memory to file memdumpx.bin.\n");
+        DEBUG_ShowMsg("SAVESTATE - Write all memory to file.\n");        
         DEBUG_ShowMsg("DISASM [s]:[o] [len]  - Write memory to file memdump.bin.\n");
         DEBUG_ShowMsg("SETSTATE [s]  - Set special state.\n");
 

@@ -53,7 +53,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
-unsigned long findvaradr = 0x1a7368;
+unsigned long findvaradr = 0x47be3b;
 
 
 unsigned long prepreprepreprelastsel;
@@ -715,26 +715,28 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
             }
             case 0x270935: {
-            //case 0x264b50: {
-            //case 0x23cf50: {
-            //case 0x00271D6E: {
-            //case 0x00227830: {
-            //case 0x00279b2c: {
-            //case 0x001f11c0: {
-            //case 0x0027B32d: {//tady   v3 = (x_BYTE *)x_DWORD_E9C30;//002bac30 //je to v 23c8d0, 23cf50, 265250, 27B32d, nekde u 27b381,27b453
-            //case 0x00265250: {
-            //case 0x0023CF50: {
-            //case 0x0023C8D0: {
-            //case 0x0023D1B0: {
-            //case 0x00237210: {
-            //case 0x00266070: {
-            //case 0x00264CD0: {
-            //case 0x00234E60: {
-            //case 0x00235200: {
-            //case 0x00267A00: {
-                //saveactstate();
-                if(reg_edx&0xff00)
+                //case 0x264b50: {
+                //case 0x23cf50: {
+                //case 0x00271D6E: {
+                //case 0x00227830: {
+                //case 0x00279b2c: {
+                //case 0x001f11c0: {
+                //case 0x0027B32d: {//tady   v3 = (x_BYTE *)x_DWORD_E9C30;//002bac30 //je to v 23c8d0, 23cf50, 265250, 27B32d, nekde u 27b381,27b453
+                //case 0x00265250: {
+                //case 0x0023CF50: {
+                //case 0x0023C8D0: {
+                //case 0x0023D1B0: {
+                //case 0x00237210: {
+                //case 0x00266070: {
+                //case 0x00264CD0: {
+                //case 0x00234E60: {
+                //case 0x00235200: {
+                //case 0x00267A00: {                
+                if (reg_edx & 0xff00)
+                {
+                    saveactstate();
                     DEBUG_EnableDebugger();
+                }
                 break;
             }
             case 0x00279D52: {//int386

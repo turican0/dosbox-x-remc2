@@ -1,4 +1,4 @@
-NEW VALUE0168:001A7368 - F8A432EB,3C88775E
+NEW VALUE0168:0047BE3B - F8A432EB,0000
 main_0x00236f70
  sub_56210_process_command_line_0x00237210
  sub_5B8D0_initialize_0x0023C8D0
@@ -6,8 +6,6 @@ main_0x00236f70
   sub_560D0_create_sound_dir_0x002370D0
   sub_5BCC0_set_any_variables1_0x0023CCC0
   sub_5BF50_load_psxdata_0x0023CF50
-NEW VALUE0168:001A7368 - 3C88775E,0000
-NEW VALUE0168:001A7368 - 0000,1D17281C
   sub_5C1B0_set_any_variables2_0x0023D1B0
   sub_54200_create_user_directiores_0x00235200
   sub_101C0_0x001f11c0
@@ -28,7 +26,6 @@ NEW VALUE0168:001A7368 - 0000,1D17281C
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
-NEW VALUE0168:001A7368 - 1D17281C,0000
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
@@ -86,7 +83,11 @@ NEW VALUE0168:001A7368 - 1D17281C,0000
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
-NEW VALUE0168:001A7368 - 0000,181B090C
+NEW VALUE0168:0047BE3B - 0000,BA7B3C00
+NEW VALUE0168:0047BE3B - BA7B3C00,BA7B3C04
+NEW VALUE0168:0047BE3B - BA7B3C04,BA7B3C19
+NEW VALUE0168:0047BE3B - BA7B3C19,BA191919
+NEW VALUE0168:0047BE3B - BA191919,191919
       sub_7B5A0_0x0025c5a0
       sub_8CD27_0x0026dd27
       unknown_libname_2_findfirst_0x0027B166
