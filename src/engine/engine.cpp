@@ -732,9 +732,9 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //case 0x00234E60: {
                 //case 0x00235200: {
                 //case 0x00267A00: {                
-                if (reg_edx & 0xff00)
+                //if (reg_edx & 0xff00)
                 {
-                    saveactstate();
+                    //saveactstate();
                     DEBUG_EnableDebugger();
                 }
                 break;
