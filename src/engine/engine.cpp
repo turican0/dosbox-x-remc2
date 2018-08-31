@@ -714,8 +714,8 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 xcounter++;
                 break;
             }
-            case 0x25b110: {
-                //case 0x264b50: {
+            case 0x25f0e0: {
+                //case 0x25f0e0: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
                 //case 0x00227830: {
