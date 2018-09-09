@@ -95,36 +95,3 @@ NEW VALUE0168:0047BE3B - BA191919,191919
       unknown_libname_4_0x0027b1b3
       sub_7B5A0_0x0025c5a0
       sub_8CD27_0x0026dd27
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
