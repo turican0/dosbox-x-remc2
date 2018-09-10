@@ -714,7 +714,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 xcounter++;
                 break;
             }
-            case 0x25f840: {
+            case 0x26dd27: {
                 //case 0x25f0e0: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
@@ -739,7 +739,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 }
                 break;
             }
-            case 0x00279D52: {//int386
+            case 0x00279D5200: {//int386
              /*   
                 Bit32u var1 = mem_readd(SegPhys(ss) + reg_esp + 0x4);
                 Bit32u var2 = mem_readd(SegPhys(ss) + reg_esp + 0x8);
