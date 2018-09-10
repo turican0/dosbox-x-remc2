@@ -88,6 +88,9 @@ FILE* fptestepc;
 
 char charbuffer[500];
 
+
+
+
 void writesubcall(char* text, int level) {
     fopen_s(&fptestepc, findnamec, "a+");
     for (int i = 0;i<level;i++)fprintf(fptestepc, " ");
@@ -483,6 +486,17 @@ void end_write() {
     fclose(fptrcont);
 }
 
+void restart_calls() {
+    if (callindex > 10)
+    {
+        fprintf(fptrcont, "----------\n");
+        callindex = 1;
+        calllevel = 0;
+    }
+    /*end_write();
+    begin_write();*/
+}
+
 void call_write(Bitu selector, Bitu offset)
 {
     if (callindex < callmax)
@@ -714,7 +728,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 xcounter++;
                 break;
             }
-            case 0x26dd27: {
+            case 0x0026DB3A: {
                 //case 0x25f0e0: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {

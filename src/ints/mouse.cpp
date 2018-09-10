@@ -40,6 +40,8 @@
 #include "setup.h"
 #include "control.h"
 
+#include "../engine/engine.h"
+
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
 #endif
@@ -1038,6 +1040,8 @@ static Bitu INT33_Handler(void) {
             mouse.hoty       = (Bit16s)reg_cx;
             mouse.cursorType = 2;
             DrawCursor();
+            //DEBUG_EnableDebugger();
+            restart_calls();
         }
         break;
     case 0x0a:  /* Define Text Cursor */
@@ -1252,6 +1256,8 @@ static Bitu MOUSE_BD_Handler(void) {
 }
 
 static Bitu INT74_Handler(void) {
+    //DEBUG_EnableDebugger();
+    restart_calls();
     if (mouse.events>0) {
         mouse.events--;
 

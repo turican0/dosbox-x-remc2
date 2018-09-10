@@ -17,4 +17,6 @@ void engine_ret(Bitu myreg_eip);
 
 void enginestep();
 
+void restart_calls();
+
 #endif
