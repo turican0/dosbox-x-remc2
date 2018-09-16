@@ -53,7 +53,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
-unsigned long findvaradr = 0x38cf5a;
+unsigned long findvaradr = 0x2b4798;
 
 
 unsigned long prepreprepreprelastsel;
@@ -712,7 +712,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x227830: {
+            case 0x2278300: {
                 //saveactstate();
                 //DEBUG_EnableDebugger();
                 break;
@@ -728,7 +728,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 xcounter++;
                 break;
             }
-            case 0x23ccc0: {
+            case 0x1fc280: {
             //case 0x270100: {
                 //case 0x25f0e0: {
                 //case 0x23cf50: {
