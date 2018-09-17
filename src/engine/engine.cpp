@@ -730,8 +730,9 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             }
             //case 0x257A40: {
             //case 0x257930: {
-            case 0x1fc280: {
-            //case 0x270100: {
+            //case 0x256e70: {
+            //case 0x1fc280: {
+            case 0x256e70: {
                 //case 0x25f0e0: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
