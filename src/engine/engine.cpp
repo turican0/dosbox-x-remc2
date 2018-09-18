@@ -53,7 +53,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
-unsigned long findvaradr = 0x2b4798;
+unsigned long findvaradr = 0x123456789;
 
 
 unsigned long prepreprepreprelastsel;
@@ -137,7 +137,8 @@ void enginestep() {
                 fopen_s(&fptestep, findname, "a+");
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
-                if (0x6F732F == oldmem)saveactstate();//DEBUG_EnableDebugger();
+                if (0x6F732F == oldmem)saveactstate();
+                //DEBUG_EnableDebugger();
                 fclose(fptestep);
             }
     }
@@ -165,7 +166,6 @@ void saveactstate() {
         fwrite(buffer, 1, 1, fptw);
     }
     fclose(fptw);
-
 }
 
 int call_0x00000160_0x0026db3axxx(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
@@ -732,8 +732,9 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x257930: {
             //case 0x256e70: {
             //case 0x1fc280: {
-            case 0x256e70: {
-                //case 0x25f0e0: {
+            case 0x256cb0: {
+            //case 0x256e70: {
+                //case 0x256e70: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
                 //case 0x00227830: {
@@ -755,6 +756,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 {
                     //restart_calls();
                     //saveactstate();
+                    //findvaradr = 0x34eb54;
                     DEBUG_EnableDebugger();
                 }
                 break;
