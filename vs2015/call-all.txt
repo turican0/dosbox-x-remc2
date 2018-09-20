@@ -110,5 +110,3 @@ main_0x00236f70
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
           sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
-          sub_41A90_VGA_pallette_install
