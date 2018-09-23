@@ -53,7 +53,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
-unsigned long findvaradr = 0x123456789;
+unsigned long findvaradr = 0x2b2bac;
 
 
 unsigned long prepreprepreprelastsel;
@@ -570,48 +570,25 @@ void writecall(Bitu selector, Bitu offset) {
         switch (selector) {
         case 0x00000160: {
             switch (offset) {
-            case 0x00236f70:writesubcall("main_0x00236f70\n", 0);break;
+            //case 0x00236f70:writesubcall("main_0x00236f70\n", 0);break;
 
-            case 0x237210:writesubcall("sub_56210_process_command_line_0x00237210\n", 1);break;
-            case 0x0023C8D0:writesubcall("sub_5B8D0_initialize_0x0023C8D0\n", 1);break;
-            case 0x00227830:writesubcall("sub_46830_main_loop_0x00227830\n", 1);break;
-            case 0x0023CC20:writesubcall("sub_5BC20_0x0023CC20\n", 1);break;
-            case 0x00237730:writesubcall("sub_56730_clean_memory_0x00237730\n", 1);break;
+            case 0x237210:writesubcall("sub_56210_process_command_line_0x00237210\n", 0);break;
+            case 0x0023C8D0:writesubcall("sub_5B8D0_initialize_0x0023C8D0\n", 0);break;
+            case 0x00227830:writesubcall("sub_46830_main_loop_0x00227830\n", 0);break;
+            case 0x0023CC20:writesubcall("sub_5BC20_0x0023CC20\n", 0);break;
+            case 0x00237730:writesubcall("sub_56730_clean_memory_0x00237730\n", 0);break;
 
-            case 0x00251890:writesubcall("sub_70890_print_header_0x00251890\n", 2);break;
-            case 0x0023D490:writesubcall("sub_5C490_testers_info_0x0023D490\n", 2);break;
-            case 0x002370D0:writesubcall("sub_560D0_create_sound_dir_0x002370D0\n", 2);break;
-            case 0x0023CCC0:writesubcall("sub_5BCC0_set_any_variables1_0x0023CCC0\n", 2);break;
-            case 0x0023CF50:writesubcall("sub_5BF50_load_psxdata_0x0023CF50\n", 2);break;
-            case 0x0023D1B0:writesubcall("sub_5C1B0_set_any_variables2_0x0023D1B0\n", 2);break;
-            case 0x00235200:writesubcall("sub_54200_create_user_directiores_0x00235200\n", 2);break;
-            case 0x001f11c0:writesubcall("sub_101C0_0x001f11c0\n", 2);break;
-            case 0x0023d430:writesubcall("sub_5C430_multi_allocation_0x0023d430\n", 2);break;
-            case 0x00227DD0:writesubcall("sub_46DD0_init_sound_and_music_0x00227DD0\n", 2);break;
+            case 0x00257930:writesubcall("sub_76930_menus_and_intros_0x00257930\n", 1);break;
 
-            case 0x00229350:writesubcall("sub_48350_0x00229350\n", 2);break;
-            case 0x00257930:writesubcall("sub_76930_0x00257930\n", 2);break;
+            case 0x00257A40:writesubcall("sub_76A40_lang_setting_0x00257A40\n", 2);break;
+            case 0x00257cf0:writesubcall("sub_76CF0_0x00257cf0\n", 2);break;
+            case 0x00257d00:writesubcall("_wcpp_1_unwind_leave__131_0x00257d00\n", 2);break;
+            case 0x00257d10:writesubcall("sub_76D10_intros_0x00257d10\n", 2);break;
+            case 0x00257fa0:writesubcall("sub_76FA0_0x00257fa0\n", 2);break;
+            case 0x002589e0:writesubcall("sub_779E0_lang_setting_loop_0x002589e0\n", 2);break;
 
-            case 0x0025CEC0:writesubcall("sub_7BEC0_0x0025CEC0\n", 3);break;
-            case 0x0024FDB0:writesubcall("sub_6EDB0_set_mouse_position_by_res_0x0024FDB0\n", 3);break;
-            case 0x00262DB0:writesubcall("sub_81DB0_0x00262DB0\n", 3);break;
-            case 0x00257A40:writesubcall("sub_76A40_0x00257A40\n", 3);break;
-
-            case 0x0025BC00:writesubcall("sub_7AC00_0x0025BC00\n", 4);break;
-            case 0x002589E0:writesubcall("sub_779E0_0x002589E0\n", 4);break;
-            case 0x0025BDE0:writesubcall("sub_7ADE0_0x0025BDE0\n", 4);break;
-
-            case 0x235600:writesubcall("sub_54600_mouse_reset\n", 5);break;
-            case 0x24FBF0:writesubcall("sub_6EBF0\n", 5);break;
-
-            case 0x0025c5a0:writesubcall("sub_7B5A0_0x0025c5a0\n", 6);break;
-            case 0x0026dd27:writesubcall("sub_8CD27_0x0026dd27\n", 6);break;
-            case 0x0027B166:writesubcall("unknown_libname_2_findfirst_0x0027B166\n", 6);break;
-            case 0x0027b1b3:writesubcall("unknown_libname_4_0x0027b1b3\n", 6);break;
-
-
-
-            case 0x00222a90:writesubcall("sub_41A90_VGA_pallette_install\n", 10);break;
+            case 0x00264850:writesubcall("sub_83850_show_welcome_screen_0x00264850\n", 3);break;
+            case 0x00257160:writesubcall("sub_76160_play_intro_0x00257160\n", 3);break;
             }
         }
         }
@@ -708,11 +685,11 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 int retval=sub_main(argc,(char**)argv, (char**)envp);
                 support_end();*/
                 //saveactstate();
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 break;
                     
                 }
-            case 0x222a90: {
+            case 0x257fa00: {
                 //saveactstate();
                 //DEBUG_EnableDebugger();
                 break;
@@ -732,8 +709,8 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x257930: {
             //case 0x256e70: {
             //case 0x1fc280: {
-            case 0x260cb0: {
-            //case 0x256e70: {
+            //case 0x257160: {
+            case 0x25c250: {
                 //case 0x256e70: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
