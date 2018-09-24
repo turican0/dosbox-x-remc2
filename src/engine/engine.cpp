@@ -600,14 +600,26 @@ void writecall(Bitu selector, Bitu offset) {
 const int lastcallsstr_count = 500;
 Bitu lastcallsstr[lastcallsstr_count];
 long lastcallsindex=0;
-void savecalls(Bitu offset) {
+void savecalls(Bitu offset) {    
+    lastcallsstr[lastcallsindex] = offset;
+    lastcallsstr[(lastcallsindex +1)% lastcallsstr_count] = 0;
     lastcallsindex++;
     if (lastcallsindex >= lastcallsstr_count)
         lastcallsindex = 0;
-    lastcallsstr[lastcallsstr_count] = offset;
 };
 
+char* writecallsfilename = "writecalls.txt";
 void writecalls() {
+    long cbegin = lastcallsindex;
+    if (cbegin < 0)cbegin += lastcallsstr_count;
+    long cend= cbegin + lastcallsstr_count;
+    FILE *fptw;
+    fopen_s(&fptw, writecallsfilename, "wt");
+    unsigned char buffer[1];
+    for (long i = cbegin;i < cend;i++) {
+        fprintf(fptw,"%04X-%08X\n", SegValue(ds), lastcallsstr[i%lastcallsstr_count]);
+    }
+    fclose(fptw);
 }
 
 long testcount = 0;
@@ -709,7 +721,6 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
             }
             case 0x26db3a: {
-
                 /*fopen_s(&fptestep, findname, "a+");
                 fprintf(fptestep, "0x222a90PAL%04X:%08X\n", 0x0168, reg_esp + 0x10);
                 fclose(fptestep);*/
@@ -723,7 +734,9 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                     DEBUG_EnableDebugger();*/
                 if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x351710) > 0x1))
                 {
-                    DEBUG_EnableDebugger();writecalls();
+                    //savecalls(offset);
+                    writecalls();
+                    DEBUG_EnableDebugger();
                 }
                 //xcounter++;
                 break;
