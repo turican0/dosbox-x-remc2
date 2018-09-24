@@ -597,6 +597,19 @@ void writecall(Bitu selector, Bitu offset) {
     callcount++;
 };
 
+const int lastcallsstr_count = 500;
+Bitu lastcallsstr[lastcallsstr_count];
+long lastcallsindex=0;
+void savecalls(Bitu offset) {
+    lastcallsindex++;
+    if (lastcallsindex >= lastcallsstr_count)
+        lastcallsindex = 0;
+    lastcallsstr[lastcallsstr_count] = offset;
+};
+
+void writecalls() {
+}
+
 long testcount = 0;
 
 
@@ -651,6 +664,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
     }*/
         
     case 0x00000160: {
+        savecalls(offset);
         switch (offset) {
         case 0xf023C8D0: {//tisk SETTING UP LEVELS - yy // přes int 10
                 //myWriteOut("Video refresh rate.\n\n");
@@ -685,7 +699,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 int retval=sub_main(argc,(char**)argv, (char**)envp);
                 support_end();*/
                 //saveactstate();
-                DEBUG_EnableDebugger();
+                //DEBUG_EnableDebugger();
                 break;
                     
                 }
@@ -694,14 +708,23 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //DEBUG_EnableDebugger();
                 break;
             }
-            case 0x257930a: {
+            case 0x26db3a: {
 
                 /*fopen_s(&fptestep, findname, "a+");
                 fprintf(fptestep, "0x222a90PAL%04X:%08X\n", 0x0168, reg_esp + 0x10);
                 fclose(fptestep);*/
                 //saveactstate();
-                //if(xcounter>87)
                 //DEBUG_EnableDebugger();
+                /*if((SegValue(ds)==0x168)&&(mem_readd(SegPhys(ds) + 0x2b4768) >0x1))
+                    DEBUG_EnableDebugger();
+                if ((SegValue(cs) == 0x160) && (mem_readd(SegPhys(cs) + 0x2b4768) > 0x1))
+                    DEBUG_EnableDebugger();
+                if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x2b4768) > 0x1))
+                    DEBUG_EnableDebugger();*/
+                if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x351710) > 0x1))
+                {
+                    DEBUG_EnableDebugger();writecalls();
+                }
                 //xcounter++;
                 break;
             }
@@ -710,7 +733,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x256e70: {
             //case 0x1fc280: {
             //case 0x257160: {
-            case 0x25c250: {
+            case 0x26db3a0: {
                 //case 0x256e70: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
@@ -735,7 +758,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                     //restart_calls();
                     //saveactstate();
                     //findvaradr = 0x34eb54;
-                    DEBUG_EnableDebugger();
+                    //DEBUG_EnableDebugger();
                 }
                 xcounter++;
                 break;
