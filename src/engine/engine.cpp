@@ -735,8 +735,8 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x351710) > 0x1))
                 {
                     //savecalls(offset);
-                    writecalls();
-                    DEBUG_EnableDebugger();
+                    //writecalls();
+                    //DEBUG_EnableDebugger();
                 }
                 //xcounter++;
                 break;
@@ -746,7 +746,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x256e70: {
             //case 0x1fc280: {
             //case 0x257160: {
-            case 0x26db3a0: {
+            case 0x25c250: {
                 //case 0x256e70: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
@@ -766,12 +766,13 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //case 0x00267A00: {                
                 //if (reg_edx & 0xff00)
                 //if (reg_eax > 1)
+                if esi+8 word
                 //if(xcounter>350)
                 {
                     //restart_calls();
                     //saveactstate();
                     //findvaradr = 0x34eb54;
-                    //DEBUG_EnableDebugger();
+                    DEBUG_EnableDebugger();
                 }
                 xcounter++;
                 break;
