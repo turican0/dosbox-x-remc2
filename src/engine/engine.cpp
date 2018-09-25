@@ -699,8 +699,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //saveactstate();
                 begin_write();
                 callindex = 1;
-                //DEBUG_EnableDebugger();
-                
+                //DEBUG_EnableDebugger();           
                 
                 /*char *argv[] = { "netherw.exe","-level","2", NULL };
                 int argc = (sizeof(argv) / sizeof(argv[0]))-1;
@@ -711,7 +710,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 int retval=sub_main(argc,(char**)argv, (char**)envp);
                 support_end();*/
                 //saveactstate();
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 break;
                     
                 }
@@ -746,7 +745,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             //case 0x256e70: {
             //case 0x1fc280: {
             //case 0x257160: {
-            case 0x25c250: {
+            case 0x25c250: {//25c26f
                 //case 0x256e70: {
                 //case 0x23cf50: {
                 //case 0x00271D6E: {
@@ -766,13 +765,13 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //case 0x00267A00: {                
                 //if (reg_edx & 0xff00)
                 //if (reg_eax > 1)
-                if esi+8 word
+                if(mem_readw(SegPhys(ds) + reg_esi +8))
                 //if(xcounter>350)
                 {
                     //restart_calls();
                     //saveactstate();
                     //findvaradr = 0x34eb54;
-                    DEBUG_EnableDebugger();
+                    //DEBUG_EnableDebugger();
                 }
                 xcounter++;
                 break;
