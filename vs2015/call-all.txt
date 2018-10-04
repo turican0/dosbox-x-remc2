@@ -10,3 +10,25 @@ sub_46830_main_loop_0x00227830
    sub_76160_play_intro_0x00257160
    sub_76160_play_intro_0x00257160
   sub_76FA0_0x00257fa0
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
+  sub_76D10_intros_0x00257d10
+   sub_76160_play_intro_0x00257160
