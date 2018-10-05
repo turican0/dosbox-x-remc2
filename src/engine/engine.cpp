@@ -711,18 +711,18 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 int retval=sub_main(argc,(char**)argv, (char**)envp);
                 support_end();*/
                 //saveactstate();
-                DEBUG_EnableDebugger();
+                //DEBUG_EnableDebugger();
                 break;
                     
                 }
-            case 0x265300: {
+            case 0x26e290: {
                 //saveactstate();
                 //if(xcounter>1)
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 //xcounter++;
                 break;
             }
-            case 0x227dd0: {
+            case 0x227dd00: {
                 //saveactstate();
                 //if(xcounter>1)
                     //DEBUG_EnableDebugger();
