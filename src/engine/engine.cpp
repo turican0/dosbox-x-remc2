@@ -696,7 +696,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //DEBUG_EnableDebugger();
                 break;
             }
-            case 0x236F70:{//181000 1A1000 rozdila a rozdil b//main
+            case 0x2847200:{//181000 1A1000 rozdila a rozdil b//main
                 //saveactstate();
                 begin_write();
                 callindex = 1;
@@ -715,7 +715,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x273190: {
+            case 0x26e290: {
                 //saveactstate();
                 //if(xcounter>1)
                 DEBUG_EnableDebugger();
