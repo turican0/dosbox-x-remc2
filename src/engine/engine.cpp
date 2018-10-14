@@ -715,7 +715,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x26e970: {
+            case 0x26e8f0: {
                 //saveactstate();
                 //if(xcounter>1)
                 DEBUG_EnableDebugger();
