@@ -718,7 +718,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             case 0x259730: {
                 //saveactstate();
                 //if(xcounter>1)
-                DEBUG_EnableDebugger();
+                //DEBUG_EnableDebugger();
                 //xcounter++;
                 break;
             }
