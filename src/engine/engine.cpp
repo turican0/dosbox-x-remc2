@@ -139,7 +139,7 @@ void enginestep() {
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 if (0x6F732F == oldmem)saveactstate();
-                DEBUG_EnableDebugger();
+                //DEBUG_EnableDebugger();
                 fclose(fptestep);
             }
     }
@@ -715,7 +715,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x26f160: {
+            case 0x26fd00: {
                 //saveactstate();
                 //if(xcounter>1)
                 DEBUG_EnableDebugger();
