@@ -54,7 +54,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x2b47fc;
+unsigned long findvaradr = 0x2b4802;
 
 
 unsigned long prepreprepreprelastsel;
@@ -139,7 +139,7 @@ void enginestep() {
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 if (0x6F732F == oldmem)saveactstate();
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 fclose(fptestep);
             }
     }
@@ -627,10 +627,11 @@ long testcount = 0;
 
 
 long xcounter = 0;
+long callindex2=0;
 int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
-    if (callindex > 0)
+    if (callindex2 > 10000)
     {
-        call_write(selector, offset);
+        //call_write(selector, offset);
         if (selector == 0x160) {
             prepreprepreprelastsel = preprepreprelastsel;
             prepreprepreprelastoff = preprepreprelastoff;
@@ -657,6 +658,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             lastesp = reg_esp;
         }
     }
+    else callindex2++;
     writecall(selector,offset);
     //if (offset == 0x00055F70)
     /*if((mem_readw(Segs.phys[cs] + reg_eip)==0x000362cc)||
@@ -699,7 +701,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             case 0x26E8000:{//181000 1A1000 rozdila a rozdil b//main
                 //saveactstate();
                 begin_write();
-                callindex = 1;
+                //callindex = 1;
                 //DEBUG_EnableDebugger();           
                 
                 /*char *argv[] = { "netherw.exe","-level","2", NULL };
@@ -715,7 +717,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x286850: {
+            case 0x287370: {
                 //saveactstate();
                 //if(xcounter>1)
                 DEBUG_EnableDebugger();
