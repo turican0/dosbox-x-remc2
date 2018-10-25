@@ -717,7 +717,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 break;
                     
                 }
-            case 0x1fc280: {
+            case 0x257160: {
                 //saveactstate();
                 //if(xcounter>1)
                 /*fopen_s(&fptestep, findname, "a+");
