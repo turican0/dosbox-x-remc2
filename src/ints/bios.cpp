@@ -2393,6 +2393,8 @@ void update_pc98_function_row(bool enable) {
     real_writeb(0x60,0x11C,c);
     real_writeb(0x60,0x110,r);
 
+    real_writeb(0x60,0x111,pc98_function_row ? 0x01 : 0x00);/* function key row display status */
+
     void vga_pc98_direct_cursor_pos(Bit16u address);
     vga_pc98_direct_cursor_pos((r*80)+c);
 }
@@ -5916,12 +5918,14 @@ private:
                 config|=0x2;
 #endif
             switch (machine) {
+                case MCH_MDA:
                 case MCH_HERC:
                     //Startup monochrome
                     config|=0x30;
                     break;
                 case EGAVGA_ARCH_CASE:
                 case MCH_CGA:
+                case MCH_MCGA:
                 case TANDY_ARCH_CASE:
                 case MCH_AMSTRAD:
                     //Startup 80x25 color
@@ -5983,7 +5987,11 @@ private:
                     /* Tandy doesn't have a 2nd PIC, left as is for now */
                     phys_writeb(data+5,(1<<6)|(1<<5)|(1<<4));   // Feature Byte 1
                 } else {
-                    if (PS1AudioCard) { /* FIXME: Won't work because BIOS_Init() comes before PS1SOUND_Init() */
+                    if (machine==MCH_MCGA) {
+                        /* PC/2 model 30 model */
+                        phys_writeb(data+2,0xFA);
+                        phys_writeb(data+3,0x00);                   // Submodel ID (PS/2) model 30
+                    } else if (PS1AudioCard) { /* FIXME: Won't work because BIOS_Init() comes before PS1SOUND_Init() */
                         phys_writeb(data+2,0xFC);                   // Model ID (PC)
                         phys_writeb(data+3,0x0B);                   // Submodel ID (PS/1).
                     } else {
@@ -6355,7 +6363,7 @@ private:
 
             DrawDOSBoxLogoVGA((unsigned int)logo_x*8u,(unsigned int)logo_y*(unsigned int)rowheight);
         }
-        else if (machine == MCH_CGA || machine == MCH_PCJR || machine == MCH_AMSTRAD || machine == MCH_TANDY) {
+        else if (machine == MCH_CGA || machine == MCH_MCGA || machine == MCH_PCJR || machine == MCH_AMSTRAD || machine == MCH_TANDY) {
             rowheight = 8;
             reg_eax = 6;        // 640x200 2-color
             CALLBACK_RunRealInt(0x10);
@@ -6455,6 +6463,12 @@ private:
             switch (machine) {
                 case MCH_CGA:
                     card = "IBM Color Graphics Adapter";
+                    break;
+                case MCH_MCGA:
+                    card = "IBM Multi Color Graphics Adapter";
+                    break;
+                case MCH_MDA:
+                    card = "IBM Monochrome Display Adapter";
                     break;
                 case MCH_HERC:
                     card = "IBM Monochrome Display Adapter (Hercules)";
@@ -6707,7 +6721,8 @@ public:
         /* model byte */
         if (machine==MCH_TANDY || machine==MCH_AMSTRAD) phys_writeb(0xffffe,0xff);  /* Tandy model */
         else if (machine==MCH_PCJR) phys_writeb(0xffffe,0xfd);  /* PCJr model */
-        else phys_writeb(0xffffe,0xfc); /* PC */
+        else if (machine==MCH_MCGA) phys_writeb(0xffffe,0xfa);  /* PC/2 model 30 model */
+        else phys_writeb(0xffffe,0xfc); /* PC (FIXME: This is listed as model byte PS/2 model 60) */
 
         // signature
         phys_writeb(0xfffff,0x55);
@@ -6775,7 +6790,7 @@ public:
         if (allow_more_than_640kb) {
             if (machine == MCH_CGA)
                 ulimit = 736;       /* 640KB + 64KB + 32KB  0x00000-0xB7FFF */
-            else if (machine == MCH_HERC)
+            else if (machine == MCH_HERC || machine == MCH_MDA)
                 ulimit = 704;       /* 640KB + 64KB = 0x00000-0xAFFFF */
 
             if (t_conv > ulimit) t_conv = ulimit;
@@ -7279,7 +7294,18 @@ void ROMBIOS_Init() {
             alias_end = (unsigned long)top - (unsigned long)1UL;
 
             LOG(LOG_BIOS,LOG_DEBUG)("ROM BIOS also mapping alias to 0x%08lx-0x%08lx",alias_base,alias_end);
-            if (!MEM_map_ROM_alias_physmem(alias_base,alias_end)) E_Exit("Unable to map ROM region as ROM alias");
+            if (!MEM_map_ROM_alias_physmem(alias_base,alias_end)) {
+                void MEM_cut_RAM_up_to(Bitu addr);
+
+                /* it's possible if memory aliasing is set that memsize is too large to make room.
+                 * let memory emulation know where the ROM BIOS starts so it can unmap the RAM pages,
+                 * reduce the memory reported to the OS, and try again... */
+                LOG(LOG_BIOS,LOG_DEBUG)("No room for ROM BIOS alias, reducing reported memory and unmapping RAM pages to make room");
+                MEM_cut_RAM_up_to(alias_base);
+
+                if (!MEM_map_ROM_alias_physmem(alias_base,alias_end))
+                    E_Exit("Unable to map ROM region as ROM alias");
+            }
         }
     }
 

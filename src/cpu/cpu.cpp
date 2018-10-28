@@ -32,6 +32,7 @@
 #include "lazyflags.h"
 #include "support.h"
 #include "control.h"
+#include "zipfile.h"
 
 #include "engine/engine.h"
 
@@ -39,6 +40,8 @@
 /* we don't care about switch statements with no case labels */
 #pragma warning(disable:4065)
 #endif
+
+extern ZIPFile savestate_zip;
 
 /* caution: do not uncomment unless you want a lot of spew */
 //#define CPU_DEBUG_SPEW
@@ -181,10 +184,6 @@ void menu_update_cputype(void) {
 	Section_prop * cpu_section = static_cast<Section_prop *>(control->GetSection("cpu"));
 	const std::string cpu_sec_type = cpu_section->Get_string("cputype");
 
-    bool is486 =
-        (CPU_ArchitectureType == CPU_ARCHTYPE_486OLD) ||
-        (CPU_ArchitectureType == CPU_ARCHTYPE_486NEW);
-
     mainMenu.get_item("cputype_auto").
         check(CPU_ArchitectureType == CPU_ARCHTYPE_MIXED).
         refresh_item(mainMenu);
@@ -216,11 +215,18 @@ void menu_update_cputype(void) {
         check(CPU_ArchitectureType == CPU_ARCHTYPE_386 && (cpudecoder == &CPU_Core_Prefetch_Run)).
         enable(cpudecoder == &CPU_Core_Normal_Run || cpudecoder == &CPU_Core_Prefetch_Run).
         refresh_item(mainMenu);
+    mainMenu.get_item("cputype_486old").
+        check(CPU_ArchitectureType == CPU_ARCHTYPE_486OLD && (cpudecoder != &CPU_Core_Prefetch_Run)).
+        refresh_item(mainMenu);
+    mainMenu.get_item("cputype_486old_prefetch").
+        check(CPU_ArchitectureType == CPU_ARCHTYPE_486OLD && (cpudecoder == &CPU_Core_Prefetch_Run)).
+        enable(cpudecoder == &CPU_Core_Normal_Run || cpudecoder == &CPU_Core_Prefetch_Run).
+        refresh_item(mainMenu);
     mainMenu.get_item("cputype_486").
-        check(is486 && (cpudecoder != &CPU_Core_Prefetch_Run)).
+        check(CPU_ArchitectureType == CPU_ARCHTYPE_486NEW && (cpudecoder != &CPU_Core_Prefetch_Run)).
         refresh_item(mainMenu);
     mainMenu.get_item("cputype_486_prefetch").
-        check(is486 && (cpudecoder == &CPU_Core_Prefetch_Run)).
+        check(CPU_ArchitectureType == CPU_ARCHTYPE_486NEW && (cpudecoder == &CPU_Core_Prefetch_Run)).
         enable(cpudecoder == &CPU_Core_Normal_Run || cpudecoder == &CPU_Core_Prefetch_Run).
         refresh_item(mainMenu);
     mainMenu.get_item("cputype_pentium").
@@ -906,9 +912,16 @@ void CPU_Exception(Bitu which,Bitu error ) {
 	}
 
 	if (cpu_double_fault_enable) {
-		/* CPU_Interrupt() could cause another fault during memory access. This needs to happen here */
-		CPU_Exception_Level[which]++;
-		CPU_Exception_In_Progress.push(which);
+        /* NTS: Putting some thought into it, I don't think divide by zero counts as something to throw a double fault
+         *      over. I may be wrong. The behavior of Intel processors will ultimately decide.
+         *
+         *      Until then, don't count Divide Overflow exceptions, so that the "EFP loader" can do it's disgusting
+         *      anti-debugger hackery when loading parts of a demo. --J.C. */
+        if (!(which == 0/*divide by zero/overflow*/)) {
+            /* CPU_Interrupt() could cause another fault during memory access. This needs to happen here */
+            CPU_Exception_Level[which]++;
+            CPU_Exception_In_Progress.push(which);
+        }
 	}
 
 	cpu.exception.error=error;
@@ -932,31 +945,6 @@ void CPU_Exception(Bitu which,Bitu error ) {
 
 Bit8u lastint;
 void CPU_Interrupt(Bitu num,Bitu type,Bitu oldeip) {
-    //tom
-    if ((num == 0x21) && ((cpu_regs.regs[REGI_AX].word[0]&0xff00)==0x3d00)
-       /* && ((cpu_regs.regs[REGI_AX].word[0] & 0xff) < 0x3)*/
-        ) {
-        if(DEBUG_GetState()==2)
-            DEBUG_Enable(true);
-    }
-    if ((num == 0x33) /*&& ((cpu_regs.regs[REGI_AX].word[0] & 0xff00) == 0x3d00)*/
-        /* && ((cpu_regs.regs[REGI_AX].word[0] & 0xff) < 0x3)*/
-        &&(
-            (cpu_regs.regs[REGI_AX].word[0] != 0x00)&&//Mouse Reset/Get Mouse Installed Flag
-            (cpu_regs.regs[REGI_AX].word[0] != 0x2) &&//Hide Mouse Cursor
-            (cpu_regs.regs[REGI_AX].word[0] != 0x4) &&//Set Mouse Cursor Position
-            (cpu_regs.regs[REGI_AX].word[0] != 0x7)&&//Set Mouse Horizontal Min/Max Position
-            (cpu_regs.regs[REGI_AX].word[0] != 0x8) &&//Set Mouse Vertical Min/Max Position
-            (cpu_regs.regs[REGI_AX].word[0] != 0xc) &&//Set Mouse User Defined Subroutine and Input Mask
-            (cpu_regs.regs[REGI_AX].word[0] != 0xf) &&//Set Mouse Mickey Pixel Ratio
-            (cpu_regs.regs[REGI_AX].word[0] != 0x15)//Get mouse driver state and memory requirements
-            )
-        ) {//0 15
-        if (DEBUG_GetState() == 3)
-            DEBUG_Enable(true);
-    }
-    //end tom
-
 	lastint=num;
 	FillFlags();
 #if C_DEBUG
@@ -1548,11 +1536,11 @@ CODE_jmp:
 
 void CPU_CALL(bool use32,Bitu selector,Bitu offset,Bitu oldeip) {
     //tom call
-    int retengine=engine_call(use32, selector, offset, oldeip);
+    int retengine = engine_call(use32, selector, offset, oldeip);
     if (retengine == 1)return;
     //tom call end
 
-	Bit32u old_esp = reg_esp;
+    Bit32u old_esp = reg_esp;
 	Bit32u old_eip = reg_eip;
 
 	if (!cpu.pmode || (reg_flags & FLAG_VM)) {
@@ -3071,10 +3059,15 @@ public:
             set_text("386").set_callback_function(CpuType_ByName);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_386_prefetch").
             set_text("386 with prefetch").set_callback_function(CpuType_ByName);
+        mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_486old").
+            set_text("486 (old)").set_callback_function(CpuType_ByName);
+        mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_486old_prefetch").
+            set_text("486 (old) with prefetch").set_callback_function(CpuType_ByName);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_486").
             set_text("486").set_callback_function(CpuType_ByName);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_486_prefetch").
             set_text("486 with prefetch").set_callback_function(CpuType_ByName);
+
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_pentium").
             set_text("Pentium").set_callback_function(CpuType_ByName);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"cputype_pentium_mmx").
@@ -3195,8 +3188,7 @@ public:
         enable_cmpxchg8b=section->Get_bool("enable cmpxchg8b");
 		CPU_CycleUp=section->Get_int("cycleup");
 		CPU_CycleDown=section->Get_int("cycledown");
-		std::string core(section->Get_string("core")); //tom
-        //std::string core("simple");
+		std::string core(section->Get_string("core"));
 		cpudecoder=&CPU_Core_Normal_Run;
 		safe_strncpy(core_mode,core.c_str(),15);
 		core_mode[15] = '\0';
@@ -3300,6 +3292,20 @@ public:
 			} else if (core == "auto") {
 				cpudecoder=&CPU_Core_Prefetch_Run;
 				CPU_PrefetchQueueSize = 32;
+				CPU_AutoDetermineMode&=(~CPU_AUTODETERMINE_CORE);
+			} else {
+				E_Exit("prefetch queue emulation requires the normal core setting.");
+			}
+		} else if (cputype == "486old") {
+			CPU_ArchitectureType = CPU_ARCHTYPE_486OLD;
+		} else if (cputype == "486old_prefetch") {
+			CPU_ArchitectureType = CPU_ARCHTYPE_486OLD;
+			if (core == "normal") {
+				cpudecoder=&CPU_Core_Prefetch_Run;
+				CPU_PrefetchQueueSize = 16;
+			} else if (core == "auto") {
+				cpudecoder=&CPU_Core_Prefetch_Run;
+				CPU_PrefetchQueueSize = 16;
 				CPU_AutoDetermineMode&=(~CPU_AUTODETERMINE_CORE);
 			} else {
 				E_Exit("prefetch queue emulation requires the normal core setting.");
@@ -3423,6 +3429,113 @@ void CPU_OnSectionPropChange(Section *x) {
 	if (test != NULL) test->Change_Config(x);
 }
 
+void CPU_LoadState(Section *sec) {
+    (void)sec;//UNUSED
+
+    /* STOP THE CPU */
+	CPU_Cycles = CPU_CycleLeft = 0;
+
+    {
+        ZIPFileEntry *ent = savestate_zip.get_entry("cpureg.txt");
+        if (ent != NULL) {
+            zip_nv_pair_map nv(*ent);
+            reg_eax =       nv.get_ulong("eax");
+            reg_ebx =       nv.get_ulong("ebx");
+            reg_ecx =       nv.get_ulong("ecx");
+            reg_edx =       nv.get_ulong("edx");
+            reg_esi =       nv.get_ulong("esi");
+            reg_edi =       nv.get_ulong("edi");
+            reg_ebp =       nv.get_ulong("ebp");
+            reg_esp =       nv.get_ulong("esp");
+            reg_eip =       nv.get_ulong("eip");
+            reg_flags =     nv.get_ulong("eflags");
+
+            Segs.val[es] =          nv.get_ulong("es.val");
+            Segs.phys[es] =         nv.get_ulong("es.phys");
+            Segs.limit[es] =        nv.get_ulong("es.limit");
+            Segs.expanddown[es] =   nv.get_bool("es.expanddown");
+
+            Segs.val[cs] =          nv.get_ulong("cs.val");
+            Segs.phys[cs] =         nv.get_ulong("cs.phys");
+            Segs.limit[cs] =        nv.get_ulong("cs.limit");
+            Segs.expanddown[cs] =   nv.get_bool("cs.expanddown");
+
+            Segs.val[ss] =          nv.get_ulong("ss.val");
+            Segs.phys[ss] =         nv.get_ulong("ss.phys");
+            Segs.limit[ss] =        nv.get_ulong("ss.limit");
+            Segs.expanddown[ss] =   nv.get_bool("ss.expanddown");
+
+            Segs.val[ds] =          nv.get_ulong("ds.val");
+            Segs.phys[ds] =         nv.get_ulong("ds.phys");
+            Segs.limit[ds] =        nv.get_ulong("ds.limit");
+            Segs.expanddown[ds] =   nv.get_bool("ds.expanddown");
+
+            Segs.val[fs] =          nv.get_ulong("fs.val");
+            Segs.phys[fs] =         nv.get_ulong("fs.phys");
+            Segs.limit[fs] =        nv.get_ulong("fs.limit");
+            Segs.expanddown[fs] =   nv.get_bool("fs.expanddown");
+
+            Segs.val[gs] =          nv.get_ulong("gs.val");
+            Segs.phys[gs] =         nv.get_ulong("gs.phys");
+            Segs.limit[gs] =        nv.get_ulong("gs.limit");
+            Segs.expanddown[gs] =   nv.get_bool("gs.expanddown");
+
+            /* CPU state includes other variables based on flags, update them */
+            CPU_SetFlags(reg_flags, FMASK_ALL);
+        }
+    }
+}
+
+void CPU_SaveState(Section *sec) {
+    (void)sec;//UNUSED
+
+    {
+        ZIPFileEntry *ent = savestate_zip.new_entry("cpureg.txt");
+        if (ent != NULL) {
+            zip_nv_write_hex(*ent,"eax",        reg_eax);
+            zip_nv_write_hex(*ent,"ebx",        reg_ebx);
+            zip_nv_write_hex(*ent,"ecx",        reg_ecx);
+            zip_nv_write_hex(*ent,"edx",        reg_edx);
+            zip_nv_write_hex(*ent,"esi",        reg_esi);
+            zip_nv_write_hex(*ent,"edi",        reg_edi);
+            zip_nv_write_hex(*ent,"ebp",        reg_ebp);
+            zip_nv_write_hex(*ent,"esp",        reg_esp);
+            zip_nv_write_hex(*ent,"eip",        reg_eip);
+            zip_nv_write_hex(*ent,"eflags",     reg_flags);
+
+            zip_nv_write_hex(*ent,"es.val",         Segs.val[es]);
+            zip_nv_write_hex(*ent,"es.phys",        Segs.phys[es]);
+            zip_nv_write_hex(*ent,"es.limit",       Segs.limit[es]);
+            zip_nv_write(*ent,"es.expanddown",      Segs.expanddown[es]);
+
+            zip_nv_write_hex(*ent,"cs.val",         Segs.val[cs]);
+            zip_nv_write_hex(*ent,"cs.phys",        Segs.phys[cs]);
+            zip_nv_write_hex(*ent,"cs.limit",       Segs.limit[cs]);
+            zip_nv_write(*ent,"cs.expanddown",      Segs.expanddown[cs]);
+
+            zip_nv_write_hex(*ent,"ss.val",         Segs.val[ss]);
+            zip_nv_write_hex(*ent,"ss.phys",        Segs.phys[ss]);
+            zip_nv_write_hex(*ent,"ss.limit",       Segs.limit[ss]);
+            zip_nv_write(*ent,"ss.expanddown",      Segs.expanddown[ss]);
+
+            zip_nv_write_hex(*ent,"ds.val",         Segs.val[ds]);
+            zip_nv_write_hex(*ent,"ds.phys",        Segs.phys[ds]);
+            zip_nv_write_hex(*ent,"ds.limit",       Segs.limit[ds]);
+            zip_nv_write(*ent,"ds.expanddown",      Segs.expanddown[ds]);
+
+            zip_nv_write_hex(*ent,"fs.val",         Segs.val[fs]);
+            zip_nv_write_hex(*ent,"fs.phys",        Segs.phys[fs]);
+            zip_nv_write_hex(*ent,"fs.limit",       Segs.limit[fs]);
+            zip_nv_write(*ent,"fs.expanddown",      Segs.expanddown[fs]);
+
+            zip_nv_write_hex(*ent,"gs.val",         Segs.val[gs]);
+            zip_nv_write_hex(*ent,"gs.phys",        Segs.phys[gs]);
+            zip_nv_write_hex(*ent,"gs.limit",       Segs.limit[gs]);
+            zip_nv_write(*ent,"gs.expanddown",      Segs.expanddown[gs]);
+        }
+    }
+}
+
 void CPU_Init() {
 	LOG(LOG_MISC,LOG_DEBUG)("Initializing CPU");
 
@@ -3431,6 +3544,9 @@ void CPU_Init() {
 	test = new CPU(control->GetSection("cpu"));
 	AddExitFunction(AddExitFunctionFuncPair(CPU_ShutDown),true);
 	AddVMEventFunction(VM_EVENT_RESET,AddVMEventFunctionFuncPair(CPU_OnReset));
+
+    AddVMEventFunction(VM_EVENT_LOAD_STATE,AddVMEventFunctionFuncPair(CPU_LoadState));
+    AddVMEventFunction(VM_EVENT_SAVE_STATE,AddVMEventFunctionFuncPair(CPU_SaveState));
 }
 //initialize static members
 bool CPU::inited=false;

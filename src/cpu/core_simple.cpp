@@ -146,7 +146,6 @@ bool CPU_WRMSR();
  *      Because of this, the simple core cannot be used to execute directly
  *      from ROM provided by an adapter since that requires memory I/O callbacks. */
 Bits CPU_Core_Simple_Run(void) {
-    //tom - begin standart instruction
     HostPt safety_limit;
 
     /* simple core is incompatible with paging */
@@ -154,14 +153,8 @@ Bits CPU_Core_Simple_Run(void) {
         return CPU_Core_Normal_Run();
 
     safety_limit = (HostPt)((size_t)MemBase + ((size_t)MEM_TotalPages() * (size_t)4096) - (size_t)16384); /* safety margin */
+
     LOADIP;
-    //begin tom
-    Bit32u testbase=  SegBase(cs);
-    Bit32u testval = SegValue(cs);
-    Bit32u testeip = reg_eip;
-    if (testval == 0x160)
-        int inengine = 1;
-    //end tom
     if (core.cseip >= safety_limit) /* beyond the safety limit, use the normal core */
         return CPU_Core_Normal_Run();
 

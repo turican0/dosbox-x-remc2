@@ -31,6 +31,9 @@
 #include "cpu.h"
 #include "pc98_cg.h"
 #include "pc98_gdc.h"
+#include "zipfile.h"
+
+extern ZIPFile savestate_zip;
 
 extern bool non_cga_ignore_oddeven;
 extern bool non_cga_ignore_oddeven_engage;
@@ -504,6 +507,24 @@ public:
 		}
 
 		addr = PAGING_GetPhysicalAddress(addr) & 0x3FFF;
+		vga.tandy.mem_base[addr] = val;
+	}
+};
+
+class VGA_MCGATEXT_PageHandler : public PageHandler {
+public:
+	VGA_MCGATEXT_PageHandler() {
+		flags=PFLAG_NOCODE;
+	}
+	Bitu readb(PhysPt addr) {
+		addr = PAGING_GetPhysicalAddress(addr) & 0xFFFF;
+		VGAMEM_USEC_read_delay();
+		return vga.tandy.mem_base[addr];
+	}
+	void writeb(PhysPt addr,Bitu val){
+		VGAMEM_USEC_write_delay();
+
+		addr = PAGING_GetPhysicalAddress(addr) & 0xFFFF;
 		vga.tandy.mem_base[addr] = val;
 	}
 };
@@ -1824,6 +1845,7 @@ static struct vg {
 	VGA_Slow_CGA_Handler		slow;
 //	VGA_TEXT_PageHandler		text;
 	VGA_CGATEXT_PageHandler		cgatext;
+	VGA_MCGATEXT_PageHandler	mcgatext;
 	VGA_TANDY_PageHandler		tandy;
 //	VGA_ChainedEGA_Handler		cega;
 //	VGA_ChainedVGA_Handler		cvga;
@@ -1861,9 +1883,15 @@ void VGA_SetupHandlers(void) {
 		else
 			MEM_SetPageHandler( VGA_PAGE_B8, 8, &vgaph.slow );
 		goto range_done;
+	case MCH_MCGA://Based on real hardware, A0000-BFFFF is the 64KB of RAM mapped twice
+		MEM_SetPageHandler( VGA_PAGE_A0, 16, &vgaph.mcgatext );     // A0000-AFFFF is the 64KB of video RAM
+        MEM_ResetPageHandler_Unmapped( VGA_PAGE_B0, 8 );            // B0000-B7FFF is unmapped
+		MEM_SetPageHandler( VGA_PAGE_B8, 8, &vgaph.mcgatext );      // B8000-BFFFF is the last 32KB half of video RAM, alias
+		goto range_done;
 	case MCH_PCJR:
 		MEM_SetPageHandler( VGA_PAGE_B8, 8, &vgaph.pcjr );
 		goto range_done;
+	case MCH_MDA:
 	case MCH_HERC:
 		vgapages.base=VGA_PAGE_B0;
 		/* NTS: Implemented according to [http://www.seasip.info/VintagePC/hercplus.html#regs] */
@@ -2036,10 +2064,17 @@ void VGA_StartUpdateLFB(void) {
 		// FIXME: What about the 8MB window?
 	}
 
-	/* if the DOS application or Windows 3.1 driver attempts to put the linear framebuffer
+    /* The LFB register has an enable bit */
+    if (!(vga.s3.reg_58 & 0x10)) {
+        vga.lfb.page = (unsigned int)vga.s3.la_window << 4u;
+        vga.lfb.addr = (unsigned int)vga.s3.la_window << 16u;
+        vga.lfb.handler = NULL;
+        MEM_SetLFB(0,0,NULL,NULL);
+    }
+    /* if the DOS application or Windows 3.1 driver attempts to put the linear framebuffer
 	 * below the top of memory, then we're probably entering a DOS VM and it's probably
 	 * a 64KB window. If it's not a 64KB window then print a warning. */
-	if ((unsigned long)(vga.s3.la_window << 4UL) < (unsigned long)MEM_TotalPages()) {
+    else if ((unsigned long)(vga.s3.la_window << 4UL) < (unsigned long)MEM_TotalPages()) {
 		if (winsz != 0x10000) // 64KB window normal for entering a DOS VM in Windows 3.1 or legacy bank switching in DOS
 			LOG(LOG_MISC,LOG_WARN)("S3 warning: Window size != 64KB and address conflict with system RAM!");
 
@@ -2069,6 +2104,32 @@ static void VGA_Memory_ShutDown(Section * /*sec*/) {
 	}
 }
 
+void VGAMEM_LoadState(Section *sec) {
+    (void)sec;//UNUSED
+
+    if (MemBase != NULL) {
+        ZIPFileEntry *ent = savestate_zip.get_entry("vga.memory.bin");
+        if (ent != NULL) {
+            ent->rewind();
+            if (vga.mem.memsize == ent->file_length)
+                ent->read(vga.mem.linear, vga.mem.memsize);
+            else
+                LOG_MSG("VGA Memory load state failure: VGA Memory size mismatch");
+        }
+    }
+}
+
+void VGAMEM_SaveState(Section *sec) {
+    (void)sec;//UNUSED
+
+    if (vga.mem.linear != NULL) {
+        ZIPFileEntry *ent = savestate_zip.new_entry("vga.memory.bin");
+        if (ent != NULL) {
+            ent->write(vga.mem.linear, vga.mem.memsize);
+        }
+    }
+}
+
 void VGA_SetupMemory() {
 	vga.svga.bank_read = vga.svga.bank_write = 0;
 	vga.svga.bank_read_full = vga.svga.bank_write_full = 0;
@@ -2094,6 +2155,9 @@ void VGA_SetupMemory() {
 	vga.svga.bank_size = 0x10000; /* most common bank size is 64K */
 
 	if (!VGA_Memory_ShutDown_init) {
+        AddVMEventFunction(VM_EVENT_LOAD_STATE,AddVMEventFunctionFuncPair(VGAMEM_LoadState));
+        AddVMEventFunction(VM_EVENT_SAVE_STATE,AddVMEventFunctionFuncPair(VGAMEM_SaveState));
+
 		AddExitFunction(AddExitFunctionFuncPair(VGA_Memory_ShutDown));
 		VGA_Memory_ShutDown_init = true;
 	}

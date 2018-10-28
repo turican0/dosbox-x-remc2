@@ -246,6 +246,9 @@ void                INT10_Init(Section*);
 #if C_NE2000
 void                NE2K_Init(Section* sec);
 #endif
+#if C_PRINTER
+void                PRINTER_Init(Section*);
+#endif
 
 signed long long time_to_clockdom(ClockDomain &src,double t) {
     signed long long lt = (signed long long)t;
@@ -733,9 +736,11 @@ void DOSBOX_RealInit() {
     else if (mtype == "cga_rgb")       { machine = MCH_CGA; mono_cga = false; cga_comp = 2; }
     else if (mtype == "cga_composite") { machine = MCH_CGA; mono_cga = false; cga_comp = 1; new_cga = false; }
     else if (mtype == "cga_composite2"){ machine = MCH_CGA; mono_cga = false; cga_comp = 1; new_cga = true; }
+    else if (mtype == "mcga")          { machine = MCH_MCGA; }
     else if (mtype == "tandy")         { machine = MCH_TANDY; }
     else if (mtype == "pcjr")          { machine = MCH_PCJR; }
     else if (mtype == "hercules")      { machine = MCH_HERC; }
+    else if (mtype == "mda")           { machine = MCH_MDA; }
     else if (mtype == "ega")           { machine = MCH_EGA; }
     else if (mtype == "svga_s3")       { svgaCard = SVGA_S3Trio; }
     else if (mtype == "vesa_nolfb")    { svgaCard = SVGA_S3Trio; int10.vesa_nolfb = true;}
@@ -811,8 +816,9 @@ void DOSBOX_SetupConfigSections(void) {
     const char* captureformats[] = { "default", "avi-zmbv", "mpegts-h264", 0 };
     const char* blocksizes[] = {"1024", "2048", "4096", "8192", "512", "256", 0};
     const char* capturechromaformats[] = { "auto", "4:4:4", "4:2:2", "4:2:0", 0};
+    const char* controllertypes[] = { "auto", "at", "xt", "pcjr", "pc98", 0}; // Future work: Tandy(?) and USB
     const char* auxdevices[] = {"none","2button","3button","intellimouse","intellimouse45",0};
-    const char* cputype_values[] = {"auto", "8086", "8086_prefetch", "80186", "80186_prefetch", "286", "286_prefetch", "386", "386_prefetch", "486", "486_prefetch", "pentium", "pentium_mmx", "ppro_slow", 0};
+    const char* cputype_values[] = {"auto", "8086", "8086_prefetch", "80186", "80186_prefetch", "286", "286_prefetch", "386", "386_prefetch", "486old", "486old_prefetch", "486", "486_prefetch", "pentium", "pentium_mmx", "ppro_slow", 0};
     const char* rates[] = {  "44100", "48000", "32000","22050", "16000", "11025", "8000", "49716", 0 };
     const char* oplrates[] = {   "44100", "49716", "48000", "32000","22050", "16000", "11025", "8000", 0 };
     const char* devices[] = { "default", "win32", "alsa", "oss", "coreaudio", "coremidi", "mt32", "synth", "timidity", "none", 0}; // FIXME: add some way to offer the actually available choices.
@@ -852,10 +858,7 @@ void DOSBOX_SetupConfigSections(void) {
     const char* pc98fmboards[] = { "auto", "off", "false", "board26k", "board86", "board86c", 0};
     const char* pc98videomodeopt[] = { "", "24khz", "31khz", "15khz", 0};
     const char* aspectmodes[] = { "false", "true", "0", "1", "yes", "no", "nearest", "bilinear", 0};
-
-    const char* irqssbhack[] = {
-        "none", "cs_equ_ds", 0
-    };
+    const char *vga_ac_mapping_settings[] = { "", "auto", "4x4", "4low", "first16", 0 };
 
     /* Setup all the different modules making up DOSBox */
     const char* machines[] = {
@@ -864,6 +867,8 @@ void DOSBOX_SetupConfigSections(void) {
         "svga_paradise", "vesa_nolfb", "vesa_oldvbe", "amstrad", "pc98", "pc9801", "pc9821",
 
         "fm_towns", // STUB
+
+        "mcga", "mda",
 
         0 };
 
@@ -928,6 +933,12 @@ void DOSBOX_SetupConfigSections(void) {
     Pstring->Set_values(machines);
     Pstring->Set_help("The type of machine DOSBox tries to emulate.");
 
+    Phex = secprop->Add_hex("svga lfb base", Property::Changeable::OnlyAtStart, 0);
+    Phex->Set_help("If nonzero, define the physical memory address of the linear framebuffer.");
+
+    Pbool = secprop->Add_bool("pci vga",Property::Changeable::WhenIdle,true);
+    Pbool->Set_help("If set, SVGA is emulated as if a PCI device (when enable pci bus=true)");
+
     Pint = secprop->Add_int("vmemdelay", Property::Changeable::WhenIdle,0);
     Pint->SetMinMax(-1,100000);
     Pint->Set_help( "VGA Memory I/O delay in nanoseconds. Set to -1 to use default, 0 to disable.\n"
@@ -987,6 +998,22 @@ void DOSBOX_SetupConfigSections(void) {
             "It is discarded when you boot into another OS. Mainline DOSBox uses 32KB. Testing shows that it is possible\n"
             "to run DOSBox with as little as 4KB. If DOSBox-X aborts with error \"not enough memory for internal tables\"\n"
             "then you need to increase this value.");
+
+    // NOTE: This will be revised as I test the DOSLIB code against more VGA/SVGA hardware!
+    Pstring = secprop->Add_string("vga attribute controller mapping",Property::Changeable::WhenIdle,"auto");
+    Pstring->Set_values(vga_ac_mapping_settings);
+    Pstring->Set_help(
+            "This affects how the attribute controller maps colors, especially in 256-color mode.\n"
+            "Some SVGA cards handle the attribute controller palette differently than most SVGA cards.\n"
+            "  auto                         Automatically pick the mapping based on the SVGA chipset.\n"
+            "  4x4                          Split into two 4-bit nibbles, map through AC, recombine. This is standard VGA behavior including clone SVGA cards.\n"
+            "  4low                         Split into two 4-bit nibbles, remap only the low 4 bits, recombine. This is standard ET4000 behavior.\n"
+            "\n"
+            "NOTES:\n"
+            "  Demoscene executable 'COPPER.EXE' requires the '4low' behavior in order to display line-fading effects\n"
+            "  (including scrolling credits) correctly, else those parts of the demo show up as a blank screen.\n"
+            "  \n"
+            "  4low behavior is default for ET4000 emulation.");
 
     // TODO: At some point, I would like to make "mask" the default instead of "fast"
     Pstring = secprop->Add_string("a20",Property::Changeable::WhenIdle,"fast");
@@ -1325,6 +1352,17 @@ void DOSBOX_SetupConfigSections(void) {
             "location reported by the VESA BIOS. Set to nonzero for DOS games with sloppy VESA graphics pointer management.\n"
             "    MFX \"Melvindale\" (1996): Set this option to 2 to center the picture properly.");
 
+    /* If set, all VESA BIOS modes map 128KB of video RAM at A0000-BFFFF even though VESA BIOS emulation
+     * reports a 64KB window. Some demos like the 1996 Wired report
+     * (ftp.scene.org/pub/parties/1995/wired95/misc/e-w95rep.zip) assume they can write past the window
+     * by spilling into B0000 without bank switching. */
+    Pbool = secprop->Add_bool("vesa map non-lfb modes to 128kb region",Property::Changeable::Always,false);
+    Pbool->Set_help("If set, VESA BIOS SVGA modes will be set to map 128KB of video memory to A0000-BFFFF instead of\n"
+                    "64KB at A0000-AFFFF. This does not affect the SVGA window size or granularity.\n"
+                    "Some games or demoscene productions assume that they can render into the next SVGA window/bank\n"
+                    "by writing to video memory beyond the current SVGA window address and will not appear correctly\n"
+                    "without this option.");
+
     Pbool = secprop->Add_bool("allow hpel effects",Property::Changeable::Always,false);
     Pbool->Set_help("If set, allow the DOS demo or program to change the horizontal pel (panning) register per scanline.\n"
             "Some early DOS demos use this to create waving or sinus effects on the picture. Not very many VGA\n"
@@ -1658,6 +1696,15 @@ void DOSBOX_SetupConfigSections(void) {
             "This option is required to allow Windows ME to reboot properly, whereas Windows 9x and earlier\n"
             "will reboot without this option using INT 19h");
 
+    Pstring = secprop->Add_string("controllertype",Property::Changeable::OnlyAtStart,"auto");
+    Pstring->Set_values(controllertypes);
+    Pstring->Set_help("Type of keyboard controller (and keyboard) attached.\n"
+                      "auto     Automatically pick according to machine type\n"
+                      "at       AT (PS/2) type keyboard\n"
+                      "xt       IBM PC/XT type keyboard\n"
+                      "pcjr     IBM PCjr type keyboard (only if machine=pcjr)\n"
+                      "pc98     PC-98 keyboard emulation (only if machine=pc98)");
+
     Pstring = secprop->Add_string("auxdevice",Property::Changeable::OnlyAtStart,"intellimouse");
     Pstring->Set_values(auxdevices);
     Pstring->Set_help("Type of PS/2 mouse attached to the AUX port");
@@ -1807,7 +1854,6 @@ void DOSBOX_SetupConfigSections(void) {
      *     port to clear bit 7! Setting 'cs_equ_ds' works around that bug by instructing PIC emulation not to
      *     fire the interrupt unless segment registers CS and DS match. */
     Pstring = secprop->Add_string("irq hack",Property::Changeable::WhenIdle,"none");
-    Pstring->Set_values(irqssbhack);
     Pstring->Set_help("Specify a hack related to the Sound Blaster IRQ to avoid crashes in a handful of games and demos.\n"
             "    none                   Emulate IRQs normally\n"
             "    cs_equ_ds              Do not fire IRQ unless two CPU segment registers match: CS == DS. Read Dosbox-X Wiki or source code for details.");
@@ -1991,6 +2037,20 @@ void DOSBOX_SetupConfigSections(void) {
     Pbool->Set_help("Start the DOS virtual machine with the DMA channel already unmasked at the controller.\n"
             "Use this for DOS applications that expect to operate the GUS but forget to unmask the DMA channel.");
 
+    Pbool = secprop->Add_bool("pic unmask irq",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("Start the DOS virtual machine with the GUS IRQ already unmasked at the PIC.");
+
+    Pbool = secprop->Add_bool("startup initialized",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, start the GF1 in a fully initialized state (as if ULTRINIT had been run).\n"
+                    "If clear, leave the card in an uninitialized state (as if cold boot).\n"
+                    "Some DOS games or demoscene productions will hang or fail to use the Ultrasound hardware\n"
+                    "because they assume the card is initialized and their hardware detect does not fully initialize the card.");
+
+    Pbool = secprop->Add_bool("dma enable on dma control polling",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, automatically enable GUS DMA transfer bit in specific cases when the DMA control register is being polled.\n"
+                    "THIS IS A HACK. Some games and demoscene productions need this hack to avoid hanging while uploading sample data\n"
+                    "to the Gravis Ultrasound due to bugs in their implementation.");
+
     Pbool = secprop->Add_bool("clear dma tc irq if excess polling",Property::Changeable::WhenIdle,false);
     Pbool->Set_help("If the DOS application is seen polling the IRQ status register rapidly, automatically clear the DMA TC IRQ status.\n"
             "This is a hack that should only be used with DOS applications that need it to avoid bugs in their GUS support code.\n"
@@ -2038,7 +2098,12 @@ void DOSBOX_SetupConfigSections(void) {
     Pint = secprop->Add_int("gusdma",Property::Changeable::WhenIdle,3);
     Pint->Set_values(dmasgus);
     Pint->Set_help("The DMA channel of the Gravis Ultrasound.");
-    
+ 
+    Pstring = secprop->Add_string("irq hack",Property::Changeable::WhenIdle,"none");
+    Pstring->Set_help("Specify a hack related to the Gravis Ultrasound IRQ to avoid crashes in a handful of games and demos.\n"
+            "    none                   Emulate IRQs normally\n"
+            "    cs_equ_ds              Do not fire IRQ unless two CPU segment registers match: CS == DS. Read Dosbox-X Wiki or source code for details.");
+
     Pstring = secprop->Add_string("gustype",Property::Changeable::WhenIdle,"classic");
     Pstring->Set_values(gustypes);
     Pstring->Set_help(  "Type of Gravis Ultrasound to emulate.\n"
@@ -2238,6 +2303,46 @@ void DOSBOX_SetupConfigSections(void) {
     Pstring = Pmulti_remain->GetSection()->Add_string("parameters",Property::Changeable::WhenIdle,"");
     Pmulti_remain->Set_help("see serial1");
 
+#if C_PRINTER
+    // printer redirection parameters
+    secprop = control->AddSection_prop("printer", &Null_Init);
+    Pbool = secprop->Add_bool("printer", Property::Changeable::WhenIdle, true);
+    Pbool->Set_help("Enable printer emulation.");
+    //secprop->Add_string("fontpath","%%windir%%\\fonts");
+    Pint = secprop->Add_int("dpi", Property::Changeable::WhenIdle, 360);
+    Pint->Set_help("Resolution of printer (default 360).");
+    Pint = secprop->Add_int("width", Property::Changeable::WhenIdle, 85);
+    Pint->Set_help("Width of paper in 1/10 inch (default 85 = 8.5'').");
+    Pint = secprop->Add_int("height", Property::Changeable::WhenIdle, 110);
+    Pint->Set_help("Height of paper in 1/10 inch (default 110 = 11.0'').");
+#ifdef C_LIBPNG
+    Pstring = secprop->Add_string("printoutput", Property::Changeable::WhenIdle, "png");
+#else
+    Pstring = secprop->Add_string("printoutput", Property::Changeable::WhenIdle, "ps");
+#endif
+    Pstring->Set_help("Output method for finished pages: \n"
+#ifdef C_LIBPNG
+        "  png     : Creates PNG images (default)\n"
+#endif
+        "  ps      : Creates Postscript\n"
+        "  bmp     : Creates BMP images (very huge files, not recommend)\n"
+#if defined (WIN32)
+        "  printer : Send to an actual printer (Print dialog will appear)"
+#endif
+    );
+
+    Pbool = secprop->Add_bool("multipage", Property::Changeable::WhenIdle, false);
+    Pbool->Set_help("Adds all pages to one Postscript file or printer job until CTRL-F2 is pressed.");
+
+    Pstring = secprop->Add_string("docpath", Property::Changeable::WhenIdle, ".");
+    Pstring->Set_help("The path where the output files are stored.");
+
+    Pint = secprop->Add_int("timeout", Property::Changeable::WhenIdle, 0);
+    Pint->Set_help("(in milliseconds) if nonzero: the time the page will\n"
+        "be ejected automatically after when no more data\n"
+        "arrives at the printer.");
+#endif
+
     // parallel ports
     secprop=control->AddSection_prop("parallel",&Null_Init,true);
     Pstring = secprop->Add_string("parallel1",Property::Changeable::WhenIdle,"disabled");
@@ -2279,6 +2384,15 @@ void DOSBOX_SetupConfigSections(void) {
     secprop=control->AddSection_prop("dos",&Null_Init,false);//done
     Pbool = secprop->Add_bool("xms",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Enable XMS support.");
+
+    Pint = secprop->Add_int("xms handles",Property::Changeable::WhenIdle,0);
+    Pint->Set_help("Number of XMS handles available for the DOS environment, or 0 to use a reasonable default");
+
+    Pbool = secprop->Add_bool("shell configuration as commands",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("Allow entering dosbox.conf configuration parameters as shell commands to get and set settings.\n"
+                    "This is disabled by default to avoid conflicts between commands and executables.\n"
+                    "It is recommended to get and set dosbox.conf settings using the CONFIG command instead.\n"
+                    "Compatibility with DOSBox SVN can be improved by enabling this option.");
 
     Pbool = secprop->Add_bool("hma",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Report through XMS that HMA exists (not necessarily available)");
@@ -2466,6 +2580,11 @@ void DOSBOX_SetupConfigSections(void) {
 
     Pbool = secprop->Add_bool("int33",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Enable INT 33H (mouse) support.");
+
+    Pbool = secprop->Add_bool("int33 disable cell granularity",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, the mouse pointer position is reported at full precision (as if 640x200 coordinates) in all modes.\n"
+                    "If not set, the mouse pointer position is rounded to the top-left corner of a character cell in text modes.\n"
+                    "This option is OFF by default.");
 
     Pbool = secprop->Add_bool("int 13 extensions",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Enable INT 13h extensions (functions 0x40-0x48). You will need this enabled if the virtual hard drive image is 8.4GB or larger.");

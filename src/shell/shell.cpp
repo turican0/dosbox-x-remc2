@@ -25,12 +25,16 @@
 #include "control.h"
 #include "shell.h"
 #include "menu.h"
+#include "cpu.h"
 #include "callback.h"
 #include "support.h"
 #include "builtin.h"
 #include "build_timestamp.h"
 
+extern bool enable_config_as_shell_commands;
 extern bool dos_shell_running_program;
+
+Bitu shell_psp = 0;
 
 void CALLBACK_DeAllocate(Bitu in);
 
@@ -333,7 +337,7 @@ void DOS_Shell::Run(void) {
 #endif
         if (machine == MCH_CGA || machine == MCH_AMSTRAD) WriteOut(MSG_Get("SHELL_STARTUP_CGA"));
         if (machine == MCH_PC98) WriteOut(MSG_Get("SHELL_STARTUP_PC98"));
-        if (machine == MCH_HERC) WriteOut(MSG_Get("SHELL_STARTUP_HERC"));
+        if (machine == MCH_HERC || machine == MCH_MDA) WriteOut(MSG_Get("SHELL_STARTUP_HERC"));
         WriteOut(MSG_Get("SHELL_STARTUP_END"));
     }
     else {
@@ -561,6 +565,41 @@ void AUTOEXEC_Init() {
 	AddVMEventFunction(VM_EVENT_DOS_EXIT_BEGIN,AddVMEventFunctionFuncPair(AUTOEXEC_ShutDown));
 	AddVMEventFunction(VM_EVENT_DOS_EXIT_REBOOT_BEGIN,AddVMEventFunctionFuncPair(AUTOEXEC_ShutDown));
 	AddVMEventFunction(VM_EVENT_DOS_SURPRISE_REBOOT,AddVMEventFunctionFuncPair(AUTOEXEC_ShutDown));
+}
+
+static Bitu INT2E_Handler(void) {
+	/* Save return address and current process */
+	RealPt save_ret=real_readd(SegValue(ss),reg_sp);
+	Bit16u save_psp=dos.psp();
+
+	/* Set first shell as process and copy command */
+	dos.psp(shell_psp);//DOS_FIRST_SHELL);
+	DOS_PSP psp(shell_psp);//DOS_FIRST_SHELL);
+	psp.SetCommandTail(RealMakeSeg(ds,reg_si));
+	SegSet16(ss,RealSeg(psp.GetStack()));
+	reg_sp=2046;
+
+	/* Read and fix up command string */
+	CommandTail tail;
+	MEM_BlockRead(PhysMake(dos.psp(),128),&tail,128);
+	if (tail.count<127) tail.buffer[tail.count]=0;
+	else tail.buffer[126]=0;
+	char* crlf=strpbrk(tail.buffer,"\r\n");
+	if (crlf) *crlf=0;
+
+	/* Execute command */
+	if (strlen(tail.buffer)) {
+		DOS_Shell temp;
+		temp.ParseLine(tail.buffer);
+		temp.RunInternal();
+	}
+
+	/* Restore process and "return" to caller */
+	dos.psp(save_psp);
+	SegSet16(cs,RealSeg(save_ret));
+	reg_ip=RealOff(save_ret);
+	reg_ax=0;
+	return CBRET_NONE;
 }
 
 static char const * const path_string="PATH=Z:\\";
@@ -915,6 +954,7 @@ void SHELL_Init() {
 
     // now COMMAND.COM has a main body and PSP segment, reflect it
     dos.psp(psp_seg);
+    shell_psp = psp_seg;
 
     {
         DOS_MCB mcb((Bit16u)(env_seg-1));
@@ -943,7 +983,13 @@ void SHELL_Init() {
 
 	/* Set up int 23 to "int 20" in the psp. Fixes what.exe */
 	real_writed(0,0x23*4,((Bit32u)psp_seg<<16));
-	
+
+	/* Set up int 2e handler */
+	Bitu call_int2e=CALLBACK_Allocate();
+	RealPt addr_int2e=RealMake(psp_seg+16+1,8);
+	CALLBACK_Setup(call_int2e,&INT2E_Handler,CB_IRET_STI,Real2Phys(addr_int2e),"Shell Int 2e");
+	RealSetVec(0x2e,addr_int2e);
+
 	/* Setup environment */
 	PhysPt env_write=PhysMake(env_seg,0);
 	MEM_BlockWrite(env_write,path_string,(Bitu)(strlen(path_string)+1));
@@ -982,9 +1028,18 @@ void SHELL_Init() {
         VFILE_RegisterBuiltinFileBlob(bfb_DOS4GW_EXE);
         VFILE_RegisterBuiltinFileBlob(bfb_EDIT_COM);
         VFILE_RegisterBuiltinFileBlob(bfb_TREE_EXE);
-        VFILE_RegisterBuiltinFileBlob(bfb_MEM_COM);
         VFILE_RegisterBuiltinFileBlob(bfb_25_COM);
     }
+
+    /* MEM.COM is not compatible with PC-98 and/or 8086 emulation */
+    if (!IS_PC98_ARCH && CPU_ArchitectureType >= CPU_ARCHTYPE_80186)
+        VFILE_RegisterBuiltinFileBlob(bfb_MEM_COM);
+
+    /* DSXMENU.EXE */
+    if (IS_PC98_ARCH)
+        VFILE_RegisterBuiltinFileBlob(bfb_DSXMENU_EXE_PC98);
+    else
+        VFILE_RegisterBuiltinFileBlob(bfb_DSXMENU_EXE_PC);
 
 	/* don't register 28.com unless EGA/VGA */
 	if (IS_EGAVGA_ARCH) VFILE_RegisterBuiltinFileBlob(bfb_28_COM);
@@ -1023,6 +1078,12 @@ void SHELL_Init() {
 	/* Setup internal DOS Variables */
 	dos.dta(RealMake(psp_seg,0x80));
 	dos.psp(psp_seg);
+
+    /* settings */
+    {
+        Section_prop * section=static_cast<Section_prop *>(control->GetSection("dos"));
+        enable_config_as_shell_commands = section->Get_bool("shell configuration as commands");
+    }
 }
 
 /* Pfff... starting and running the shell from a configuration section INIT

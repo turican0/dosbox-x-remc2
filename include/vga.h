@@ -27,6 +27,8 @@
 
 #define VGA_LFB_MAPPED
 
+#define S3_LFB_BASE_DEFAULT	  0xE0000000u
+
 class PageHandler;
 
 enum VGAModes {
@@ -281,6 +283,7 @@ typedef struct {
 	bool lightpen_triggered;
 	Bit8u cursor_start;
 	Bit8u cursor_end;
+    Bit8u mcga_mode_control;
 } VGA_OTHER;
 
 typedef struct {
@@ -477,6 +480,10 @@ void VGA_DAC_SetEntry(Bitu entry,Bit8u red,Bit8u green,Bit8u blue);
 void VGA_ATTR_SetPalette(Bit8u index,Bit8u val);
 
 typedef enum {CGA, EGA, MONO} EGAMonitorMode;
+
+typedef enum {AC_4x4, AC_low4/*4low*/} ACPalRemapMode;
+
+extern unsigned char VGA_AC_remap;
 
 void VGA_ATTR_SetEGAMonitorPalette(EGAMonitorMode m);
 

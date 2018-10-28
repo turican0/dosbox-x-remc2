@@ -3,10 +3,18 @@
 
 #include "bitop.h"
 
+/* I don't know when this happened.... but suddenly Microsoft C++ doesn't like these constexpr tests or static_assert >:( */
+#if defined(_MSC_VER)
+# define DISABLE_SELF_TEST
+#endif
+
 namespace bitop {
 
 void self_test(void) {
-    /*// DEBUG
+#ifdef DISABLE_SELF_TEST
+# pragma message ("bitop self-test disabled for your compiler")
+#else
+    // DEBUG
     static_assert(bitcount2masklsb<0u>() == 0u, "whoops");
     static_assert(bitcount2masklsb<1u>() == 1u, "whoops");
     static_assert(bitcount2masklsb<2u>() == 3u, "whoops");
@@ -164,18 +172,18 @@ void self_test(void) {
     static_assert(log2<128u>() == 7, "whoops");
     static_assert(log2<16u>() == 4, "whoops");
     static_assert(log2<1u>() == 0, "whoops");
-    static_assert(log2<0u>() == ~0u, "whoops");*/
+    static_assert(log2<0u>() == ~0u, "whoops");
 
                                                     /* 3210 bit position */
                                                     /* ---- */
-    //static_assert(log2<9u>() == 3, "whoops");       /* 1001 */
-    //static_assert(log2<7u>() == 2, "whoops");       /*  111 */
-    //static_assert(log2<5u>() == 2, "whoops");       /*  101 */
-    //static_assert(log2<3u>() == 1, "whoops");       /*   11 */
-    //static_assert(log2<2u>() == 1, "whoops");       /*   10 */
+    static_assert(log2<9u>() == 3, "whoops");       /* 1001 */
+    static_assert(log2<7u>() == 2, "whoops");       /*  111 */
+    static_assert(log2<5u>() == 2, "whoops");       /*  101 */
+    static_assert(log2<3u>() == 1, "whoops");       /*   11 */
+    static_assert(log2<2u>() == 1, "whoops");       /*   10 */
 
-    //if (sizeof(unsigned long long) >= 8) { /* we're assuming unsigned long long is at least 64 bits here */
-    /*static_assert(log2<unsigned long long,1ull << 63ull>() == 63, "whoops");
+    if (sizeof(unsigned long long) >= 8) { /* we're assuming unsigned long long is at least 64 bits here */
+    static_assert(log2<unsigned long long,1ull << 63ull>() == 63, "whoops");
     static_assert(log2<unsigned long long,1ull << 48ull>() == 48, "whoops");
     }
     static_assert(log2<unsigned long long,1ull << 31ull>() == 31, "whoops");
@@ -204,18 +212,18 @@ void self_test(void) {
     assert(log2(128u) == 7);
     assert(log2(16u) == 4);
     assert(log2(1u) == 0);
-    assert(log2(0u) == ~0u);*/
+    assert(log2(0u) == ~0u);
 
                                     /* 3210 bit position */
                                     /* ---- */
-    //assert(log2(9u) == 3);          /* 1001 */
-    //assert(log2(7u) == 2);          /*  111 */
-    //assert(log2(5u) == 2);          /*  101 */
-    //assert(log2(3u) == 1);          /*   11 */
-    //assert(log2(2u) == 1);          /*   10 */
+    assert(log2(9u) == 3);          /* 1001 */
+    assert(log2(7u) == 2);          /*  111 */
+    assert(log2(5u) == 2);          /*  101 */
+    assert(log2(3u) == 1);          /*   11 */
+    assert(log2(2u) == 1);          /*   10 */
 
-    //if (sizeof(unsigned long long) >= 8) { /* we're assuming unsigned long long is at least 64 bits here */
-    /*assert(log2<unsigned long long>(1ull << 63ull) == 63);
+    if (sizeof(unsigned long long) >= 8) { /* we're assuming unsigned long long is at least 64 bits here */
+    assert(log2<unsigned long long>(1ull << 63ull) == 63);
     assert(log2<unsigned long long>(1ull << 48ull) == 48);
     }
     assert(log2<unsigned long long>(1ull << 31ull) == 31);
@@ -282,7 +290,8 @@ void self_test(void) {
     assert(bitseqlengthandpos(124) == bitseqlengthandpos_ret_t(2,5));
     assert(bitseqlengthandpos(252) == bitseqlengthandpos_ret_t(2,6));
     assert(bitseqlengthandpos(508) == bitseqlengthandpos_ret_t(2,7));
-    assert(bitseqlengthandpos(1020)== bitseqlengthandpos_ret_t(2,8));*/
+    assert(bitseqlengthandpos(1020)== bitseqlengthandpos_ret_t(2,8));
+#endif
 }
 
 }

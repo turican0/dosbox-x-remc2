@@ -25,7 +25,6 @@
 #include "dosbox.h"
 #include "bios.h"
 #include "mem.h"
-#include "debug.h"
 #include "regs.h"
 #include "dos_inc.h"
 #include "drives.h"
@@ -365,8 +364,6 @@ bool DOS_FindNext(void) {
 
 
 bool DOS_ReadFile(Bit16u entry,Bit8u * data,Bit16u * amount) {
-    if(DEBUG_GetState()==1)
-        DEBUG_Enable(true);
 #if defined(WIN32) && !defined(__MINGW32__)
 	if(Network_IsActiveResource(entry))
 		return Network_ReadFile(entry,data,amount);

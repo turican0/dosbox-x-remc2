@@ -29,7 +29,7 @@
 #include "paging.h"
 #include "mmx.h"
 
-
+#include "engine/engine.h"
 
 bool CPU_RDMSR();
 bool CPU_WRMSR();
@@ -43,7 +43,7 @@ extern bool ignore_opcode_63;
 #if C_DEBUG
 #include "debug.h"
 #endif
-#include "engine/engine.h"
+
 #if (!C_CORE_INLINE)
 #define LoadMb(off) mem_readb(off)
 #define LoadMw(off) mem_readw(off)
@@ -153,50 +153,50 @@ static INLINE Bit32u Fetchd() {
 
 #define EALookupTable (core.ea_table)
 
-
-
 Bits CPU_Core_Normal_Run(void) {
 	while (CPU_Cycles-->0) {
 		LOADIP;
+
         enginestep();
-        
+
 
         /*oldmem = read
             SegValue(ds) + D41A0;*/
-        /*if ((SegValue(cs) == 0x00000160) && (reg_eip == 0x0028C6D7))
-            saveactstate();
-        if((SegValue(cs)==0x00000160)&&(reg_eip ==0x0028C6D9))
-            saveactstate();*/
-        /*
-        //tom
-        pre4temp = pre3temp;
-        pre3temp = pre2temp;
-        pre2temp = pretemp;
-        pretemp = temp;
-        temp = LoadMb(core.cseip);
-        if ((pre3temp == 0x53)&&
-            (pre2temp == 0x55) &&
-            (pretemp == 0x89) &&
-            (temp == 0x83)
-            ) {
-            DEBUG_EnableDebugger();
-        }
-        if ((pre4temp == 0x53) &&
-            (pre3temp == 0x55) &&
-            (pre2temp == 0x89) &&
-            (pretemp == 0x8b) &&
-            (temp == 0x83)
-            ) {
-            DEBUG_EnableDebugger();
-        }
-        
-        //tom
-        */
-        /*
-        if ((Segs.val[cs] == 0x160)&&(core.cseip==0x236f70))
-        {
-            DEBUG_EnableDebugger();
-        }*/
+            /*if ((SegValue(cs) == 0x00000160) && (reg_eip == 0x0028C6D7))
+                saveactstate();
+            if((SegValue(cs)==0x00000160)&&(reg_eip ==0x0028C6D9))
+                saveactstate();*/
+                /*
+                //tom
+                pre4temp = pre3temp;
+                pre3temp = pre2temp;
+                pre2temp = pretemp;
+                pretemp = temp;
+                temp = LoadMb(core.cseip);
+                if ((pre3temp == 0x53)&&
+                    (pre2temp == 0x55) &&
+                    (pretemp == 0x89) &&
+                    (temp == 0x83)
+                    ) {
+                    DEBUG_EnableDebugger();
+                }
+                if ((pre4temp == 0x53) &&
+                    (pre3temp == 0x55) &&
+                    (pre2temp == 0x89) &&
+                    (pretemp == 0x8b) &&
+                    (temp == 0x83)
+                    ) {
+                    DEBUG_EnableDebugger();
+                }
+
+                //tom
+                */
+                /*
+                if ((Segs.val[cs] == 0x160)&&(core.cseip==0x236f70))
+                {
+                    DEBUG_EnableDebugger();
+                }*/
+
 		core.opcode_index=cpu.code.big*0x200u;
 		core.prefixes=cpu.code.big;
 		core.ea_table=&EATable[cpu.code.big*256u];

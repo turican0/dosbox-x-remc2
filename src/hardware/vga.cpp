@@ -135,6 +135,7 @@
 #include "pc98_gdc_const.h"
 #include "mixer.h"
 #include "menu.h"
+#include "mem.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -144,6 +145,10 @@
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
 #endif
+
+#include "zipfile.h"
+
+extern ZIPFile savestate_zip;
 
 using namespace std;
 
@@ -163,6 +168,10 @@ extern egc_quad                     pc98_gdc_tiles;
 extern uint8_t                      pc98_egc_srcmask[2]; /* host given (Neko: egc.srcmask) */
 extern uint8_t                      pc98_egc_maskef[2]; /* effective (Neko: egc.mask2) */
 extern uint8_t                      pc98_egc_mask[2]; /* host given (Neko: egc.mask) */
+
+uint32_t S3_LFB_BASE =              S3_LFB_BASE_DEFAULT;
+
+bool                                enable_pci_vga = true;
 
 VGA_Type vga;
 SVGA_Driver svga;
@@ -191,6 +200,9 @@ bool pc98_graphics_hide_odd_raster_200line = false;
 bool pc98_attr4_graphic = false;
 bool gdc_analog = true;
 bool pc98_31khz_mode = false;
+bool int10_vesa_map_as_128kb = false;
+
+unsigned char VGA_AC_remap = AC_4x4;
 
 unsigned int vga_display_start_hretrace = 0;
 float hretrace_fx_avg_weight = 3;
@@ -382,6 +394,11 @@ void VGA_SetCGA2Table(Bit8u val0,Bit8u val1) {
             ((Bitu)total[(i >> 1u) & 1u] << 16u ) | ((Bitu)total[(i >> 0u) & 1u] << 24u );
 #endif
     }
+
+    if (machine == MCH_MCGA) {
+        VGA_DAC_CombineColor(0x0,val0);
+        VGA_DAC_CombineColor(0x1,val1);
+    }
 }
 
 void VGA_SetCGA4Table(Bit8u val0,Bit8u val1,Bit8u val2,Bit8u val3) {
@@ -403,7 +420,14 @@ void VGA_SetCGA4Table(Bit8u val0,Bit8u val1,Bit8u val2,Bit8u val3) {
             ((Bitu)total[((i >> 3u) & 1u) | ((i >> 6u) & 2u)] << 0u  ) | (Bitu)(total[((i >> 2u) & 1u) | ((i >> 5u) & 2u)] << 8u  ) |
             ((Bitu)total[((i >> 1u) & 1u) | ((i >> 4u) & 2u)] << 16u ) | (Bitu)(total[((i >> 0u) & 1u) | ((i >> 3u) & 2u)] << 24u );
 #endif
-    }   
+    }
+
+    if (machine == MCH_MCGA) {
+        VGA_DAC_CombineColor(0x0,val0);
+        VGA_DAC_CombineColor(0x1,val1);
+        VGA_DAC_CombineColor(0x2,val2);
+        VGA_DAC_CombineColor(0x3,val3);
+    }
 }
 
 class VFRCRATE : public Program {
@@ -522,14 +546,111 @@ VGA_Vsync VGA_Vsync_Decode(const char *vsyncmodestr) {
     return VS_Off;
 }
 
+bool has_pcibus_enable(void);
+Bit32u MEM_get_address_bits();
+
 void VGA_Reset(Section*) {
     Section_prop * section=static_cast<Section_prop *>(control->GetSection("dosbox"));
+    bool lfb_default = false;
     string str;
     int i;
+
+    Bit32u cpu_addr_bits = MEM_get_address_bits();
+    Bit64u cpu_max_addr = (Bit64u)1 << (Bit64u)cpu_addr_bits;
 
     LOG(LOG_MISC,LOG_DEBUG)("VGA_Reset() reinitializing VGA emulation");
 
     GDC_display_plane_wait_for_vsync = section->Get_bool("pc-98 buffer page flip");
+
+    enable_pci_vga = section->Get_bool("pci vga");
+
+    S3_LFB_BASE = section->Get_hex("svga lfb base");
+    if (S3_LFB_BASE == 0) {
+        if (cpu_addr_bits >= 32)
+            S3_LFB_BASE = S3_LFB_BASE_DEFAULT;
+        else if (cpu_addr_bits >= 26)
+            S3_LFB_BASE = (enable_pci_vga && has_pcibus_enable()) ? 0x02000000 : 0x03400000;
+        else if (cpu_addr_bits >= 24)
+            S3_LFB_BASE = 0x00C00000;
+        else
+            S3_LFB_BASE = S3_LFB_BASE_DEFAULT;
+
+        lfb_default = true;
+    }
+
+    /* no farther than 32MB below the top */
+    if (S3_LFB_BASE > 0xFE000000UL)
+        S3_LFB_BASE = 0xFE000000UL;
+
+    /* if the user WANTS the base address to be PCI misaligned, then turn off PCI VGA emulation */
+    if (enable_pci_vga && has_pcibus_enable() && (S3_LFB_BASE & 0x1FFFFFFul)) {
+        if (!lfb_default)
+            LOG(LOG_VGA,LOG_DEBUG)("S3 linear framebuffer was set by user to an address not aligned to 32MB, switching off PCI VGA emulation");
+
+        enable_pci_vga = false;
+    }
+    /* if memalias is below 26 bits, PCI VGA emulation is impossible */
+    if (cpu_addr_bits < 26) {
+        if (IS_VGA_ARCH && enable_pci_vga && has_pcibus_enable())
+            LOG(LOG_VGA,LOG_DEBUG)("CPU memalias setting is below 26 bits, switching off PCI VGA emulation");
+
+        enable_pci_vga = false;
+    }
+
+    if (enable_pci_vga && has_pcibus_enable()) {
+        /* must be 32MB aligned (PCI) */
+        S3_LFB_BASE +=  0x0FFFFFFUL;
+        S3_LFB_BASE &= ~0x1FFFFFFUL;
+    }
+    else {
+        /* must be 64KB aligned (ISA) */
+        S3_LFB_BASE +=  0x7FFFUL;
+        S3_LFB_BASE &= ~0xFFFFUL;
+    }
+
+    /* must not overlap system RAM */
+    if (S3_LFB_BASE < (MEM_TotalPages()*4096))
+        S3_LFB_BASE = (MEM_TotalPages()*4096);
+
+    /* if the constraints we imposed make it impossible to maintain the alignment required for PCI,
+     * then just switch off PCI VGA emulation. */
+    if (IS_VGA_ARCH && enable_pci_vga && has_pcibus_enable()) {
+        if (S3_LFB_BASE & 0x1FFFFFFUL) { /* not 32MB aligned */
+            LOG(LOG_VGA,LOG_DEBUG)("S3 linear framebuffer is not 32MB aligned, switching off PCI VGA emulation");
+            enable_pci_vga = false;
+        }
+    }
+
+    /* announce LFB framebuffer address only if actually emulating the S3 */
+    if (IS_VGA_ARCH && svgaCard == SVGA_S3Trio)
+        LOG(LOG_VGA,LOG_DEBUG)("S3 linear framebuffer at 0x%lx%s as %s",
+            (unsigned long)S3_LFB_BASE,lfb_default?" by default":"",
+            (enable_pci_vga && has_pcibus_enable()) ? "PCI" : "(E)ISA");
+
+    /* other applicable warnings: */
+    /* Microsoft Windows 3.1 S3 driver:
+     *   If the LFB is set to an address below 16MB, the driver will program the base to something
+     *   odd like 0x73000000 and access MMIO through 0x74000000.
+     *
+     *   Because of this, if memalias < 31 and LFB is below 16MB mark, Windows won't use the
+     *   accelerated features of the S3 emulation properly.
+     *
+     *   If memalias=24, the driver hangs and nothing appears on screen.
+     *
+     *   As far as I can tell, it's mapping for the LFB, not the MMIO. It uses the MMIO in the
+     *   A0000-AFFFF range anyway. The failure to blit and draw seems to be caused by mapping the
+     *   LFB out of range like that and then trying to draw on the LFB.
+     *
+     *   As far as I can tell from http://www.vgamuseum.info and the list of S3 cards, the S3 chipsets
+     *   emulated by DOSBox-X and DOSBox SVN here are all EISA and PCI cards, so it's likely the driver
+     *   is written around the assumption that memory addresses are the full 32 bits to the card, not
+     *   just the low 24 seen on the ISA slot. So it is unlikely the driver could ever support the
+     *   card on a 386SX nor could such a card work on a 386SX. It shouldn't even work on a 486SX
+     *   (26-bit limit), but it could. */
+    if (IS_VGA_ARCH && svgaCard == SVGA_S3Trio && cpu_addr_bits <= 24)
+        LOG(LOG_VGA,LOG_WARN)("S3 linear framebuffer warning: memalias setting is known to cause the Windows 3.1 S3 driver to crash");
+    if (IS_VGA_ARCH && svgaCard == SVGA_S3Trio && cpu_addr_bits < 31 && S3_LFB_BASE < 0x1000000ul) /* below 16MB and memalias == 31 bits */
+        LOG(LOG_VGA,LOG_WARN)("S3 linear framebuffer warning: A linear framebuffer below the 16MB mark in physical memory when memalias < 31 is known to have problems with the Windows 3.1 S3 driver");
 
     pc98_allow_scanline_effect = section->Get_bool("pc-98 allow scanline effect");
     mainMenu.get_item("pc98_allow_200scanline").check(pc98_allow_scanline_effect).refresh_item(mainMenu);
@@ -550,6 +671,23 @@ void VGA_Reset(Section*) {
 
     // EGC implies 16-color
     if (enable_pc98_16color) enable_pc98_16color = true;
+
+    str = section->Get_string("vga attribute controller mapping");
+    if (str == "4x4")
+        VGA_AC_remap = AC_4x4;
+    else if (str == "4low")
+        VGA_AC_remap = AC_low4;
+    else {
+        /* auto:
+         *
+         * 4x4 by default.
+         * except for ET4000 which is 4low */
+        VGA_AC_remap = AC_4x4;
+        if (IS_VGA_ARCH) {
+            if (svgaCard == SVGA_TsengET3K || svgaCard == SVGA_TsengET4K)
+                VGA_AC_remap = AC_low4;
+        }
+    }
 
     str = section->Get_string("pc-98 video mode");
     if (str == "31khz")
@@ -599,6 +737,7 @@ void VGA_Reset(Section*) {
     vga_sierra_lock_565 = section->Get_bool("sierra ramdac lock 565");
     hretrace_fx_avg_weight = section->Get_double("hretrace effect weight");
     ignore_vblank_wraparound = section->Get_bool("ignore vblank wraparound");
+    int10_vesa_map_as_128kb = section->Get_bool("vesa map non-lfb modes to 128kb region");
     vga_enable_hretrace_effects = section->Get_bool("allow hretrace effects");
     enable_page_flip_debugging_marker = section->Get_bool("page flip debug line");
     vga_palette_update_on_full_load = section->Get_bool("vga palette update on full load");
@@ -657,7 +796,7 @@ void VGA_Reset(Section*) {
                 vga_memio_delay_ns = (int)floor(t);
             }
         }
-        else if (machine == MCH_CGA || machine == MCH_HERC) {
+        else if (machine == MCH_CGA || machine == MCH_HERC || machine == MCH_MDA) {
             /* default IBM PC/XT 4.77MHz timing. this is carefully tuned so that Trixter's CGA test program
              * times our CGA emulation as having about 305KB/sec reading speed. */
             double t = (1000000000.0 * clockdom_ISA_OSC.freq_div * 143) / (clockdom_ISA_OSC.freq * 3);
@@ -702,8 +841,11 @@ void VGA_Reset(Section*) {
      * FIXME: Again it was foolish for DOSBox to standardize on machine=
      * for selecting machine type AND video card. */
     switch (machine) {
-        case MCH_HERC: /* FIXME: MCH_MDA (4KB) vs MCH_HERC (64KB?) */
+        case MCH_HERC:
             if (vga.mem.memsize < _KB_bytes(64)) vga.mem.memsize = _KB_bytes(64);
+            break;
+        case MCH_MDA:
+            if (vga.mem.memsize < _KB_bytes(4)) vga.mem.memsize = _KB_bytes(4);
             break;
         case MCH_CGA:
             if (vga.mem.memsize < _KB_bytes(16)) vga.mem.memsize = _KB_bytes(16);
@@ -731,6 +873,9 @@ void VGA_Reset(Section*) {
         case MCH_PC98:
             if (vga.mem.memsize < _KB_bytes(512)) vga.mem.memsize = _KB_bytes(512);
             break;
+        case MCH_MCGA:
+            if (vga.mem.memsize < _KB_bytes(64)) vga.mem.memsize = _KB_bytes(64);
+            break;
         default:
             E_Exit("Unexpected machine");
     };
@@ -748,6 +893,10 @@ void VGA_Reset(Section*) {
     vga.mem.memmask = vga.mem.memsize - 1u;
 
     LOG(LOG_VGA,LOG_NORMAL)("Video RAM: %uKB",vga.mem.memsize>>10);
+
+    // TODO: If S3 emulation, and linear framebuffer bumps up against the CPU memalias limits,
+    //       trim Video RAM to fit (within reasonable limits) or else E_Exit() to let the user
+    //       know of impossible constraints.
 
     VGA_SetupMemory();      // memory is allocated here
     if (!IS_PC98_ARCH) {
@@ -1087,9 +1236,113 @@ void VGA_Destroy(Section*) {
     PC98_FM_Destroy(NULL);
 }
 
+extern uint8_t                     pc98_pal_analog[256*3]; /* G R B    0x0..0xF */
+extern uint8_t                     pc98_pal_digital[8];    /* G R B    0x0..0x7 */
+
+void pc98_update_palette(void);
+
+void VGA_LoadState(Section *sec) {
+    (void)sec;//UNUSED
+
+    if (IS_PC98_ARCH) {
+        {
+            ZIPFileEntry *ent = savestate_zip.get_entry("vga.pc98.analog.palette.bin");
+            if (ent != NULL) {
+                ent->rewind();
+                ent->read(pc98_pal_analog, 256*3);
+            }
+        }
+
+        {
+            ZIPFileEntry *ent = savestate_zip.get_entry("vga.pc98.digital.palette.bin");
+            if (ent != NULL) {
+                ent->rewind();
+                ent->read(pc98_pal_digital, 8);
+            }
+        }
+
+        pc98_update_palette();
+    }
+    else {
+        {
+            ZIPFileEntry *ent = savestate_zip.get_entry("vga.ac.palette.bin");
+            if (ent != NULL) {
+                ent->rewind();
+                ent->read(vga.attr.palette, 0x10);
+            }
+        }
+
+        {
+            unsigned char tmp[256 * 3];
+
+            ZIPFileEntry *ent = savestate_zip.get_entry("vga.dac.palette.bin");
+            if (ent != NULL) {
+                ent->rewind();
+                ent->read(tmp, 256 * 3);
+                for (unsigned int c=0;c < 256;c++) {
+                    vga.dac.rgb[c].red =   tmp[c*3 + 0];
+                    vga.dac.rgb[c].green = tmp[c*3 + 1];
+                    vga.dac.rgb[c].blue =  tmp[c*3 + 2];
+                }
+            }
+        }
+
+        for (unsigned int i=0;i < 0x10;i++)
+            VGA_ATTR_SetPalette(i,vga.attr.palette[i]);
+
+        VGA_DAC_UpdateColorPalette();
+    }
+}
+
+void VGA_SaveState(Section *sec) {
+    (void)sec;//UNUSED
+
+    if (IS_PC98_ARCH) {
+        {
+            ZIPFileEntry *ent = savestate_zip.new_entry("vga.pc98.analog.palette.bin");
+            if (ent != NULL) {
+                ent->write(pc98_pal_analog, 256*3);
+            }
+        }
+
+        {
+            ZIPFileEntry *ent = savestate_zip.new_entry("vga.pc98.digital.palette.bin");
+            if (ent != NULL) {
+                ent->write(pc98_pal_digital, 8);
+            }
+        }
+    }
+    else {
+        {
+            ZIPFileEntry *ent = savestate_zip.new_entry("vga.ac.palette.bin");
+            if (ent != NULL) {
+                ent->write(vga.attr.palette, 0x10);
+            }
+        }
+
+        {
+            unsigned char tmp[256 * 3];
+
+            ZIPFileEntry *ent = savestate_zip.new_entry("vga.dac.palette.bin");
+            if (ent != NULL) {
+                for (unsigned int c=0;c < 256;c++) {
+                    tmp[c*3 + 0] = vga.dac.rgb[c].red;
+                    tmp[c*3 + 1] = vga.dac.rgb[c].green;
+                    tmp[c*3 + 2] = vga.dac.rgb[c].blue;
+                }
+                ent->write(tmp, 256 * 3);
+            }
+        }
+    }
+}
+
 void VGA_Init() {
     string str;
     Bitu i,j;
+
+    vga.other.mcga_mode_control = 0;
+
+	vga.config.chained = false;
 
     vga.draw.render_step = 0;
     vga.draw.render_max = 1;
@@ -1150,6 +1403,9 @@ void VGA_Init() {
 
     AddExitFunction(AddExitFunctionFuncPair(VGA_Destroy));
     AddVMEventFunction(VM_EVENT_RESET,AddVMEventFunctionFuncPair(VGA_Reset));
+
+    AddVMEventFunction(VM_EVENT_LOAD_STATE,AddVMEventFunctionFuncPair(VGA_LoadState));
+    AddVMEventFunction(VM_EVENT_SAVE_STATE,AddVMEventFunctionFuncPair(VGA_SaveState));
 }
 
 void SVGA_Setup_Driver(void) {

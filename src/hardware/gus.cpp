@@ -67,13 +67,19 @@ static Bit8u const irqtable[8] = { 0/*invalid*/, 2, 5, 3, 7, 11, 12, 15 };
 static Bit8u const dmatable[8] = { 0/*NO DMA*/, 1, 3, 5, 6, 7, 0/*invalid*/, 0/*invalid*/ };
 static Bit8u GUSRam[1024*1024 + 16/*safety margin*/]; // 1024K of GUS Ram
 static Bit32s AutoAmp = 512;
+static bool unmask_irq = false;
 static bool enable_autoamp = false;
+static bool startup_ultrinit = false;
+static bool dma_enable_on_dma_control_polling = false;
 static Bit16u vol16bit[4096];
 static Bit32u pantable[16];
 static enum GUSType gus_type = GUS_CLASSIC;
 static bool gus_ics_mixer = false;
 static bool gus_warn_irq_conflict = false;
 static bool gus_warn_dma_conflict = false;
+
+static IO_Callout_t gus_iocallout = IO_Callout_t_none;
+static IO_Callout_t gus_iocallout2 = IO_Callout_t_none;
 
 class GUSChannels;
 static void CheckVoiceIrq(void);
@@ -85,6 +91,7 @@ struct GFGus {
 	Bit8u gRegSelect;
 	Bit16u gRegData;
 	Bit32u gDramAddr;
+	Bit32u gDramAddrMask;
 	Bit16u gCurChannel;
 
 	Bit8u gUltraMAXControl;
@@ -186,7 +193,6 @@ public:
 	Bit32u RampEnd;
 	Bit32u RampVol;
 	Bit32u RampAdd;
-	Bit32u RampAddReal;
 
 	Bit8u RampRate;
 	Bit8u RampCtrl;
@@ -213,7 +219,6 @@ public:
 		RampEnd = 0;
 		RampCtrl = 3;
 		RampAdd = 0;
-		RampAddReal = 0;
 		RampVol = 0;
 		VolLeft = 0;
 		VolRight = 0;
@@ -661,6 +666,14 @@ static Bit16u ExecuteReadRegister(void) {
 		// NTS: The GUS SDK documents the active channel count as bits 5-0, which is wrong. it's bits 4-0. bits 7-5 are always 1 on real hardware.
 		return ((Bit16u)(0xE0 | (myGUS.ActiveChannelsUser - 1))) << 8;
 	case 0x41: // Dma control register - read acknowledges DMA IRQ
+        if (dma_enable_on_dma_control_polling) {
+            if (!GetDMAChannel(myGUS.dma1)->masked && !(myGUS.DMAControl & 0x01) && !(myGUS.IRQStatus & 0x80)) {
+                LOG(LOG_MISC,LOG_DEBUG)("GUS: As instructed, switching on DMA ENABLE upon polling DMA control register (HACK) as workaround");
+                myGUS.DMAControl |= 0x01;
+                GUS_StartDMA();
+            }
+        }
+
 		tmpreg = myGUS.DMAControl & 0xbf;
 		tmpreg |= (myGUS.IRQStatus & 0x80) >> 1;
 		myGUS.IRQStatus&=0x7f;
@@ -1294,6 +1307,12 @@ static Bitu read_gus(Bitu port,Bitu iolen) {
 
     (void)iolen;//UNUSED
 //	LOG_MSG("read from gus port %x",port);
+
+    /* 12-bit ISA decode (FIXME: Check GUS MAX ISA card to confirm)
+     *
+     * More than 10 bits must be decoded in order for GUS MAX extended registers at 7xx to work */
+    port &= 0xFFF;
+
 	switch(port - GUS_BASE) {
 	case 0x206:
 		if (myGUS.clearTCIfPollingIRQStatus) {
@@ -1365,8 +1384,8 @@ static Bitu read_gus(Bitu port,Bitu iolen) {
 
 		return reg16;
 	case 0x307:
-		if(myGUS.gDramAddr < myGUS.memsize) {
-			return GUSRam[myGUS.gDramAddr];
+		if((myGUS.gDramAddr & myGUS.gDramAddrMask) < myGUS.memsize) {
+			return GUSRam[myGUS.gDramAddr & myGUS.gDramAddrMask];
 		} else {
 			return 0;
 		}
@@ -1392,7 +1411,13 @@ static Bitu read_gus(Bitu port,Bitu iolen) {
 
 static void write_gus(Bitu port,Bitu val,Bitu iolen) {
 //	LOG_MSG("Write gus port %x val %x",port,val);
-	switch(port - GUS_BASE) {
+
+    /* 12-bit ISA decode (FIXME: Check GUS MAX ISA card to confirm)
+     *
+     * More than 10 bits must be decoded in order for GUS MAX extended registers at 7xx to work */
+    port &= 0xFFF;
+
+    switch(port - GUS_BASE) {
 	case 0x200:
 		myGUS.gRegControl = 0;
 		myGUS.mixControl = (Bit8u)val;
@@ -1576,7 +1601,8 @@ static void write_gus(Bitu port,Bitu val,Bitu iolen) {
 		ExecuteGlobRegister();
 		break;
 	case 0x307:
-		if(myGUS.gDramAddr < myGUS.memsize) GUSRam[myGUS.gDramAddr] = (Bit8u)val;
+		if ((myGUS.gDramAddr & myGUS.gDramAddrMask) < myGUS.memsize)
+            GUSRam[myGUS.gDramAddr & myGUS.gDramAddrMask] = (Bit8u)val;
 		break;
 	case 0x306:
 	case 0x706:
@@ -1822,6 +1848,9 @@ void GUS_StartDMA() {
 		LOG(LOG_MISC,LOG_DEBUG)("GUS: Starting DMA transfer interval");
 		PIC_AddEvent(GUS_DMA_Event,GUS_DMA_Event_interval_init);
 
+        if (GetDMAChannel(myGUS.dma1)->masked)
+            LOG(LOG_MISC,LOG_WARN)("GUS: DMA transfer interval started when channel is masked");
+
         if (gus_warn_dma_conflict)
             LOG(LOG_MISC,LOG_WARN)(
                 "GUS warning: Both DMA channels set to the same channel WITHOUT combining! "
@@ -1958,12 +1987,44 @@ static void MakeTables(void) {
 		((double)pantable[15]) / (1 << RAMP_FRACT));
 }
 
+static IO_ReadHandler* gus_cb_port_r(IO_CalloutObject &co,Bitu port,Bitu iolen) {
+    (void)co;
+    (void)iolen;
+
+    /* 10-bit ISA decode.
+     * NOTE that the I/O handlers still need more than 10 bits to handle GUS MAX/Interwave registers at 0x7xx. */
+    port &= 0x3FF;
+
+    if (gus_type >= GUS_MAX) {
+        if (port >= (0x30C + GUS_BASE) && port <= (0x30F + GUS_BASE))
+            return read_gus_cs4231;
+    }
+
+    return read_gus;
+}
+
+static IO_WriteHandler* gus_cb_port_w(IO_CalloutObject &co,Bitu port,Bitu iolen) {
+    (void)co;
+    (void)iolen;
+
+    /* 10-bit ISA decode.
+     * NOTE that the I/O handlers still need more than 10 bits to handle GUS MAX/Interwave registers at 0x7xx. */
+    port &= 0x3FF;
+
+    if (gus_type >= GUS_MAX) {
+        if (port >= (0x30C + GUS_BASE) && port <= (0x30F + GUS_BASE))
+            return write_gus_cs4231;
+    }
+
+    return write_gus;
+}
+
 class GUS:public Module_base{
 private:
-	IO_ReadHandleObject ReadHandler[12];
-	IO_WriteHandleObject WriteHandler[12];
-	IO_ReadHandleObject ReadCS4231Handler[4];
-	IO_WriteHandleObject WriteCS4231Handler[4];
+//	IO_ReadHandleObject ReadHandler[12];
+//	IO_WriteHandleObject WriteHandler[12];
+//	IO_ReadHandleObject ReadCS4231Handler[4];
+//	IO_WriteHandleObject WriteCS4231Handler[4];
 	AutoexecObject autoexecline[3];
 	MixerObject MixerChan;
     bool gus_enable;
@@ -1980,7 +2041,12 @@ public:
         memset(&myGUS,0,sizeof(myGUS));
         memset(GUSRam,0,1024*1024);
 
+        unmask_irq = section->Get_bool("pic unmask irq");
         enable_autoamp = section->Get_bool("autoamp");
+
+        startup_ultrinit = section->Get_bool("startup initialized");
+
+        dma_enable_on_dma_control_polling = section->Get_bool("dma enable on dma control polling");
 
 		string s_pantable = section->Get_string("gus panning table");
 		if (s_pantable == "default" || s_pantable == "" || s_pantable == "accurate")
@@ -2064,11 +2130,54 @@ public:
 		int irq_val = section->Get_int("gusirq");
 		if ((irq_val<0) || (irq_val>255)) irq_val = 5;	// sensible default
 
+        if (irq_val > 0) {
+            string s = section->Get_string("irq hack");
+            if (!s.empty() && s != "none") {
+                LOG(LOG_MISC,LOG_NORMAL)("GUS emulation: Assigning IRQ hack '%s' as instruced",s.c_str());
+                PIC_Set_IRQ_hack(irq_val,PIC_parse_IRQ_hack_string(s.c_str()));
+            }
+        }
+
 		myGUS.dma1 = (Bit8u)dma_val;
 		myGUS.dma2 = (Bit8u)dma_val;
 		myGUS.irq1 = (Bit8u)irq_val;
 		myGUS.irq2 = (Bit8u)irq_val;
 
+        if (gus_iocallout != IO_Callout_t_none) {
+            IO_FreeCallout(gus_iocallout);
+            gus_iocallout = IO_Callout_t_none;
+        }
+
+        if (gus_iocallout2 != IO_Callout_t_none) {
+            IO_FreeCallout(gus_iocallout2);
+            gus_iocallout2 = IO_Callout_t_none;
+        }
+
+        if (gus_iocallout == IO_Callout_t_none)
+            gus_iocallout = IO_AllocateCallout(IO_TYPE_ISA);
+        if (gus_iocallout == IO_Callout_t_none)
+            E_Exit("Failed to get GUS IO callout handle");
+
+        if (gus_iocallout2 == IO_Callout_t_none)
+            gus_iocallout2 = IO_AllocateCallout(IO_TYPE_ISA);
+        if (gus_iocallout2 == IO_Callout_t_none)
+            E_Exit("Failed to get GUS IO callout handle");
+
+        {
+            IO_CalloutObject *obj = IO_GetCallout(gus_iocallout);
+            if (obj == NULL) E_Exit("Failed to get GUS IO callout");
+            obj->Install(0x200 + GUS_BASE,IOMASK_Combine(IOMASK_ISA_10BIT,IOMASK_Range(16)),gus_cb_port_r,gus_cb_port_w);
+            IO_PutCallout(obj);
+        }
+
+        {
+            IO_CalloutObject *obj = IO_GetCallout(gus_iocallout2);
+            if (obj == NULL) E_Exit("Failed to get GUS IO callout");
+            obj->Install(0x300 + GUS_BASE,IOMASK_Combine(IOMASK_ISA_10BIT,IOMASK_Range(16)),gus_cb_port_r,gus_cb_port_w);
+            IO_PutCallout(obj);
+        }
+
+#if 0
 		// We'll leave the MIDI interface to the MPU-401 
 		// Ditto for the Joystick 
 		// GF1 Synthesizer 
@@ -2114,16 +2223,19 @@ public:
 			WriteHandler[10].Install(0x306 + GUS_BASE,write_gus,IO_MB); // Mixer control
 			WriteHandler[11].Install(0x706 + GUS_BASE,write_gus,IO_MB); // Mixer data / GUS UltraMAX Control register
 		}
+#endif
 		if (gus_type >= GUS_MAX) {
 			LOG(LOG_MISC,LOG_WARN)("GUS caution: CS4231 UltraMax emulation is new and experimental at this time and it is not guaranteed to work.");
 			LOG(LOG_MISC,LOG_WARN)("GUS caution: CS4231 UltraMax emulation as it exists now may cause applications to hang or malfunction attempting to play through it.");
 
+#if 0
 			/* UltraMax has a CS4231 codec at 3XC-3XF */
 			/* FIXME: Does the Interwave have a CS4231? */
 			for (unsigned int i=0;i < 4;i++) {
 				ReadCS4231Handler[i].Install(0x30C + i + GUS_BASE,read_gus_cs4231,IO_MB);
 				WriteCS4231Handler[i].Install(0x30C + i + GUS_BASE,write_gus_cs4231,IO_MB);
 			}
+#endif
 		}
 	
 	//	DmaChannels[myGUS.dma1]->Register_TC_Callback(GUS_DMA_TC_Callback);
@@ -2142,6 +2254,8 @@ public:
 
 		if (myGUS.initUnmaskDMA)
 			GetDMAChannel(myGUS.dma1)->SetMask(false);
+        if (unmask_irq)
+            PIC_SetIRQMask(myGUS.irq1,false);
 
 		gus_chan->Enable(true);
 
@@ -2163,7 +2277,19 @@ public:
 			// master volume update, updates ALL pairs
 			GUS_ICS2101.updateVolPair(gus_ICS2101::MASTER_OUTPUT_PORT);
 		}
-	}
+
+        // Default to GUS MAX 1MB maximum
+        myGUS.gDramAddrMask = 0xFFFFF;
+
+        // if instructed, configure the card as if ULTRINIT had been run
+        if (startup_ultrinit) {
+            myGUS.gRegData=0x700;
+            GUSReset();
+
+            myGUS.gRegData=0x700;
+            GUSReset();
+        }
+    }
 
     void DOS_Startup() {
 		int portat = 0x200+GUS_BASE;
@@ -2198,6 +2324,16 @@ public:
 	}
 
 	~GUS() {
+        if (gus_iocallout != IO_Callout_t_none) {
+            IO_FreeCallout(gus_iocallout);
+            gus_iocallout = IO_Callout_t_none;
+        }
+
+        if (gus_iocallout2 != IO_Callout_t_none) {
+            IO_FreeCallout(gus_iocallout2);
+            gus_iocallout2 = IO_Callout_t_none;
+        }
+
 #if 0 // FIXME
 		if(!IS_EGAVGA_ARCH) return;
 	

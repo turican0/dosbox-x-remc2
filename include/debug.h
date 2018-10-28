@@ -29,8 +29,6 @@ Bitu DEBUG_EnableDebugger(void);
 extern Bitu cycle_count;
 extern Bitu debugCallback;
 
-int DEBUG_GetState();
-
 #ifdef C_HEAVY_DEBUG
 bool DEBUG_HeavyIsBreakpoint(void);
 void DEBUG_HeavyWriteLogInstruction(void);

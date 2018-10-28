@@ -753,7 +753,7 @@ public:
             }
             Bitu loadsz = (isz2 + 0xFU) & (~0xFU);
             if (loadsz == 0) loadsz = 0x10;
-            if (loadsz > (IS_PC98_ARCH ? 0x18000 : 0x20000)) loadsz = (IS_PC98_ARCH ? 0x18000 : 0x20000);
+            if (loadsz > (IS_PC98_ARCH ? 0x18000u : 0x20000u)) loadsz = (IS_PC98_ARCH ? 0x18000u : 0x20000u);
             Bitu segbase = 0x100000 - loadsz;
             LOG_MSG("Loading BIOS image %s to 0x%lx, 0x%lx bytes",bios.c_str(),(unsigned long)segbase,(unsigned long)loadsz);
             fseek(romfp, 0, SEEK_SET);
@@ -3921,7 +3921,7 @@ void MODE::Run(void) {
     }
     else if (cmd->GetCount()>1) goto modeparam;
     else if (strcasecmp(temp_line.c_str(),"mono")==0) mode=7;
-    else if (machine==MCH_HERC) goto modeparam;
+    else if (machine==MCH_HERC || machine==MCH_MDA) goto modeparam;
     else if (strcasecmp(temp_line.c_str(),"co80")==0) mode=3;
     else if (strcasecmp(temp_line.c_str(),"bw80")==0) mode=2;
     else if (strcasecmp(temp_line.c_str(),"co40")==0) mode=1;

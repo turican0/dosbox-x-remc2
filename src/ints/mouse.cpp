@@ -27,7 +27,6 @@
 #include "dosbox.h"
 #include "callback.h"
 #include "mem.h"
-#include "debug.h"
 #include "regs.h"
 #include "cpu.h"
 #include "mouse.h"
@@ -39,8 +38,6 @@
 #include "support.h"
 #include "setup.h"
 #include "control.h"
-
-#include "../engine/engine.h"
 
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
@@ -56,6 +53,7 @@ void KEYBOARD_AUX_Event(float x,float y,Bitu buttons,int scrollwheel);
 
 bool en_int33=false;
 bool en_bios_ps2mouse=false;
+bool cell_granularity_disable=false;
 
 void DisableINT33() {
     if (en_int33) {
@@ -567,6 +565,10 @@ static inline bool GFX_IsFullscreen(void) {
 }
 #endif
 
+extern int  user_cursor_x,  user_cursor_y;
+extern int  user_cursor_sw, user_cursor_sh;
+extern bool user_cursor_locked;
+
 /* FIXME: Re-test this code */
 void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
     extern bool Mouse_Vertical;
@@ -583,8 +585,16 @@ void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
     if((fabs(yrel) > 1.0) || (mouse.senv_y < 1.0)) dy *= mouse.senv_y;
     if (useps2callback) dy *= 2;    
 
-    /* serial mouse, if connected, also wants to know about it */
-    on_mouse_event_for_serial((int)(dx),(int)(dy*2),mouse.buttons);
+    if (user_cursor_locked) {
+        /* either device reports relative motion ONLY, and therefore requires that the user
+         * has captured the mouse */
+
+        /* serial mouse */
+        on_mouse_event_for_serial((int)(dx),(int)(dy*2),mouse.buttons);
+
+        /* PC-98 mouse */
+        if (IS_PC98_ARCH) pc98_mouse_movement_apply(xrel,yrel);
+    }
 
     mouse.mickey_x += (dx * mouse.mickeysPerPixel_x);
     mouse.mickey_y += (dy * mouse.mickeysPerPixel_y);
@@ -614,18 +624,12 @@ void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
         }
     }
 
-    if (IS_PC98_ARCH)
-        pc98_mouse_movement_apply(xrel,yrel);
-
     /* ignore constraints if using PS2 mouse callback in the bios */
 
     if (mouse.x > mouse.max_x) mouse.x = mouse.max_x;
     if (mouse.x < mouse.min_x) mouse.x = mouse.min_x;
     if (mouse.y > mouse.max_y) mouse.y = mouse.max_y;
     if (mouse.y < mouse.min_y) mouse.y = mouse.min_y;
-    extern int  user_cursor_x,  user_cursor_y;
-    extern int  user_cursor_sw, user_cursor_sh;
-    extern bool user_cursor_locked;
 
     /*make mouse emulated, eventually*/
     extern MOUSE_EMULATION user_cursor_emulation;
@@ -662,12 +666,15 @@ void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
             mouse.y = mouse.max_y;
     }
 
-    mouse.ps2x += xrel;
-    mouse.ps2y += yrel;
-    if (mouse.ps2x >= 32768.0)       mouse.ps2x -= 65536.0;
-    else if (mouse.ps2x <= -32769.0) mouse.ps2x += 65536.0;
-    if (mouse.ps2y >= 32768.0)       mouse.ps2y -= 65536.0;
-    else if (mouse.ps2y <= -32769.0) mouse.ps2y += 65536.0;
+    if (user_cursor_locked) {
+        /* send relative PS/2 mouse motion only if the cursor is captured */
+        mouse.ps2x += xrel;
+        mouse.ps2y += yrel;
+        if (mouse.ps2x >= 32768.0)       mouse.ps2x -= 65536.0;
+        else if (mouse.ps2x <= -32769.0) mouse.ps2x += 65536.0;
+        if (mouse.ps2y >= 32768.0)       mouse.ps2y -= 65536.0;
+        else if (mouse.ps2y <= -32769.0) mouse.ps2y += 65536.0;
+    }
 
     Mouse_AddEvent(MOUSE_HAS_MOVED);
 }
@@ -880,6 +887,11 @@ void Mouse_NewVideoMode(void) {
     mouse.min_x = 0;
     mouse.min_y = 0;
 
+    if (cell_granularity_disable) {
+        mouse.gran_x = (Bit16s)0xffff;
+        mouse.gran_y = (Bit16s)0xffff;
+    }
+
     mouse.events = 0;
     mouse.timer_in_progress = false;
     PIC_RemoveEvents(MOUSE_Limit_Events);
@@ -1040,8 +1052,6 @@ static Bitu INT33_Handler(void) {
             mouse.hoty       = (Bit16s)reg_cx;
             mouse.cursorType = 2;
             DrawCursor();
-            //DEBUG_EnableDebugger();
-            //restart_calls();
         }
         break;
     case 0x0a:  /* Define Text Cursor */
@@ -1256,8 +1266,6 @@ static Bitu MOUSE_BD_Handler(void) {
 }
 
 static Bitu INT74_Handler(void) {
-    //DEBUG_EnableDebugger();
-    //restart_calls();
     if (mouse.events>0) {
         mouse.events--;
 
@@ -1273,8 +1281,6 @@ static Bitu INT74_Handler(void) {
         if (mouse.sub_mask & mouse.event_queue[mouse.events].type) {
             reg_ax=mouse.event_queue[mouse.events].type;
             reg_bx=mouse.event_queue[mouse.events].buttons;
-            if ((DEBUG_GetState() == 4)&&(reg_bx>0))
-                DEBUG_Enable(true);
             reg_cx=(Bit16u)POS_X;
             reg_dx=(Bit16u)POS_Y;
             reg_si=(Bit16u)static_cast<Bit16s>(mouse.mickey_x);
@@ -1392,7 +1398,13 @@ void MOUSE_Startup(Section *sec) {
     /* TODO: Needs to check for mouse, and fail to do anything if neither PS/2 nor serial mouse emulation enabled */
 
     en_int33=section->Get_bool("int33");
-    if (!en_int33) return;
+    if (!en_int33) {
+        Mouse_Reset();
+        Mouse_SetSensitivity(50,50,50);
+        return;
+    }
+
+    cell_granularity_disable=section->Get_bool("int33 disable cell granularity");
 
     LOG(LOG_KEYBOARD,LOG_NORMAL)("INT 33H emulation enabled");
 

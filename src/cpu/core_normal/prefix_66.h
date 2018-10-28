@@ -15,6 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
+
 #include "engine/engine.h"
 
 	CASE_D(0x01)												/* ADD Ed,Gd */
@@ -484,7 +485,8 @@
 		GRP2D(Fetchb());break;
 	CASE_D(0xc2)												/* RETN Iw */
 		{
-            engine_ret(reg_eip); //tom ret
+        engine_ret(reg_eip); //tom ret
+
 			Bit32u old_esp = reg_esp;
 
 			try {
@@ -499,8 +501,9 @@
 				throw;
 			}
 		} continue;
-    CASE_D(0xc3)												/* RETN */
+	CASE_D(0xc3)
         engine_ret(reg_eip); //tom ret
+        /* RETN */
 		reg_eip=Pop_32();
 		continue;
 	CASE_D(0xc4)												/* LES */
@@ -552,7 +555,7 @@
 		} break;
 	CASE_D(0xca)												/* RETF Iw */
 		{
-            engine_ret(reg_eip); //tom ret
+        engine_ret(reg_eip); //tom ret
 			Bitu words=Fetchw();
 			FillFlags();
 			CPU_RET(true,words,GETIP);
@@ -560,14 +563,14 @@
 		}
 	CASE_D(0xcb)												/* RETF */			
 		{
-            engine_ret(reg_eip); //tom ret
+        engine_ret(reg_eip); //tom ret
 			FillFlags();
             CPU_RET(true,0,GETIP);
 			continue;
 		}
 	CASE_D(0xcf)												/* IRET */
 		{
-            engine_ret(reg_eip); //tom ret
+        engine_ret(reg_eip); //tom ret
 			CPU_IRET(true,GETIP);
 #if CPU_TRAP_CHECK
 			if (GETFLAG(TF)) {	
@@ -626,19 +629,15 @@
 		{ 
 			/* must not adjust (E)IP until we have completed the instruction.
 			 * if interrupted by a page fault, EIP must be unmodified. */
-
-            
-
-            Bit32s addip=Fetchds();
+			Bit32s addip=Fetchds();
 			Bit32u here=GETIP;
 			Push_32(here);
 			reg_eip=(Bit32u)((Bit32u)addip+here);
-
             //tom call
             int retengine = engine_call(true, Segs.val[cs], reg_eip, here);
             //tom call
 
-			continue;
+            continue;
 		}
 	CASE_D(0xe9)												/* JMP Jd */
 		{ 

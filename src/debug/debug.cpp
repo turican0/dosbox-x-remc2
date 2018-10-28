@@ -88,6 +88,10 @@ static void DrawVariables(void);
 static void LogDOSKernMem(void);
 static void LogBIOSMem(void);
 
+void DEBUG_DrawInput(void) {
+    DrawInput();
+}
+
 //tom
 int debug_state = 0;
 
@@ -152,6 +156,9 @@ static bool debugging = false;
 static bool debug_running = false;
 static bool check_rescroll = false;
 
+bool IsDebuggerActive(void) {
+    return debugging;
+}
 
 static void SetColor(Bitu test) {
 	if (test) {

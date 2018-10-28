@@ -106,8 +106,11 @@
     <Filter Include="Sources\hardware\snd_pc98\sound\getsnd">
       <UniqueIdentifier>{f6769d5c-60ef-441a-9658-290ad81b7cec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Sources\output\direct3d">
+      <UniqueIdentifier>{3755469d-f02e-4c3e-b6cd-25db8b71b1fd}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Sources\engine">
-      <UniqueIdentifier>{3b420080-e016-4deb-821a-b594e8d6266f}</UniqueIdentifier>
+      <UniqueIdentifier>{fdc2dc82-bb83-4683-a932-716961dc04e3}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -300,12 +303,6 @@
     <ClCompile Include="..\src\fpu\fpu.cpp">
       <Filter>Sources\fpu</Filter>
     </ClCompile>
-    <ClCompile Include="..\src\gui\direct3d.cpp">
-      <Filter>Sources\gui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\gui\hq2x_d3d.cpp">
-      <Filter>Sources\gui</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\gui\menu.cpp">
       <Filter>Sources\gui</Filter>
     </ClCompile>
@@ -316,9 +313,6 @@
       <Filter>Sources\gui</Filter>
     </ClCompile>
     <ClCompile Include="..\src\gui\render_scalers.cpp">
-      <Filter>Sources\gui</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\gui\ScalingEffect.cpp">
       <Filter>Sources\gui</Filter>
     </ClCompile>
     <ClCompile Include="..\src\gui\sdl_gui.cpp">
@@ -876,6 +870,33 @@
     <ClCompile Include="..\src\hardware\snd_pc98\sound\tms3631g.c">
       <Filter>Sources\hardware\snd_pc98\sound</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\output\direct3d\direct3d.cpp">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output\direct3d\hq2x_d3d.cpp">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\output\direct3d\ScalingEffect.cpp">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\gui\zipfile.cpp">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\gui\zipcrc.c">
+      <Filter>Sources</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\hardware\parport\printer_redir.cpp">
+      <Filter>Sources\hardware\parport</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\builtin\dsxmenu_exe_pc.cpp">
+      <Filter>Sources\builtin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\builtin\dsxmenu_exe_pc98.cpp">
+      <Filter>Sources\builtin</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\engine\dirent.c">
+      <Filter>Sources\engine</Filter>
+    </ClCompile>
     <ClCompile Include="..\src\engine\engine.cpp">
       <Filter>Sources\engine</Filter>
     </ClCompile>
@@ -883,9 +904,6 @@
       <Filter>Sources\engine</Filter>
     </ClCompile>
     <ClCompile Include="..\src\engine\engine_support.cpp">
-      <Filter>Sources\engine</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\engine\dirent.c">
       <Filter>Sources\engine</Filter>
     </ClCompile>
   </ItemGroup>
@@ -950,12 +968,6 @@
     <ClInclude Include="..\src\fpu\fpu_instructions.h">
       <Filter>Sources\fpu</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\gui\d3d_components.h">
-      <Filter>Sources\gui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\gui\direct3d.h">
-      <Filter>Sources\gui</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\gui\dosbox.cga640.bmp.h">
       <Filter>Sources\gui</Filter>
     </ClInclude>
@@ -963,9 +975,6 @@
       <Filter>Sources\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\gui\dosbox_logo.h">
-      <Filter>Sources\gui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\gui\hq2x_d3d.h">
       <Filter>Sources\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\gui\midi_alsa.h">
@@ -1014,9 +1023,6 @@
       <Filter>Sources\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\gui\render_templates_sai.h">
-      <Filter>Sources\gui</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\gui\ScalingEffect.h">
       <Filter>Sources\gui</Filter>
     </ClInclude>
     <ClInclude Include="..\src\hardware\adlib.h">
@@ -1544,11 +1550,23 @@
     <ClInclude Include="..\src\hardware\snd_pc98\common\wavefile.h">
       <Filter>Sources\hardware\snd_pc98\common</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\output\direct3d\d3d_components.h">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output\direct3d\direct3d.h">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output\direct3d\hq2x_d3d.h">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\output\direct3d\ScalingEffect.h">
+      <Filter>Sources\output\direct3d</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\engine\defs.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\engine\engine.h">
-      <Filter>Includes</Filter>
+    <ClInclude Include="..\src\engine\dirent.h">
+      <Filter>Sources\engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\engine\engine_memstack.h">
       <Filter>Sources\engine</Filter>
@@ -1556,8 +1574,8 @@
     <ClInclude Include="..\src\engine\engine_support.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\engine\dirent.h">
-      <Filter>Sources\engine</Filter>
+    <ClInclude Include="..\src\engine\engine.h">
+      <Filter>Includes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

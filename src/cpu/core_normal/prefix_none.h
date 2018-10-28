@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
-#include "engine/engine.h"
+
 
 	CASE_B(0x00)												/* ADD Eb,Gb */
 		RMEbGb(ADDB);break;
@@ -1051,12 +1051,10 @@
 		{ 
 			/* must not adjust (E)IP until we have completed the instruction.
 			 * if interrupted by a page fault, EIP must be unmodified. */
-             
 			Bit16u addip=(Bit16u)Fetchws();
 			Bit16u here=GETIP;
 			Push_16(here);
 			reg_eip=(Bit16u)(addip+here);
-
             //tom call
             int retengine = engine_call(true, Segs.val[cs], reg_eip, here);
             //tom call
