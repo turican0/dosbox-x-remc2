@@ -731,8 +731,16 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 //DEBUG_EnableDebugger();
                 fclose(fptestep);*/
-                myAddBreakpoint(SegValue(cs), 0x25b533, false);
-                myAddBreakpoint(SegValue(cs), 0x258350, false);
+                //myAddBreakpoint(SegValue(cs), 0x25b533, false);
+                //myAddBreakpoint(SegValue(cs), 0x258350, false);
+                myAddBreakpoint(SegValue(cs), 0x25b742, false);
+                myAddBreakpoint(SegValue(cs), 0x25b747, false);
+                myAddBreakpoint(SegValue(cs), 0x25b74a, false);
+                //25b742
+                //25b747
+                //25b74a
+                //25b751
+                //25b753
                 DEBUG_EnableDebugger();
                 //xcounter++;
                 break;
