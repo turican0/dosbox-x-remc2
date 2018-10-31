@@ -406,6 +406,11 @@ std::list<CBreakpoint*> CBreakpoint::BPoints;
 CBreakpoint*			CBreakpoint::ignoreOnce = 0;
 Bitu					ignoreAddressOnce = 0;
 
+void myAddBreakpoint(Bit16u seg, Bit32u off, bool once)
+{
+    CBreakpoint::AddBreakpoint(seg, off, once);
+}
+
 CBreakpoint* CBreakpoint::AddBreakpoint(Bit16u seg, Bit32u off, bool once)
 {
 	CBreakpoint* bp = new CBreakpoint();

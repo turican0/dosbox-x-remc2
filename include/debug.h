@@ -26,6 +26,8 @@ bool DEBUG_ExitLoop(void);
 void DEBUG_RefreshPage(char scroll);
 Bitu DEBUG_EnableDebugger(void);
 
+void myAddBreakpoint(Bit16u seg, Bit32u off, bool once);
+
 extern Bitu cycle_count;
 extern Bitu debugCallback;
 
