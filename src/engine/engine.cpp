@@ -747,10 +747,10 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //xcounter++;
                 break;
             }
-            case 0x259730: {
+            case 0x244c90: {
                 //saveactstate();
                 //if(xcounter>1)
-                oldmem = 0x12345678;
+                //oldmem = 0x12345678;
                 DEBUG_EnableDebugger();
                 
                 //xcounter++;
