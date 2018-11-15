@@ -54,7 +54,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x35cf6a00;
+unsigned long findvaradr = 0x35cf72;
 
 
 unsigned long prepreprepreprelastsel;
