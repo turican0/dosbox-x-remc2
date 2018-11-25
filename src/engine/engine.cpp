@@ -46,6 +46,9 @@ Bit8u pre3temp;
 Bit8u pre4temp;
 Bit8u temp;
 
+//bool stopturnon = true;
+//int stopindex=0;
+
 Bit32u oldmem=-123456789;
 long count = 0;
 FILE *fptestep;
@@ -54,7 +57,8 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x363286;
+unsigned long findvaradr = 0x30c4e000;
+unsigned long findvarval = 0x002212a0;
 
 
 unsigned long prepreprepreprelastsel;
@@ -99,6 +103,8 @@ void writesubcall(char* text, int level) {
     fclose(fptestepc);
 };
 
+long xcounter = 0;
+
 void enginestep() {
     if (count == 0) {        
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -111,9 +117,18 @@ void enginestep() {
     }
     if (count > 10000)
     {
+        if ((reg_eip==0x218240) && (SegValue(cs) == 0x160))
+        {
+            if(xcounter>= 0xfe)
+            {
+                DEBUG_EnableDebugger();
+            }
+            xcounter++;
+        }
         if ((SegValue(ds) == findvarseg)&& (SegValue(cs) == 0x160))
         {
             Bit32u actmem = mem_readd(SegPhys(ds) + findvaradr);
+            //if (findvarval == actmem)
             if (oldmem != actmem)
             {
                     fopen_s(&fptestep, findname, "a+");
@@ -141,6 +156,7 @@ void enginestep() {
                 if (0x6F732F == oldmem)saveactstate();
                 DEBUG_EnableDebugger();
                 fclose(fptestep);
+                findvarval = 0;//fix
             }
     }
     count++;
@@ -626,7 +642,7 @@ void writecalls() {
 long testcount = 0;
 
 
-long xcounter = 0;
+
 long callindex2=0;
 int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
     if (callindex2 > 10000)
@@ -747,13 +763,25 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
                 //xcounter++;
                 break;
             }
-            case 0x23d8d0: {
+            case 0x22a8a0: {
+                //stopindex++;
+                //if(stopindex>=0x91)DEBUG_EnableDebugger();
                 //saveactstate();
                 //if(xcounter>1)
                 //oldmem = 0x12345678;
-                DEBUG_EnableDebugger();
-                
+                //if(xcounter>= 0x574)
+                {
+                    //DEBUG_EnableDebugger();
+                }
                 //xcounter++;
+                //DEBUG_EnableDebugger();
+                break;
+            }
+            case 0x22b190:{
+                //if (stopindex+1 >= 0x91)DEBUG_EnableDebugger();
+                //stopindex++;
+                //stopturnon = true;
+
                 break;
             }
             case 0x26db3a: {
