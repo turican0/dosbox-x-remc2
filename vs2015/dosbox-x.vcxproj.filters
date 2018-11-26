@@ -110,7 +110,7 @@
       <UniqueIdentifier>{3755469d-f02e-4c3e-b6cd-25db8b71b1fd}</UniqueIdentifier>
     </Filter>
     <Filter Include="Sources\engine">
-      <UniqueIdentifier>{fdc2dc82-bb83-4683-a932-716961dc04e3}</UniqueIdentifier>
+      <UniqueIdentifier>{e0c0fc47-4878-4b36-8352-6d163a6a01e1}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1568,14 +1568,14 @@
     <ClInclude Include="..\src\engine\dirent.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\engine\engine.h">
+      <Filter>Sources\engine</Filter>
+    </ClInclude>
     <ClInclude Include="..\src\engine\engine_memstack.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\engine\engine_support.h">
       <Filter>Sources\engine</Filter>
-    </ClInclude>
-    <ClInclude Include="..\src\engine\engine.h">
-      <Filter>Includes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

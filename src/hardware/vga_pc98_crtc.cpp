@@ -1,3 +1,20 @@
+/*
+ *  Copyright (C) 2018  Jon Campbell
+ *
+ *  This program is free software; you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation; either version 2 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program; if not, write to the Free Software
+ *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
 
 #include "dosbox.h"
 #include "setup.h"
@@ -25,6 +42,7 @@ bool                        gdc_5mhz_mode = false;
 bool                        enable_pc98_egc = true;
 bool                        enable_pc98_grcg = true;
 bool                        enable_pc98_16color = true;
+bool                        enable_pc98_188usermod = true;
 bool                        GDC_vsync_interrupt = false;
 uint8_t                     GDC_display_plane_wait_for_vsync = false;
 uint8_t                     GDC_display_plane_pending = false;
@@ -35,9 +53,34 @@ uint8_t                     pc98_gdc_modereg=0;
 uint8_t                     pc98_gdc_vramop=0;
 egc_quad                    pc98_gdc_tiles;
 
+extern unsigned char        pc98_text_first_row_scanline_start;  /* port 70h */
+extern unsigned char        pc98_text_first_row_scanline_end;    /* port 72h */
+extern unsigned char        pc98_text_row_scanline_blank_at;     /* port 74h */
+extern unsigned char        pc98_text_row_scroll_lines;          /* port 76h */
+extern unsigned char        pc98_text_row_scroll_count_start;    /* port 78h */
+extern unsigned char        pc98_text_row_scroll_num_lines;      /* port 7Ah */
+
 void pc98_crtc_write(Bitu port,Bitu val,Bitu iolen) {
     (void)iolen;//UNUSED
     switch (port&0xE) {
+        case 0x00:      // 0x70: Character row, CG start scanline
+            pc98_text_first_row_scanline_start = (unsigned char)val & 0x1F;
+            break;
+        case 0x02:      // 0x72: Character row, CG end scanline
+            pc98_text_first_row_scanline_end = (unsigned char)val & 0x1F;
+            break;
+        case 0x04:      // 0x74: Character row, number of CG scanlines to display
+            pc98_text_row_scanline_blank_at = (unsigned char)val & 0x1F;
+            break;
+        case 0x06:
+            pc98_text_row_scroll_lines = (unsigned char)val & 0x1F;
+            break;
+        case 0x08:
+            pc98_text_row_scroll_count_start = (unsigned char)val & 0x1F;
+            break;
+        case 0x0A:
+            pc98_text_row_scroll_num_lines = (unsigned char)val & 0x1F;
+            break;
         case 0x0C:      // 0x7C: mode reg / vram operation mode (also, reset tile counter)
             if (enable_pc98_grcg) {
                 pc98_gdc_tile_counter = 0;
@@ -61,7 +104,24 @@ void pc98_crtc_write(Bitu port,Bitu val,Bitu iolen) {
 
 Bitu pc98_crtc_read(Bitu port,Bitu iolen) {
     (void)iolen;//UNUSED
-    LOG_MSG("PC98 CRTC r: port=0x%02X unknown",(unsigned int)port);
+    switch (port&0xE) {
+        case 0x00:      // 0x70: Character row, CG start scanline
+            return pc98_text_first_row_scanline_start;
+        case 0x02:      // 0x72: Character row, CG end scanline
+            return pc98_text_first_row_scanline_end;
+        case 0x04:      // 0x74: Character row, number of CG scanlines to display
+            return pc98_text_row_scanline_blank_at;
+        case 0x06:
+            return pc98_text_row_scroll_lines;
+        case 0x08:
+            return pc98_text_row_scroll_count_start;
+        case 0x0A:
+            return pc98_text_row_scroll_num_lines;
+        default:
+            LOG_MSG("PC98 CRTC r: port=0x%02X unknown",(unsigned int)port);
+            break;
+    }
+
     return ~0ul;
 }
 

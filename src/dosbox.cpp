@@ -75,6 +75,10 @@
 #include "parport.h"
 #include "clockdomain.h"
 
+#if C_EMSCRIPTEN
+# include <emscripten.h>
+#endif
+
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -104,7 +108,7 @@ bool sse2_available = false;
 
 void CheckSSESupport()
 {
-#if defined (__GNUC__) || (_MSC_VER)
+#if (defined (__GNUC__) || (_MSC_VER)) && !defined(EMSCRIPTEN)
     Bitu a, b, c, d;
     cpuid(1, a, b, c, d);
     sse2_available = ((d >> 26) & 1)?true:false;
@@ -298,6 +302,8 @@ extern bool allow_keyb_reset;
 
 extern bool DOSBox_Paused();
 
+//#define DEBUG_CYCLE_OVERRUN_CALLBACK
+
 static Bitu Normal_Loop(void) {
     bool saved_allow = dosbox_allow_nonrecursive_page_fault;
     Bit32u ticksNew;
@@ -341,9 +347,28 @@ static Bitu Normal_Loop(void) {
                     if (GCC_UNLIKELY(ret >= CB_MAX))
                         return 0;
 
+                    extern unsigned int last_callback;
+                    unsigned int p_last_callback = last_callback;
+                    last_callback = ret;
+
                     dosbox_allow_nonrecursive_page_fault = false;
                     Bitu blah = (*CallBack_Handlers[ret])();
                     dosbox_allow_nonrecursive_page_fault = saved_allow;
+
+                    last_callback = p_last_callback;
+
+#ifdef DEBUG_CYCLE_OVERRUN_CALLBACK
+                    {
+                        extern char* CallBack_Description[CB_MAX];
+
+                        /* I/O delay can cause negative CPU_Cycles and PIC event / audio rendering issues */
+                        cpu_cycles_count_t overrun = -std::min(CPU_Cycles,(cpu_cycles_count_t)0);
+
+                        if (overrun > (CPU_CycleMax/100))
+                            LOG_MSG("Normal loop: CPU cycles count overrun by %ld (%.3fms) after callback '%s'\n",(signed long)overrun,(double)overrun / CPU_CycleMax,CallBack_Description[ret]);
+                    }
+#endif
+
                     if (GCC_UNLIKELY(blah > 0U))
                         return blah;
                 }
@@ -488,11 +513,34 @@ void DOSBOX_SetNormalLoop() {
     loop=Normal_Loop;
 }
 
+//#define DEBUG_RECURSION
+
+#ifdef DEBUG_RECURSION
+volatile int runmachine_recursion = 0;
+#endif
+
 void DOSBOX_RunMachine(void){
     Bitu ret;
+
+    extern unsigned int last_callback;
+    unsigned int p_last_callback = last_callback;
+    last_callback = 0;
+
+#ifdef DEBUG_RECURSION
+    if (runmachine_recursion++ != 0)
+        LOG_MSG("RunMachine recursion");
+#endif
+
     do {
         ret=(*loop)();
     } while (!ret);
+
+#ifdef DEBUG_RECURSION
+    if (--runmachine_recursion < 0)
+        LOG_MSG("RunMachine recursion leave error");
+#endif
+
+    last_callback = p_last_callback;
 }
 
 static void DOSBOX_UnlockSpeed( bool pressed ) {
@@ -616,6 +664,9 @@ void Init_VGABIOS() {
     assert(section != NULL);
 
     if (IS_PC98_ARCH) {
+        // There IS no VGA BIOS, this is PC-98 mode!
+        VGA_BIOS_SEG = 0xC000;
+        VGA_BIOS_SEG_END = 0xC000; // Important: DOS kernel uses this to determine where to place the private area!
         VGA_BIOS_Size = 0;
         return;
     }
@@ -644,8 +695,12 @@ void Init_VGABIOS() {
 
     if (VGA_BIOS_Size_override >= 512 && VGA_BIOS_Size_override <= 65536)
         VGA_BIOS_Size = (VGA_BIOS_Size_override + 0x7FFU) & (~0xFFFU);
-    else if (IS_VGA_ARCH)
-        VGA_BIOS_Size = 0x3000; /* <- Experimentation shows the S3 emulation can fit in 12KB, doesn't need all 32KB */
+    else if (IS_VGA_ARCH) {
+        if (svgaCard == SVGA_S3Trio)
+            VGA_BIOS_Size = 0x4000;
+        else
+            VGA_BIOS_Size = 0x3000;
+    }
     else if (machine == MCH_EGA) {
         if (VIDEO_BIOS_always_carry_16_high_font)
             VGA_BIOS_Size = 0x3000;
@@ -860,6 +915,9 @@ void DOSBOX_SetupConfigSections(void) {
     const char* aspectmodes[] = { "false", "true", "0", "1", "yes", "no", "nearest", "bilinear", 0};
     const char *vga_ac_mapping_settings[] = { "", "auto", "4x4", "4low", "first16", 0 };
 
+    const char* irqhandler[] = {
+        "", "simple", "cooperative_2nd", 0 };
+
     /* Setup all the different modules making up DOSBox */
     const char* machines[] = {
         "hercules", "cga", "cga_mono", "cga_rgb", "cga_composite", "cga_composite2", "tandy", "pcjr", "ega",
@@ -902,7 +960,7 @@ void DOSBOX_SetupConfigSections(void) {
         0
     };
 
-#if defined(__SSE__) && !defined(_M_AMD64)
+#if defined(__SSE__) && !defined(_M_AMD64) && !defined(EMSCRIPTEN)
     CheckSSESupport();
 #endif
     SDLNetInited = false;
@@ -1064,6 +1122,13 @@ void DOSBOX_SetupConfigSections(void) {
                       "jump directly to F000:FFF0 to return control to the BIOS.\n"
                       "This can be used for x86 assembly language experiments and automated testing against the CPU emulation.");
 
+    Pstring = secprop->Add_string("unhandled irq handler",Property::Changeable::WhenIdle,"");
+    Pstring->Set_values(irqhandler);
+    Pstring->Set_help("Determines how unhandled IRQs are handled. This may help some errant DOS applications.\n"
+                      "Leave unset for default behavior (simple).\n"
+                      "simple               Acknowledge the IRQ, and the master (if slave IRQ)\n"
+                      "mask_isr             Acknowledge IRQs in service on master and slave and mask IRQs still in service, to deal with errant handlers (em-dosbox method)");
+
     Pstring = secprop->Add_string("call binary on boot",Property::Changeable::WhenIdle,"");
     Pstring->Set_help("If set, this is the path of a binary blob to load into the ROM BIOS area and execute immediately before booting the DOS system.\n"
                       "This can be used for x86 assembly language experiments and automated testing against the CPU emulation.");
@@ -1122,7 +1187,11 @@ void DOSBOX_SetupConfigSections(void) {
     Pint = secprop->Add_int("acpi reserved size", Property::Changeable::WhenIdle,0);
     Pint->Set_help("Amount of memory at top to reserve for ACPI structures and tables. Set to 0 for automatic assignment.");
 
+#if defined(C_EMSCRIPTEN)
+    Pint = secprop->Add_int("memsize", Property::Changeable::WhenIdle,4);
+#else
     Pint = secprop->Add_int("memsize", Property::Changeable::WhenIdle,16);
+#endif
     Pint->SetMinMax(1,511);
     Pint->Set_help(
         "Amount of memory DOSBox has in megabytes.\n"
@@ -1167,6 +1236,16 @@ void DOSBOX_SetupConfigSections(void) {
         "        or 386DX and 486 systems where the CPU communicated directly with the ISA bus (A24-A31 tied off)\n"
         "    26: 64MB aliasing. Some 486s had only 26 external address bits, some motherboards tied off A26-A31");
 
+    Pbool = secprop->Add_bool("pc-98 int 1b fdc timer wait",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, INT 1Bh floppy access will wait for the timer to count down before returning.\n"
+                    "This is needed for Ys II to run without crashing.");
+
+    Pbool = secprop->Add_bool("pc-98 pic init to read isr",Property::Changeable::WhenIdle,true);
+    Pbool->Set_help("If set, the programmable interrupt controllers are initialized by default (if PC-98 mode)\n"
+                    "so that the in-service interrupt status can be read immediately. There seems to be a common\n"
+                    "convention in PC-98 games to program and/or assume this mode for cooperative interrupt handling.\n"
+                    "This option is enabled by default for best compatibility with PC-98 games.");
+
     Pstring = secprop->Add_string("pc-98 fm board",Property::Changeable::Always,"auto");
     Pstring->Set_values(pc98fmboards);
     Pstring->Set_help("In PC-98 mode, selects the FM music board to emulate.");
@@ -1194,6 +1273,9 @@ void DOSBOX_SetupConfigSections(void) {
     Pbool = secprop->Add_bool("pc-98 enable egc",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Allow EGC graphics functions if set, disable if not set");
 
+    Pbool = secprop->Add_bool("pc-98 enable 188 user cg",Property::Changeable::WhenIdle,true);
+    Pbool->Set_help("Allow 188+ user-defined CG cells if set");
+
     Pbool = secprop->Add_bool("pc-98 start gdc at 5mhz",Property::Changeable::WhenIdle,false);
     Pbool->Set_help("Start GDC at 5MHz if set, 2.5MHz if clear. May be required for some games.");
 
@@ -1201,6 +1283,9 @@ void DOSBOX_SetupConfigSections(void) {
     Pbool->Set_help("If set, PC-98 emulation will allow the DOS application to enable the 'scanline effect'\n"
                     "in 200-line graphics modes upconverted to 400-line raster display. When enabled, odd\n"
                     "numbered scanlines are blanked instead of doubled");
+
+    Pbool = secprop->Add_bool("pc-98 bus mouse",Property::Changeable::WhenIdle,true);
+    Pbool->Set_help("Enable PC-98 bus mouse emulation. Disabling this option does not disable INT 33h emulation.");
 
     Pstring = secprop->Add_string("pc-98 video mode",Property::Changeable::WhenIdle,"");
     Pstring->Set_values(pc98videomodeopt);
@@ -1323,6 +1408,12 @@ void DOSBOX_SetupConfigSections(void) {
     Pbool = secprop->Add_bool("dma page registers write-only",Property::Changeable::WhenIdle,false);
     Pbool->Set_help("Normally (on AT hardware) the DMA page registers are read/write. Set this option if you want to emulate PC/XT hardware where the page registers are write-only.");
 
+    Pbool = secprop->Add_bool("cascade interrupt never in service",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, PIC emulation will never mark cascade interrupt as in service. This is OFF by default. It is a hack for troublesome games.");
+
+    Pbool = secprop->Add_bool("cascade interrupt ignore in service",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, PIC emulation will allow slave pic interrupts even if the cascade interrupt is still \"in service\". This is OFF by default. It is a hack for troublesome games.");
+
     Pbool = secprop->Add_bool("enable slave pic",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Enable slave PIC (IRQ 8-15). Set this to 0 if you want to emulate a PC/XT type arrangement with IRQ 0-7 and no IRQ 2 cascade.");
 
@@ -1394,6 +1485,11 @@ void DOSBOX_SetupConfigSections(void) {
     Pint->Set_help("IF nonzero, VESA modes with vertical resolution higher than the specified pixel count will not be listed.\n"
             "This is another way the modelist can be capped for DOS applications that have trouble with long modelists.");
 
+    Pbool = secprop->Add_bool("vesa vbe put modelist in vesa information",Property::Changeable::Always,false);
+    Pbool->Set_help("If set, the VESA modelist is placed in the VESA information structure itself when the DOS application\n"
+                    "queries information on the VESA BIOS. Setting this option may help with some games, though it limits\n"
+                    "the mode list reported to the DOS application.");
+
     Pbool = secprop->Add_bool("vesa vbe 1.2 modes are 32bpp",Property::Changeable::Always,true);
     Pbool->Set_help("If set, truecolor (16M color) VESA BIOS modes in the 0x100-0x11F range are 32bpp. If clear, they are 24bpp.\n"
             "Some DOS games and demos assume one bit depth or the other and do not enumerate VESA BIOS modes, which is why this\n"
@@ -1420,6 +1516,9 @@ void DOSBOX_SetupConfigSections(void) {
 
     Pbool = secprop->Add_bool("allow 4bpp vesa modes",Property::Changeable::Always,true);
     Pbool->Set_help("If the DOS game or demo has problems with 4bpp VESA modes, set to 'false'");
+
+    Pbool = secprop->Add_bool("allow 4bpp packed vesa modes",Property::Changeable::Always,true);
+    Pbool->Set_help("If the DOS game or demo has problems with 4bpp packed VESA modes, set to 'false'");
 
     Pbool = secprop->Add_bool("allow tty vesa modes",Property::Changeable::Always,true);
     Pbool->Set_help("If the DOS game or demo has problems with text VESA modes, set to 'false'");
@@ -2087,6 +2186,10 @@ void DOSBOX_SetupConfigSections(void) {
     Pint->SetMinMax(-1,1024);
     Pint->Set_help("Amount of RAM on the Gravis Ultrasound in KB. Set to -1 for default.");
 
+    Pdouble = secprop->Add_double("gus master volume",Property::Changeable::WhenIdle,0);
+    Pdouble->SetMinMax(-120.0,6.0);
+    Pdouble->Set_help("Master Gravis Ultrasound GF1 volume, in decibels. Reducing the master volume can help with games or demoscene productions where the music is too loud and clipping");
+
     Phex = secprop->Add_hex("gusbase",Property::Changeable::WhenIdle,0x240);
     Phex->Set_values(iosgus);
     Phex->Set_help("The IO base address of the Gravis Ultrasound.");
@@ -2580,6 +2683,17 @@ void DOSBOX_SetupConfigSections(void) {
 
     Pbool = secprop->Add_bool("int33",Property::Changeable::WhenIdle,true);
     Pbool->Set_help("Enable INT 33H (mouse) support.");
+
+    Pbool = secprop->Add_bool("int33 hide host cursor if interrupt subroutine",Property::Changeable::WhenIdle,true);
+    Pbool->Set_help("If set, the cursor on the host will be hidden if the DOS application provides it's own\n"
+                    "interrupt subroutine for the mouse driver to call, which is usually an indication that\n"
+                    "the DOS game wishes to draw the cursor with it's own support routines (DeluxePaint II).");
+
+    Pbool = secprop->Add_bool("int33 hide host cursor when polling",Property::Changeable::WhenIdle,false);
+    Pbool->Set_help("If set, the cursor on the host will be hidden even if the DOS application has also\n"
+                    "hidden the cursor in the guest, as long as the DOS application is polling position\n"
+                    "and button status. This can be useful for DOS programs that draw the cursor on their\n"
+                    "own instead of using the mouse driver, including most games and DeluxePaint II.");
 
     Pbool = secprop->Add_bool("int33 disable cell granularity",Property::Changeable::WhenIdle,false);
     Pbool->Set_help("If set, the mouse pointer position is reported at full precision (as if 640x200 coordinates) in all modes.\n"

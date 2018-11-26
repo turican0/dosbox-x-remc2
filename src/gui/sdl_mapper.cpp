@@ -40,6 +40,10 @@
 #include "setup.h"
 #include "menu.h"
 
+#if C_EMSCRIPTEN
+# include <emscripten.h>
+#endif
+
 #include <map>
 
 std::map<std::string,std::string> pending_string_binds;
@@ -2686,8 +2690,10 @@ extern void GFX_UpdateDisplayDimensions(int width, int height);
 #endif
 
 static void DrawButtons(void) {
+#if defined(C_SDL2)
+    SDL_FillRect(mapper.draw_surface,0,0);
+#else
     SDL_FillRect(mapper.surface,0,0);
-#if !defined(C_SDL2)
     SDL_LockSurface(mapper.surface);
 #endif
     for (CButton_it but_it = buttons.begin();but_it!=buttons.end();but_it++) {
@@ -3555,7 +3561,15 @@ void BIND_MappingEvents(void) {
     if (GUI_JoystickCount()>0) SDL_JoystickUpdate();
     MAPPER_UpdateJoysticks();
 
+#if C_EMSCRIPTEN
+    emscripten_sleep_with_yield(0);
+#endif
+
     while (SDL_PollEvent(&event)) {
+#if C_EMSCRIPTEN
+        emscripten_sleep_with_yield(0);
+#endif
+
         switch (event.type) {
 #if defined(C_SDL2)
         case SDL_FINGERUP:
@@ -3854,7 +3868,7 @@ void MAPPER_RunInternal() {
     SDL_SetPaletteColors(sdl2_map_pal_ptr, map_pal, 0, 6);
     SDL_SetSurfacePalette(mapper.draw_surface, sdl2_map_pal_ptr);
     if (last_clicked) {
-        last_clicked->BindColor();
+        last_clicked->SetColor(CLR_WHITE);
         last_clicked=NULL;
     }
 #else
@@ -3876,12 +3890,16 @@ void MAPPER_RunInternal() {
     SDL_JoystickEventState(SDL_ENABLE);
 #endif
     while (!mapper.exit) {
+#if C_EMSCRIPTEN
+        emscripten_sleep_with_yield(0);
+#endif
+
         if (mapper.redraw) {
             mapper.redraw=false;        
             DrawButtons();
         } else {
 #if defined(C_SDL2)
-            SDL_UpdateWindowSurface(mapper.window);
+//            SDL_UpdateWindowSurface(mapper.window);
 #endif
         }
         BIND_MappingEvents();
@@ -4020,6 +4038,8 @@ void MAPPER_StartUp() {
         /* Note: table has to be tested/updated for various OSs */
 #if defined (MACOSX)
         /* nothing */
+#elif defined(HAIKU)
+		usescancodes = false;
 #elif defined(OS2)
         sdlkey_map[0x61]=SDLK_UP;
         sdlkey_map[0x66]=SDLK_DOWN;

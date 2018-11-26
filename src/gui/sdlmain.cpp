@@ -70,7 +70,12 @@ void GFX_OpenGLRedrawScreen(void);
 #include "bitop.h"
 #include "ptrop.h"
 #include "mapper.h"
+#include "sdlmain.h"
 #include "zipfile.h"
+
+#if C_EMSCRIPTEN
+# include <emscripten.h>
+#endif
 
 #include "../src/libs/gui_tk/gui_tk.h"
 
@@ -117,6 +122,8 @@ void GFX_OpenGLRedrawScreen(void);
 
 SDL_Block sdl;
 Bitu frames = 0;
+
+ScreenSizeInfo          screen_size_info;
 
 const char *scaler_menu_opts[][2] = {
     { "none",                   "None" },
@@ -327,7 +334,35 @@ void UpdateWindowDimensions(Bitu width, Bitu height)
     currentWindowHeight = height;
 }
 
-void UpdateWindowDimensions(void) 
+void PrintScreenSizeInfo(void) {
+#if 1
+    const char *method = "?";
+
+    switch (screen_size_info.method) {
+        case ScreenSizeInfo::METHOD_NONE:       method = "None";        break;
+        case ScreenSizeInfo::METHOD_X11:        method = "X11";         break;
+        case ScreenSizeInfo::METHOD_XRANDR:     method = "XRandR";      break;
+        default:                                                        break;
+    };
+
+    LOG_MSG("Screen report: Method '%s' (%.3f x %.3f pixels) (%.3f x %.3f mm) (%.3f x %.3f in) (%.3f x %.3f DPI)",
+            method,
+
+            screen_size_info.screen_dimensions_pixels.width,
+            screen_size_info.screen_dimensions_pixels.height,
+
+            screen_size_info.screen_dimensions_mm.width,
+            screen_size_info.screen_dimensions_mm.height,
+
+            screen_size_info.screen_dimensions_mm.width / 25.4,
+            screen_size_info.screen_dimensions_mm.height / 25.4,
+
+            screen_size_info.screen_dpi.width,
+            screen_size_info.screen_dpi.height);
+#endif
+}
+
+void UpdateWindowDimensions(void)
 {
 #if defined(WIN32) && !defined(C_SDL2)
     // When maximized, SDL won't actually tell us our new dimensions, so get it ourselves.
@@ -342,7 +377,10 @@ void UpdateWindowDimensions(void)
 #if defined(LINUX) && !defined(C_SDL2)
     void UpdateWindowDimensions_Linux(void);
     UpdateWindowDimensions_Linux();
+    void Linux_GetWindowDPI(ScreenSizeInfo &info);
+    Linux_GetWindowDPI(/*&*/screen_size_info);
 #endif
+    PrintScreenSizeInfo();
 }
 
 #if defined(C_SDL2)
@@ -396,6 +434,8 @@ struct private_hwdata {
 # define DEFAULT_CONFIG_FILE            "/dosbox.conf"
 #elif defined(MACOSX)
 # define DEFAULT_CONFIG_FILE            "/Library/Preferences/DOSBox Preferences"
+#elif defined(HAIKU)
+#define DEFAULT_CONFIG_FILE "~/config/settings/dosbox/dosbox.conf"
 #else /*linux freebsd*/
 # define DEFAULT_CONFIG_FILE            "/.dosboxrc"
 #endif
@@ -668,7 +708,13 @@ void PauseDOSBox(bool pressed) {
 #endif
 
     while (paused) {
+#if C_EMSCRIPTEN
+        emscripten_sleep_with_yield(0);
+        SDL_PollEvent(&event);
+#else
         SDL_WaitEvent(&event);    // since we're not polling, cpu usage drops to 0.
+#endif
+
 #ifdef __WIN32__
   #if DOSBOXMENU_TYPE == DOSBOXMENU_HMENU
         if (event.type==SDL_SYSWMEVENT && event.syswm.msg->msg == WM_COMMAND && event.syswm.msg->wParam == (mainMenu.get_item("mapper_pause").get_master_id()+DOSBoxMenu::winMenuMinimumID)) {
@@ -2321,6 +2367,10 @@ void GFX_OpenGLRedrawScreen(void) {
 }
 
 void GFX_EndUpdate(const Bit16u *changedLines) {
+#if C_EMSCRIPTEN
+    emscripten_sleep_with_yield(0);
+#endif
+
     /* don't present our output if 3Dfx is in OpenGL mode */
     if (sdl.desktop.prevent_fullscreen)
         return;
@@ -2823,8 +2873,10 @@ static void GUI_StartUp() {
     MAPPER_AddHandler(ResetSystem, MK_r, MMODHOST, "reset", "Reset", &item); /* Host+R (Host+CTRL+R acts funny on my Linux system) */
     item->set_text("Reset guest system");
 
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
     MAPPER_AddHandler(KillSwitch,MK_f9,MMOD1,"shutdown","ShutDown", &item); /* KEEP: Most DOSBox-X users may have muscle memory for this */
     item->set_text("Quit");
+#endif
 
     MAPPER_AddHandler(CaptureMouse,MK_f10,MMOD1,"capmouse","Cap Mouse", &item); /* KEEP: Most DOSBox-X users may have muscle memory for this */
     item->set_text("Capture mouse");
@@ -2832,8 +2884,10 @@ static void GUI_StartUp() {
     MAPPER_AddHandler(SwitchFullScreen,MK_f,MMODHOST,"fullscr","Fullscreen", &item);
     item->set_text("Toggle fullscreen");
 
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
     MAPPER_AddHandler(Restart,MK_nothing,0,"restart","Restart", &item); /* This is less useful, and now has no default binding */
     item->set_text("Restart DOSBox-X");
+#endif
 
     void PasteClipboard(bool bPressed); // emendelson from dbDOS adds MMOD2 to this for Ctrl-Alt-F5 for PasteClipboard
     MAPPER_AddHandler(PasteClipboard, MK_nothing, 0, "paste", "Paste Clipboard"); //end emendelson
@@ -3235,11 +3289,13 @@ static void HandleMouseMotion(SDL_MouseMotionEvent * motion) {
     }
     else if (!user_cursor_locked)
     {
+        bool MOUSE_HasInterruptSub();
+        bool MOUSE_IsBeingPolled();
         bool MOUSE_IsHidden();
         /* Show only when DOS app is not using mouse */
 
         if (!sdl.mouse.locked && !sdl.desktop.fullscreen)
-            SDL_ShowCursor((!inside || MOUSE_IsHidden()) ? SDL_ENABLE : SDL_DISABLE);
+            SDL_ShowCursor(((!inside) || ((MOUSE_IsHidden()) && !(MOUSE_IsBeingPolled() || MOUSE_HasInterruptSub()))) ? SDL_ENABLE : SDL_DISABLE);
     }
     Mouse_CursorMoved(xrel, yrel, x, y, emu);
 }
@@ -3429,7 +3485,12 @@ static void HandleMouseButton(SDL_MouseButtonEvent * button) {
 
                 /* fall into another loop to process the menu */
                 while (runloop) {
+#if C_EMSCRIPTEN
+                    emscripten_sleep_with_yield(0);
+                    if (!SDL_PollEvent(&event)) continue;
+#else
                     if (!SDL_WaitEvent(&event)) break;
+#endif
 
 #if defined(C_SDL2)
                     switch (event.type) {
@@ -4458,6 +4519,10 @@ void GFX_Events() {
 
     GFX_EventsMouse();
 
+#if C_EMSCRIPTEN
+    emscripten_sleep_with_yield(0);
+#endif
+
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
         case SDL_WINDOWEVENT:
@@ -4511,8 +4576,13 @@ void GFX_Events() {
 //                  }
 
                     while (paused) {
+#if C_EMSCRIPTEN
+                        emscripten_sleep_with_yield(0);
+                        SDL_PollEvent(&ev);
+#else
                         // WaitEvent waits for an event rather than polling, so CPU usage drops to zero
                         SDL_WaitEvent(&ev);
+#endif
 
                         switch (ev.type) {
                         case SDL_QUIT:
@@ -4607,6 +4677,10 @@ void GFX_Events() {
 #endif
 
     GFX_EventsMouse();
+
+#if C_EMSCRIPTEN
+    emscripten_sleep_with_yield(0);
+#endif
 
     while (SDL_PollEvent(&event)) {
         switch (event.type) {
@@ -4708,8 +4782,13 @@ void GFX_Events() {
 //                  }
 
                     while (paused) {
+#if C_EMSCRIPTEN
+                        emscripten_sleep_with_yield(0);
+                        SDL_PollEvent(&ev);
+#else
                         // WaitEvent waits for an event rather than polling, so CPU usage drops to zero
                         SDL_WaitEvent(&ev);
+#endif
 
                         switch (ev.type) {
                         case SDL_QUIT: throw(0); break; // a bit redundant at linux at least as the active events gets before the quit event.
@@ -5070,6 +5149,21 @@ static BOOL WINAPI ConsoleEventHandler(DWORD event) {
 #endif
 
 void Null_Init(Section *sec);
+
+void SDL_OnSectionPropChange(Section *x) {
+    (void)x;//UNUSED
+    Section_prop * section = static_cast<Section_prop *>(control->GetSection("sdl"));
+
+    {
+        bool cfg_want_menu = section->Get_bool("showmenu");
+
+        /* -- -- decide whether to set menu */
+        if (menu_gui && !control->opt_nomenu && cfg_want_menu)
+            DOSBox_SetMenu();
+        else
+            DOSBox_NoMenu();
+    }
+}
 
 void SDL_SetupConfigSection() {
     Section_prop * sdl_sec=control->AddSection_prop("sdl",&Null_Init);
@@ -5565,7 +5659,7 @@ bool DOSBOX_parse_argv() {
     assert(control != NULL);
     assert(control->cmdline != NULL);
 
-    control->cmdline->BeginOpt();
+    control->cmdline->BeginOpt(true/*eat argv*/);
     while (control->cmdline->GetOpt(optname)) {
         std::transform(optname.begin(), optname.end(), optname.begin(), ::tolower);
 
@@ -5762,7 +5856,7 @@ bool DOSBOX_parse_argv() {
             const char *ext = strrchr(tmp.c_str(),'.');
             if (ext != NULL) { /* if it looks like a file... with an extension */
                 if (stat(tmp.c_str(), &st) == 0 && S_ISREG(st.st_mode)) {
-                    if (!strcasecmp(ext,".bat")) { /* .BAT files given on the command line trigger automounting C: to run it */
+                    if (!strcasecmp(ext,".bat") || !strcasecmp(ext,".exe") || !strcasecmp(ext,".com")) { /* .BAT files given on the command line trigger automounting C: to run it */
                         control->auto_bat_additional.push_back(tmp);
                         control->cmdline->EatCurrentArgv();
                         continue;
@@ -5982,7 +6076,10 @@ bool VM_PowerOn() {
     return true;
 }
 
+#if !defined(C_EMSCRIPTEN)
 void update_capture_fmt_menu(void);
+#endif
+
 bool capture_fmt_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem);
 
 void update_pc98_clock_pit_menu(void) {
@@ -6001,7 +6098,7 @@ void update_pc98_clock_pit_menu(void) {
 bool dos_pc98_clock_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
     (void)menu;//UNUSED
     (void)menuitem;//UNUSED
-    void TIMER_OnEnterPC98_Phase2(Section*);
+    void TIMER_OnPowerOn(Section*);
     void TIMER_OnEnterPC98_Phase2_UpdateBDA(void);
 
     const char *ts = menuitem->get_name().c_str();
@@ -6021,7 +6118,7 @@ bool dos_pc98_clock_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * con
     Section_prop * dosbox_section = static_cast<Section_prop *>(control->GetSection("dosbox"));
     dosbox_section->HandleInputline(tmp.c_str());
 
-    TIMER_OnEnterPC98_Phase2(NULL);
+    TIMER_OnPowerOn(NULL);
     TIMER_OnEnterPC98_Phase2_UpdateBDA();
 
     update_pc98_clock_pit_menu();
@@ -6148,6 +6245,31 @@ bool vid_pc98_4parts_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * co
     return true;
 }
 
+bool vid_pc98_enable_188user_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
+    (void)menu;//UNUSED
+    (void)menuitem;//UNUSED
+    void gdc_egc_enable_update_vars(void);
+    extern bool enable_pc98_egc;
+    extern bool enable_pc98_grcg;
+    extern bool enable_pc98_16color;
+    extern bool enable_pc98_188usermod;
+
+    if(IS_PC98_ARCH) {
+        enable_pc98_188usermod = !enable_pc98_188usermod;
+        gdc_egc_enable_update_vars();
+
+        Section_prop * dosbox_section = static_cast<Section_prop *>(control->GetSection("dosbox"));
+        if (enable_pc98_188usermod)
+            dosbox_section->HandleInputline("pc-98 enable 188 user cg=1");
+        else
+            dosbox_section->HandleInputline("pc-98 enable 188 user cg=0");
+
+        mainMenu.get_item("pc98_enable_188user").check(enable_pc98_188usermod).refresh_item(mainMenu);
+    }
+    
+    return true;
+}
+
 bool vid_pc98_enable_egc_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
     (void)menu;//UNUSED
     (void)menuitem;//UNUSED
@@ -6155,6 +6277,7 @@ bool vid_pc98_enable_egc_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item 
     extern bool enable_pc98_egc;
     extern bool enable_pc98_grcg;
     extern bool enable_pc98_16color;
+    extern bool enable_pc98_188usermod;
 
     if(IS_PC98_ARCH) {
         enable_pc98_egc = !enable_pc98_egc;
@@ -6378,6 +6501,43 @@ bool scaler_set_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const m
     return true;
 }
 
+void CALLBACK_Idle(void);
+
+bool pausewithinterrupts_enable = false;
+
+void PauseWithInterruptsEnabled(Bitu /*val*/) {
+    /* we can ONLY do this when the CPU is either in real mode or v86 mode.
+     * doing this from protected mode will only crash the game.
+     * also require that interrupts are enabled before pausing. */
+	if (cpu.pmode) {
+        if (!(reg_flags & FLAG_VM)) {
+            PIC_AddEvent(PauseWithInterruptsEnabled,0.001);
+            return;
+        }
+    }
+
+    if (!(reg_flags & FLAG_IF)) {
+        PIC_AddEvent(PauseWithInterruptsEnabled,0.001);
+        return;
+    }
+
+    while (pausewithinterrupts_enable) CALLBACK_Idle();
+}
+
+void PauseWithInterrupts_mapper_shortcut(bool pressed) {
+    if (!pressed) return;
+
+    if (!pausewithinterrupts_enable) {
+        pausewithinterrupts_enable = true;
+        PIC_AddEvent(PauseWithInterruptsEnabled,0.001);
+    }
+    else {
+        pausewithinterrupts_enable = false;
+    }
+
+    mainMenu.get_item("mapper_pauseints").check(pausewithinterrupts_enable).refresh_item(mainMenu);
+}
+
 bool video_frameskip_common_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
     (void)menu;//UNUSED
 
@@ -6390,18 +6550,22 @@ bool video_frameskip_common_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::it
 }
 
 bool show_console_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
+#if !defined(C_EMSCRIPTEN)
     (void)menu;//UNUSED
     (void)menuitem;//UNUSED
     DOSBox_ShowConsole();
     mainMenu.get_item("show_console").check(true).refresh_item(mainMenu);
+#endif
     return true;
 }
 
 bool wait_on_error_menu_callback(DOSBoxMenu * const menu, DOSBoxMenu::item * const menuitem) {
+#if !defined(C_EMSCRIPTEN)
     (void)menu;//UNUSED
     (void)menuitem;//UNUSED
     sdl.wait_on_error = !sdl.wait_on_error;
     mainMenu.get_item("wait_on_error").check(sdl.wait_on_error).refresh_item(mainMenu);
+#endif
     return true;
 }
 
@@ -6546,7 +6710,6 @@ void AspectRatio_mapper_shortcut(bool pressed) {
 
     if (!GFX_GetPreventFullscreen()) {
         SetVal("render", "aspect", render.aspect ? "false" : "true");
-        mainMenu.get_item("mapper_aspratio").check(render.aspect).refresh_item(mainMenu);
     }
 }
 
@@ -6576,6 +6739,11 @@ bool custom_bios = false;
 int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
     CommandLine com_line(argc,argv);
     Config myconf(&com_line);
+
+#if C_EMSCRIPTEN
+    control->opt_debug = true;
+    control->opt_earlydebug = true;
+#endif
 
     bitop::self_test();
     ptrop::self_test();
@@ -6869,6 +7037,12 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         /* -- -- other steps to prepare SDL window/output */
         SDL_Prepare();
 
+        /* -- NOW it is safe to send change events to SDL */
+        {
+            Section_prop *sdl_sec = static_cast<Section_prop*>(control->GetSection("sdl"));
+            sdl_sec->onpropchange.push_back(&SDL_OnSectionPropChange);
+        }
+
         /* -- -- Keyboard layout detection and setup */
         KeyboardLayoutDetect();
         SetMapperKeyboardLayout(host_keyboard_layout);
@@ -7093,6 +7267,8 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
                     set_callback_function(vid_pc98_enable_grcg_menu_callback);
                 mainMenu.alloc_item(DOSBoxMenu::item_type_id,"pc98_enable_analog").set_text("Enable analog display").
                     set_callback_function(vid_pc98_enable_analog_menu_callback);
+                mainMenu.alloc_item(DOSBoxMenu::item_type_id,"pc98_enable_188user").set_text("Enable 188+ user CG cells").
+                    set_callback_function(vid_pc98_enable_188user_menu_callback);
                 mainMenu.alloc_item(DOSBoxMenu::item_type_id,"pc98_clear_text").set_text("Clear text layer").
                     set_callback_function(vid_pc98_cleartext_menu_callback);
                 mainMenu.alloc_item(DOSBoxMenu::item_type_id,"pc98_clear_graphics").set_text("Clear graphics layer").
@@ -7140,10 +7316,12 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
                 }
             }
         }
+#if !defined(C_EMSCRIPTEN)
         {
             DOSBoxMenu::item &item = mainMenu.alloc_item(DOSBoxMenu::submenu_type_id,"CaptureMenu");
             item.set_text("Capture");
         }
+# if (C_SSHOT)
         {
             DOSBoxMenu::item &item = mainMenu.alloc_item(DOSBoxMenu::submenu_type_id,"CaptureFormatMenu");
             item.set_text("Capture format");
@@ -7151,24 +7329,14 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
             {
                 mainMenu.alloc_item(DOSBoxMenu::item_type_id,"capture_fmt_avi_zmbv").set_text("AVI + ZMBV").
                     set_callback_function(capture_fmt_menu_callback);
-#if (C_AVCODEC)
+#  if (C_AVCODEC)
                 mainMenu.alloc_item(DOSBoxMenu::item_type_id,"capture_fmt_mpegts_h264").set_text("MPEG-TS + H.264").
                     set_callback_function(capture_fmt_menu_callback);
-#endif
+#  endif
             }
         }
-
-        /* more */
-        {
-            DOSBoxMenu::item *item;
-
-            MAPPER_AddHandler(&SetCyclesCount_mapper_shortcut, MK_nothing, 0, "editcycles", "EditCycles", &item);
-            item->set_text("Edit cycles");
-
-            MAPPER_AddHandler(&HideMenu_mapper_shortcut, MK_escape, MMODHOST, "togmenu", "TogMenu", &item);
-            item->set_text("Hide/show menu bar");
-            item->check(!menu.toggle);
-        }
+# endif
+#endif
 
         /* Start up main machine */
 
@@ -7194,16 +7362,28 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         if (host_keyboard_layout == DKM_JPN && IS_PC98_ARCH)
             SetMapperKeyboardLayout(DKM_JPN_PC98);
 
-        RENDER_Init();
+        /* more */
+        {
+            DOSBoxMenu::item *item;
 
-        { /* Depends on RENDER_Init */
+            MAPPER_AddHandler(&SetCyclesCount_mapper_shortcut, MK_nothing, 0, "editcycles", "EditCycles", &item);
+            item->set_text("Edit cycles");
+
+            MAPPER_AddHandler(&HideMenu_mapper_shortcut, MK_escape, MMODHOST, "togmenu", "TogMenu", &item);
+            item->set_text("Hide/show menu bar");
+
+            MAPPER_AddHandler(&PauseWithInterrupts_mapper_shortcut, MK_nothing, 0, "pauseints", "PauseInts", &item);
+            item->set_text("Pause with interrupts enabled");
+        }
+
+        {
             DOSBoxMenu::item *item;
 
             MAPPER_AddHandler(&AspectRatio_mapper_shortcut, MK_nothing, 0, "aspratio", "AspRatio", &item);
             item->set_text("Fit to aspect ratio");
-            item->check(render.aspect);
         }
 
+        RENDER_Init();
         CAPTURE_Init();
         IO_Init();
         HARDWARE_Init();
@@ -7299,7 +7479,9 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         }
 
         /* more */
+#if !defined(C_EMSCRIPTEN)
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"show_console").set_text("Show console").set_callback_function(show_console_menu_callback);
+#endif
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"wait_on_error").set_text("Wait on error").set_callback_function(wait_on_error_menu_callback).check(sdl.wait_on_error);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"auto_lock_mouse").set_text("Autolock mouse").set_callback_function(autolock_mouse_menu_callback).check(sdl.mouse.autoenable);
         mainMenu.alloc_item(DOSBoxMenu::item_type_id,"sendkey_ctrlesc").set_text("Ctrl+Esc").set_callback_function(sendkey_preset_menu_callback);
@@ -7328,6 +7510,7 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         mainMenu.get_item("pc98_enable_egc").enable(IS_PC98_ARCH);
         mainMenu.get_item("pc98_enable_grcg").enable(IS_PC98_ARCH);
         mainMenu.get_item("pc98_enable_analog").enable(IS_PC98_ARCH);
+        mainMenu.get_item("pc98_enable_188user").enable(IS_PC98_ARCH);
         mainMenu.get_item("pc98_clear_text").enable(IS_PC98_ARCH);
         mainMenu.get_item("pc98_clear_graphics").enable(IS_PC98_ARCH);
         mainMenu.get_item("dos_pc98_pit_4mhz").enable(IS_PC98_ARCH);
@@ -7338,11 +7521,15 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
 
         mainMenu.get_item("dos_mouse_enable_int33").check(Mouse_Drv).refresh_item(mainMenu);
         mainMenu.get_item("dos_mouse_y_axis_reverse").check(Mouse_Vertical).refresh_item(mainMenu);
+#if !defined(C_EMSCRIPTEN)
         mainMenu.get_item("show_console").check(showconsole_init).refresh_item(mainMenu);
+#endif
 
         OutputSettingMenuUpdate();
         update_pc98_clock_pit_menu();
+#if !defined(C_EMSCRIPTEN)
         update_capture_fmt_menu();
+#endif
 
         /* The machine just "powered on", and then reset finished */
         if (!VM_PowerOn()) E_Exit("VM failed to power on");
@@ -7363,8 +7550,9 @@ int main(int argc, char* argv[]) SDL_MAIN_NOEXCEPT {
         void ConstructMenu(void);
         ConstructMenu();
 
+#if 0
         mainMenu.dump_log_debug(); /*DEBUG*/
-
+#endif
         mainMenu.rebuild();
 
 #if DOSBOXMENU_TYPE == DOSBOXMENU_HMENU
@@ -7556,6 +7744,12 @@ fresh_boot:
             /* if instructed, turn off A20 at boot */
             if (disable_a20) MEM_A20_Enable(false);
 
+            /* PC-98: hide the cursor */
+            if (IS_PC98_ARCH) {
+                void PC98_show_cursor(bool show);
+                PC98_show_cursor(false);
+            }
+
             /* new code: fire event */
             DispatchVMEvent(VM_EVENT_GUEST_OS_BOOT);
 
@@ -7593,6 +7787,22 @@ fresh_boot:
 
             /* new code: fire event */
             DispatchVMEvent(VM_EVENT_RESET);
+
+            extern bool custom_bios;
+            if (custom_bios) {
+                /* need to relocate BIOS allocations */
+                void ROMBIOS_InitForCustomBIOS(void);
+                ROMBIOS_InitForCustomBIOS();
+
+                void CALLBACK_Init();
+                CALLBACK_Init();
+
+#if C_DEBUG
+                void DEBUG_ReinitCallback(void);
+                DEBUG_ReinitCallback();
+#endif
+            }
+
             DispatchVMEvent(VM_EVENT_RESET_END);
 
             /* HACK: EGA/VGA modes will need VGA BIOS mapped in, ready to go */
@@ -7710,6 +7920,14 @@ fresh_boot:
     mainMenu.clear_all_menu_items();
 
     return 0;
+}
+
+void GFX_GetSizeAndPos(int &x,int &y,int &width, int &height, bool &fullscreen) {
+    x = sdl.clip.x;
+    y = sdl.clip.y;
+    width = sdl.clip.w; // draw.width
+    height = sdl.clip.h; // draw.height
+    fullscreen = sdl.desktop.fullscreen;
 }
 
 void GFX_GetSize(int &width, int &height, bool &fullscreen) {

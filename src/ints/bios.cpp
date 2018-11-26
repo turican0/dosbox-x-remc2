@@ -45,6 +45,10 @@ extern bool PS1AudioCard;
 #include <time.h>
 #include <sys/timeb.h>
 
+#if C_EMSCRIPTEN
+# include <emscripten.h>
+#endif
+
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
 # pragma warning(disable:4305) /* truncation from double to float */
@@ -70,6 +74,8 @@ bool MEM_map_ROM_alias_physmem(Bitu start,Bitu end);
 bool bochs_port_e9 = false;
 bool isa_memory_hole_512kb = false;
 bool int15_wait_force_unmask_irq = false;
+
+int unhandled_irq_method = UNHANDLED_IRQ_SIMPLE;
 
 Bit16u biosConfigSeg=0;
 
@@ -163,6 +169,10 @@ bool ROMBIOS_FreeMemory(Bitu phys) {
 
 Bitu ROMBIOS_GetMemory(Bitu bytes,const char *who,Bitu alignment,Bitu must_be_at) {
     return rombios_alloc.getMemory(bytes,who,alignment,must_be_at);
+}
+
+void ROMBIOS_InitForCustomBIOS(void) {
+    rombios_alloc.initSetRange(0xD8000,0xE0000);
 }
 
 static IO_Callout_t dosbox_int_iocallout = IO_Callout_t_none;
@@ -1185,6 +1195,12 @@ void ISAPNP_Cfg_Reset(Section *sec) {
     APMBIOS_allow_prot32 = section->Get_bool("apmbios allow 32-bit protected mode");
 
     std::string apmbiosver = section->Get_string("apmbios version");
+
+    /* PC-98 does not have the IBM PC/AT APM BIOS interface */
+    if (IS_PC98_ARCH) {
+        APMBIOS = false;
+        APMBIOS_pnp = false;
+    }
 
     if (apmbiosver == "1.0")
         APM_BIOS_minor_version = 0;
@@ -2293,6 +2309,7 @@ bool INT16_get_key(Bit16u &code);
 bool INT16_peek_key(Bit16u &code);
 
 extern uint8_t                     GDC_display_plane;
+extern uint8_t                     GDC_display_plane_pending;
 
 unsigned char prev_pc98_mode42 = 0;
 
@@ -2406,8 +2423,16 @@ extern bool                         gdc_5mhz_mode;
 extern bool                         enable_pc98_egc;
 extern bool                         enable_pc98_grcg;
 extern bool                         enable_pc98_16color;
+extern bool                         enable_pc98_188usermod;
 extern bool                         pc98_31khz_mode;
 extern bool                         pc98_attr4_graphic;
+
+extern unsigned char                pc98_text_first_row_scanline_start;  /* port 70h */
+extern unsigned char                pc98_text_first_row_scanline_end;    /* port 72h */
+extern unsigned char                pc98_text_row_scanline_blank_at;     /* port 74h */
+extern unsigned char                pc98_text_row_scroll_lines;          /* port 76h */
+extern unsigned char                pc98_text_row_scroll_count_start;    /* port 78h */
+extern unsigned char                pc98_text_row_scroll_num_lines;      /* port 7Ah */
 
 void pc98_update_text_layer_lineheight_from_bda(void) {
 //    unsigned char c = mem_readb(0x53C);
@@ -2415,6 +2440,27 @@ void pc98_update_text_layer_lineheight_from_bda(void) {
 
     pc98_gdc[GDC_MASTER].force_fifo_complete();
     pc98_gdc[GDC_MASTER].row_height = lineheight;
+
+    if (lineheight > 16) { // usually 20
+        pc98_text_first_row_scanline_start = 0x1E;
+        pc98_text_first_row_scanline_end = lineheight - 3;
+        pc98_text_row_scanline_blank_at = 16;
+    }
+    else {
+        pc98_text_first_row_scanline_start = 0;
+        pc98_text_first_row_scanline_end = lineheight - 1;
+        pc98_text_row_scanline_blank_at = lineheight;
+    }
+
+    pc98_text_row_scroll_lines = 0;
+    pc98_text_row_scroll_count_start = 0;
+    pc98_text_row_scroll_num_lines = 0;
+
+    vga.crtc.cursor_start = 0;
+    vga.draw.cursor.sline = 0;
+
+    vga.crtc.cursor_end   = lineheight - 1;
+    vga.draw.cursor.eline = lineheight - 1;
 }
 
 void pc98_update_text_lineheight_from_bda(void) {
@@ -2463,6 +2509,16 @@ static Bitu INT18_PC98_Handler(void) {
                 reg_ax = temp16;
             }
             else {
+                /* Keyboard checks.
+                 * If the interrupt got masked, unmask it.
+                 * If the keyboard has data waiting, make sure the interrupt signal is active in case the last interrupt handler
+                 * handled the keyboard interrupt and never read the keyboard (Quarth).
+                 *
+                 * TODO: Is this what real PC-98 BIOSes do? */
+                void check_keyboard_fire_IRQ1(void);
+                check_keyboard_fire_IRQ1();
+                IO_WriteB(0x02,IO_ReadB(0x02) & (~(1u << /*IRQ*/1u))); // unmask IRQ1
+
                 reg_ip += 1; /* step over IRET, to NOPs which then JMP back to callback */
             }
             break;
@@ -2474,6 +2530,16 @@ static Bitu INT18_PC98_Handler(void) {
                 reg_bh = 1;
             }
             else {
+                /* Keyboard checks.
+                 * If the interrupt got masked, unmask it.
+                 * If the keyboard has data waiting, make sure the interrupt signal is active in case the last interrupt handler
+                 * handled the keyboard interrupt and never read the keyboard (Quarth).
+                 *
+                 * TODO: Is this what real PC-98 BIOSes do? */
+                void check_keyboard_fire_IRQ1(void);
+                check_keyboard_fire_IRQ1();
+                IO_WriteB(0x02,IO_ReadB(0x02) & (~(1u << /*IRQ*/1u))); // unmask IRQ1
+
                 reg_bh = 0;
             }
             break;
@@ -2494,6 +2560,16 @@ static Bitu INT18_PC98_Handler(void) {
                 reg_bh = 1;
             }
             else {
+                /* Keyboard checks.
+                 * If the interrupt got masked, unmask it.
+                 * If the keyboard has data waiting, make sure the interrupt signal is active in case the last interrupt handler
+                 * handled the keyboard interrupt and never read the keyboard (Quarth).
+                 *
+                 * TODO: Is this what real PC-98 BIOSes do? */
+                void check_keyboard_fire_IRQ1(void);
+                check_keyboard_fire_IRQ1();
+                IO_WriteB(0x02,IO_ReadB(0x02) & (~(1u << /*IRQ*/1u))); // unmask IRQ1
+
                 reg_bh = 0;
             }
             break;
@@ -2731,6 +2807,10 @@ static Bitu INT18_PC98_Handler(void) {
             //           01 = 640x200 upper half
             //           10 = 640x200 lower half
             //           11 = 640x400
+            //   [5:5] = CRT
+            //           0 = color
+            //           1 = monochrome
+            //   [4:4] = Display bank
 
             // FIXME: This is a guess. I have no idea as to actual behavior, yet.
             //        This seems to help with clearing the text layer when games start the graphics.
@@ -2762,7 +2842,7 @@ static Bitu INT18_PC98_Handler(void) {
             }
 
             pc98_gdc_vramop &= ~(1 << VOPBIT_ACCESS);
-            GDC_display_plane = 0;
+            GDC_display_plane = GDC_display_plane_pending = (reg_ch & 0x10) ? 1 : 0;
 
             prev_pc98_mode42 = reg_ch;
 
@@ -3014,6 +3094,61 @@ void PC98_BIOS_FDC_CALL_GEO_UNPACK(unsigned int &fdc_cyl,unsigned int &fdc_head,
     if (fdc_sz > 8) fdc_sz = 8;
 }
 
+/* NTS: FDC calls reset IRQ 0 timer to a specific fixed interval,
+ *      because the real BIOS likely does the same in the act of
+ *      controlling the floppy drive.
+ *
+ *      Resetting the interval is required to prevent Ys II from
+ *      crashing after disk swap (divide by zero/overflow) because
+ *      Ys II reads the timer after INT 1Bh for whatever reason
+ *      and the upper half of the timer byte later affects a divide
+ *      by 3 in the code. */
+
+void PC98_Interval_Timer_Continue(void);
+
+bool enable_fdc_timer_hack = false;
+
+void FDC_WAIT_TIMER_HACK(void) {
+    unsigned int v,pv;
+    unsigned int c=0;
+
+    // Explanation:
+    //
+    // Originally the FDC code here changed the timer interval back to the stock 100hz
+    // normally used in PC-98, to fix Ys II. However that seems to break other booter
+    // games that hook IRQ 0 directly and set the timer ONCE, then access the disk.
+    //
+    // For example, "Angelus" ran WAY too slow with the timer hack because it programs
+    // the timer to a 600hz interval and expects it to stay that way.
+    //
+    // So the new method to satisfy both games is to loop here until the timer
+    // count is below the maximum that would occur if the 100hz tick count were
+    // still in effect, even if the timer interval was reprogrammed.
+    //
+    // NTS: Writing port 0x77 to relatch the timer also seems to break games
+    //
+    // TODO: As a safety against getting stuck, perhaps PIC_FullIndex() should be used
+    //       to break out of the loop if this runs for more than 1 second, since that
+    //       is a sign the timer is in an odd state that will never terminate this loop.
+
+    v = ~0U;
+    c = 10;
+    do {
+        void CALLBACK_Idle(void);
+        CALLBACK_Idle();
+
+        pv = v;
+
+        v  = IO_ReadB(0x71);
+        v |= IO_ReadB(0x71) << 8;
+
+        if (v > pv) {
+            /* if the timer rolled around, we might have missed the narrow window we're watching for */
+            if (--c == 0) break;
+        }
+    } while (v >= 0x60);
+}
+
 void PC98_BIOS_FDC_CALL(unsigned int flags) {
     static unsigned int fdc_cyl[2]={0,0},fdc_head[2]={0,0},fdc_sect[2]={0,0},fdc_sz[2]={0,0}; // FIXME: Rename and move out. Making "static" is a hack here.
     Bit32u img_heads=0,img_cyl=0,img_sect=0,img_ssz=0;
@@ -3045,6 +3180,12 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
         /* TODO: 0x0A = Read ID */
         /* TODO: 0x0D = Format track */
         /* TODO: 0x0E = ?? */
+        case 0x03: /* equipment flags update (?) */
+            // TODO: Update the disk equipment flags in BDA.
+            //       For now, make Alantia happy by returning success.
+            reg_ah = 0x00;
+            CALLBACK_SCF(false);
+            break;
         case 0x00: /* seek */
             /* CL = track */
             if (floppy == NULL) {
@@ -3052,6 +3193,11 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
                 reg_ah = 0x00;
                 /* TODO? Error code? */
                 return;
+            }
+
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
             }
 
             fdc_cyl[drive] = reg_cl;
@@ -3074,6 +3220,11 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
                 return;
             }
             floppy->Get_Geometry(&img_heads, &img_cyl, &img_sect, &img_ssz);
+
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
 
             /* Prevent reading 1.44MB floppyies using 1.2MB read commands and vice versa.
              * FIXME: It seems MS-DOS 5.0 booted from a HDI image has trouble understanding
@@ -3148,6 +3299,11 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
                 return;
             }
             floppy->Get_Geometry(&img_heads, &img_cyl, &img_sect, &img_ssz);
+
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
 
             /* Prevent reading 1.44MB floppyies using 1.2MB read commands and vice versa.
              * FIXME: It seems MS-DOS 5.0 booted from a HDI image has trouble understanding
@@ -3261,6 +3417,11 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
             }
             floppy->Get_Geometry(&img_heads, &img_cyl, &img_sect, &img_ssz);
 
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
+
             /* TODO: Error if write protected */
 
             PC98_BIOS_FDC_CALL_GEO_UNPACK(/*&*/fdc_cyl[drive],/*&*/fdc_head[drive],/*&*/fdc_sect[drive],/*&*/fdc_sz[drive]);
@@ -3312,6 +3473,37 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
                 return;
             }
 
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
+
+            reg_ah = 0x00;
+            CALLBACK_SCF(false);
+            break;
+        case 0x0D: /* format track */
+            if (floppy == NULL) {
+                CALLBACK_SCF(true);
+                reg_ah = 0x00;
+                /* TODO? Error code? */
+                return;
+            }
+
+            PC98_BIOS_FDC_CALL_GEO_UNPACK(/*&*/fdc_cyl[drive],/*&*/fdc_head[drive],/*&*/fdc_sect[drive],/*&*/fdc_sz[drive]);
+            unitsize = PC98_FDC_SZ_TO_BYTES(fdc_sz[drive]);
+
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
+
+            LOG_MSG("WARNING: INT 1Bh FDC format track command not implemented. Formatting is faked, for now on C/H/S/sz %u/%u/%u/%u drive %c.",
+                (unsigned int)fdc_cyl[drive],
+                (unsigned int)fdc_head[drive],
+                (unsigned int)fdc_sect[drive],
+                (unsigned int)unitsize,
+                drive + 'A');
+
             reg_ah = 0x00;
             CALLBACK_SCF(false);
             break;
@@ -3326,6 +3518,11 @@ void PC98_BIOS_FDC_CALL(unsigned int flags) {
             }
 
             floppy->Get_Geometry(&img_heads, &img_cyl, &img_sect, &img_ssz);
+
+            if (enable_fdc_timer_hack) {
+                // Hack for Ys II
+                FDC_WAIT_TIMER_HACK();
+            }
 
             if (reg_ah & 0x10) { // seek to track number in CL
                 if (img_cyl != 0 && reg_cl >= img_cyl) {
@@ -3470,7 +3667,7 @@ void PC98_Interval_Timer_Continue(void) {
     else
         IO_WriteB(0x71,0x60);
 
-    PIC_SetIRQMask(0,false);
+    IO_WriteB(0x02,IO_ReadB(0x02) & (~(1u << /*IRQ*/0u))); // unmask IRQ0
 }
 
 unsigned char pc98_dec2bcd(unsigned char c) {
@@ -3512,6 +3709,28 @@ static Bitu INT1C_PC98_Handler(void) {
     else if (reg_ah == 0x03) { /* continue interval timer */
         PC98_Interval_Timer_Continue();
     }
+    /* TODO: According to the PDF at
+     *
+     * http://hackipedia.org/browse.cgi/Computer/Platform/PC%2c%20NEC%20PC%2d98/Collections/PC%2d9801%20Bible%20%e6%9d%b1%e4%ba%ac%e7%90%86%e7%a7%91%e5%a4%a7%e5%ad%a6EIC%20%281994%29%2epdf
+     *
+     * There are additional functions
+     *
+     *  AH = 04h
+     *  ES:BX = ?
+     *
+     *  ---
+     *
+     *  AH = 05h
+     *  ES:BX = ?
+     *
+     *  ---
+     *
+     *  AH = 06h
+     *  CX = ? (1-FFFFh)
+     *  DX = ? (20h-8000h Hz)
+     *
+     * If any PC-98 games or applications rely on this, let me know. Adding a case for them is easy enough if anyone is interested. --J.C.
+     */
     else {
         LOG_MSG("PC-98 INT 1Ch unknown call AX=%04X BX=%04X CX=%04X DX=%04X SI=%04X DI=%04X DS=%04X ES=%04X",
                 reg_ax,
@@ -3629,8 +3848,26 @@ static Bitu INTDC_PC98_Handler(void) {
 
     switch (reg_cl) {
         case 0x10:
-            if (reg_ah == 0x00) { /* CL=0x10 AL=0x00 DL=char write char to CON */
+            if (reg_ah == 0x00) { /* CL=0x10 AH=0x00 DL=char write char to CON */
                 PC98_INTDC_WriteChar(reg_dl);
+                goto done;
+            }
+            else if (reg_ah == 0x01) { /* CL=0x10 AH=0x01 DS:DX write string to CON */
+                /* According to the example at http://tepe.tec.fukuoka-u.ac.jp/HP98/studfile/grth/gt10.pdf
+                 * the string ends in '$' just like the main DOS string output function. */
+                Bit16u ofs = reg_dx;
+                do {
+                    unsigned char c = real_readb(SegValue(ds),ofs++);
+                    if (c == '$') break;
+                    PC98_INTDC_WriteChar(c);
+                } while (1);
+                goto done;
+            }
+            else if (reg_ah == 0x02) { /* CL=0x10 AH=0x02 DL=attribute set console output attribute */
+                /* Ref: https://nas.jmc/jmcs/docs/browse/Computer/Platform/PC%2c%20NEC%20PC%2d98/Collections/Undocumented%209801%2c%209821%20Volume%202%20%28webtech.co.jp%29%20English%20translation/memdos%2eenglish%2dgoogle%2dtranslate%2etxt
+                 *
+                 * DL is the attribute byte (in the format written directly to video RAM, not the ANSI code) */
+                mem_writeb(0x71D,reg_dl);   /* 60:11D */
                 goto done;
             }
             goto unknown;
@@ -3665,6 +3902,25 @@ static Bitu INTF2_PC98_Handler(void) {
         reg_di,
         SegValue(ds),
         SegValue(es));
+
+    return CBRET_NONE;
+}
+
+static Bitu PC98_BIOS_LIO(void) {
+    /* on entry, AL (from our BIOS code) is set to the call number that lead here */
+    LOG_MSG("PC-98 BIOS LIO graphics call 0x%02x with AX=%04X BX=%04X CX=%04X DX=%04X SI=%04X DI=%04X DS=%04X ES=%04X",
+        reg_al,
+        reg_ax,
+        reg_bx,
+        reg_cx,
+        reg_dx,
+        reg_si,
+        reg_di,
+        SegValue(ds),
+        SegValue(es));
+
+    // from Yksoft1's patch
+    reg_ah = 0;
 
     return CBRET_NONE;
 }
@@ -5230,6 +5486,7 @@ static Bitu adapter_scan_start;
 static CALLBACK_HandlerObject int4b_callback;
 static CALLBACK_HandlerObject callback[20]; /* <- fixme: this is stupid. just declare one per interrupt. */
 static CALLBACK_HandlerObject cb_bios_post;
+static CALLBACK_HandlerObject callback_pc98_lio;
 
 Bitu call_pnp_r = ~0UL;
 Bitu call_pnp_rp = 0;
@@ -5315,6 +5572,32 @@ void gdc_16color_enable_update_vars(void) {
     }
 }
 
+/* NTS: Remember the 8259 is non-sentient, and the term "slave" is used in a computer programming context */
+static Bitu Default_IRQ_Handler_Cooperative_Slave_Pic(void) {
+    /* PC-98 style IRQ 8-15 handling.
+     *
+     * This mimics the recommended procedure [https://www.webtech.co.jp/company/doc/undocumented_mem/io_pic.txt]
+     *
+     *  mov al,20h      ;Send EOI to SLAVE
+     *  out 0008h,al
+     *  jmp $+2         ;I/O WAIT
+     *  mov al,0Bh      ;ISR read mode set(slave)
+     *  out 0008h,al
+     *  jmp $+2         ;I/O WAIT
+     *  in  al,0008h    ;ISR read(slave)
+     *  cmp al,00h      ;slave pic in-service ?
+     *  jne EoiEnd
+     *  mov al,20h      ;Send EOI to MASTER
+     *  out 0000h,al
+     */
+    IO_WriteB(IS_PC98_ARCH ? 0x08 : 0xA0,0x20); // send EOI to slave
+    IO_WriteB(IS_PC98_ARCH ? 0x08 : 0xA0,0x0B); // ISR read mode set
+    if (IO_ReadB(IS_PC98_ARCH ? 0x08 : 0xA0) == 0) // if slave pic in service..
+        IO_WriteB(IS_PC98_ARCH ? 0x00 : 0x20,0x20); // then EOI the master
+
+    return CBRET_NONE;
+}
+
 class BIOS:public Module_base{
 private:
     static Bitu cb_bios_post__func(void) {
@@ -5391,6 +5674,27 @@ private:
              * bit[0:0] = 98 NOTE coprocessor function available */
             mem_writeb(0x45C,(enable_pc98_egc ? 0x40/*Extended Graphics*/ : 0x00));
 
+            /* Keyboard type */
+            /* bit[7:7] = ?
+             * bit[6:6] = keyboard type bit 1
+             * bit[5:5] = EMS page frame at B0000h 1=present 0=none
+             * bit[4:4] = EMS page frame at B0000h 1=page frame 0=G-VRAM
+             * bit[3:3] = keyboard type bit 0
+             * bit[2:2] = High resolution memory window available
+             * bit[1:1] = ?
+             * bit[0:0] = ?
+             *
+             * keyboard bits[1:0] from bit 6 as bit 1 and bit 3 as bit 0 combined:
+             * 11 = new keyboard (NUM key, DIP switch 2-7 OFF)
+             * 10 = new keyboard (without NUM key)
+             * 01 = new keyboard (NUM key, DIP switch 2-7 ON)
+             * 00 = old keyboard
+             *
+             * The old keyboard is documented not to support software control of CAPS and KANA states */
+            /* TODO: Make this a dosbox.conf option. Default is new keyboard without NUM key because that is what
+             *       keyboard emulation currently acts like anyway. */
+            mem_writeb(0x481,0x40/*bit 6=1 bit 3=0 new keyboard without NUM key*/);
+
             /* BIOS flags */
             /* bit[7:7] = Startup            1=hot start    0=cold start
              * bit[6:6] = BASIC type         ??
@@ -5421,6 +5725,10 @@ private:
              *                             100=640KB      101=768KB
              *
              * Ref: http://hackipedia.org/browse/Computer/Platform/PC,%20NEC%20PC-98/Collections/Undocumented%209801,%209821%20Volume%202%20(webtech.co.jp)/memsys.txt */
+            /* NTS: High resolution means 640x400, not the 1120x750 mode known as super high resolution mode.
+             *      DOSBox-X does not yet emulate super high resolution nor does it emulate the 15khz 200-line "standard" mode.
+             *      ref: https://github.com/joncampbell123/dosbox-x/issues/906#issuecomment-434513930
+             *      ref: https://jisho.org/search?utf8=%E2%9C%93&keyword=%E8%B6%85 */
             mem_writeb(0x501,0x20 | memsize_real_code);
 
             /* keyboard buffer */
@@ -5432,7 +5740,7 @@ private:
 
             /* Text screen status.
              * Note that most of the bits are used verbatim in INT 18h AH=0Ah/AH=0Bh */
-            /* bit[7:7] = High resolution display                   1=yes           0=no (standard)
+            /* bit[7:7] = High resolution display                   1=yes           0=no (standard)         NOT super high res
              * bit[6:6] = vsync                                     1=VSYNC wait    0=end of vsync handling
              * bit[5:5] = unused
              * bit[4:4] = Number of lines                           1=30 lines      0=20/25 lines
@@ -5440,21 +5748,21 @@ private:
              * bit[2:2] = Attribute mode (how to handle bit 4)      1=Simp. graphic 0=Vertical line
              * bit[1:1] = Number of columns                         1=40 cols       0=80 cols
              * bit[0:0] = Number of lines                           1=20/30 lines   0=25 lines */
-            mem_writeb(0x53C,0x00);
+            mem_writeb(0x53C,(true/*TODO*/ ? 0x80/*high res*/ : 0x00/*standard*/));
 
             /* BIOS raster location */
             mem_writew(0x54A,0x1900);
 
             /* BIOS flags */
             /* bit[7:7] = Graphics display state                    1=Visible       0=Blanked (hidden)
-             * bit[6:6] = CRT type                                  1=high res      0=standard
+             * bit[6:6] = CRT type                                  1=high res      0=standard              NOT super high res
              * bit[5:5] = Horizontal sync rate                      1=31.47KHz      0=24.83KHz
              * bit[4:4] = CRT line mode                             1=480-line      0=400-line
              * bit[3:3] = Number of user-defined characters         1=188+          0=63
              * bit[2:2] = Extended graphics RAM (for 16-color)      1=present       0=absent
              * bit[1:1] = Graphics Charger is present               1=present       0=absent
              * bit[0:0] = DIP switch 1-8 at startup                 1=ON            0=OFF (?) */
-            mem_writeb(0x54C,(enable_pc98_grcg ? 0x02 : 0x00) | (enable_pc98_16color ? 0x04 : 0x00) | (pc98_31khz_mode ? 0x20/*31khz*/ : 0x00/*24khz*/)); // PRXCRT, 16-color G-VRAM, GRCG
+            mem_writeb(0x54C,(true/*TODO*/ ? 0x40/*high res*/ : 0x00/*standard*/) | (enable_pc98_grcg ? 0x02 : 0x00) | (enable_pc98_16color ? 0x04 : 0x00) | (pc98_31khz_mode ? 0x20/*31khz*/ : 0x00/*24khz*/) | (enable_pc98_188usermod ? 0x08 : 0x00)); // PRXCRT, 16-color G-VRAM, GRCG
 
             /* BIOS flags */
             /* bit[7:7] = 256-color board present (PC-H98)
@@ -5587,8 +5895,8 @@ private:
             callback[18].Install(&INTGEN_PC98_Handler,CB_IRET,"Int stub ???");
             for (unsigned int i=0x00;i < 0x100;i++) RealSetVec(i,callback[18].Get_RealPointer());
 
-            /* need handler at INT 07h */
-            real_writed(0,0x07*4,BIOS_DEFAULT_HANDLER_LOCATION);
+            for (unsigned int i=0x00;i < 0x08;i++)
+                real_writed(0,i*4,CALLBACK_RealPointer(call_default));
         }
         else {
             /* Clear the vector table */
@@ -5607,10 +5915,20 @@ private:
                 RealSetVec(ct,BIOS_DEFAULT_IRQ07_DEF_LOCATION);
         }
 
-        if (IS_PC98_ARCH) {
+        if (unhandled_irq_method == UNHANDLED_IRQ_COOPERATIVE_2ND) {
+            // PC-98 style: Master PIC ack with 0x20 for IRQ 0-7.
+            //              For the slave PIC, ack with 0x20 on the slave, then only ack the master (cascade interrupt)
+            //              if the ISR register on the slave indicates none are in service.
+            CALLBACK_Setup(call_irq07default,NULL,CB_IRET_EOI_PIC1,Real2Phys(BIOS_DEFAULT_IRQ07_DEF_LOCATION),"bios irq 0-7 default handler");
+            CALLBACK_Setup(call_irq815default,Default_IRQ_Handler_Cooperative_Slave_Pic,CB_IRET,Real2Phys(BIOS_DEFAULT_IRQ815_DEF_LOCATION),"bios irq 8-15 default handler");
+        }
+        else {
+            // IBM PC style: Master PIC ack with 0x20, slave PIC ack with 0x20, no checking
             CALLBACK_Setup(call_irq07default,NULL,CB_IRET_EOI_PIC1,Real2Phys(BIOS_DEFAULT_IRQ07_DEF_LOCATION),"bios irq 0-7 default handler");
             CALLBACK_Setup(call_irq815default,NULL,CB_IRET_EOI_PIC2,Real2Phys(BIOS_DEFAULT_IRQ815_DEF_LOCATION),"bios irq 8-15 default handler");
+        }
 
+        if (IS_PC98_ARCH) {
             BIOS_UnsetupKeyboard();
             BIOS_UnsetupDisks();
 
@@ -5645,6 +5963,8 @@ private:
 
             void INT10_EnterPC98(Section *sec);
             INT10_EnterPC98(NULL); /* INT 10h */
+
+            callback_pc98_lio.Uninstall();
 
             callback[1].Uninstall(); /* INT 11h */
             callback[2].Uninstall(); /* INT 12h */
@@ -5727,8 +6047,22 @@ private:
             callback[5].Set_RealVec(0x1C,/*reinstall*/true);
 
             /* INT 1Dh *STUB* */
+            /* Place it in the PC-98 int vector area at FD80:0000 to satisfy some DOS games
+             * that detect PC-98 from the segment value of the vector (issue #927).
+             * Note that on real hardware (PC-9821) INT 1Dh appears to be a stub that IRETs immediately. */
             callback[6].Install(&INT1D_PC98_Handler,CB_IRET,"Int 1D ???");
-            callback[6].Set_RealVec(0x1D,/*reinstall*/true);
+//            callback[6].Set_RealVec(0x1D,/*reinstall*/true);
+            {
+                Bitu ofs = 0xFD813; /* 0xFD80:0013 try not to look like a phony address */
+                unsigned int vec = 0x1D;
+                Bit32u target = callback[6].Get_RealPointer();
+
+                phys_writeb(ofs+0,0xEA);        // JMP FAR <callback>
+                phys_writed(ofs+1,target);
+
+                phys_writew((vec*4)+0,(ofs-0xFD800));
+                phys_writew((vec*4)+2,0xFD80);
+            }
 
             /* INT 1Eh *STUB* */
             callback[7].Install(&INT1E_PC98_Handler,CB_IRET,"Int 1E ???");
@@ -5753,6 +6087,46 @@ private:
             // default handler for IRQ 8-15
             for (Bit16u ct=0;ct < 8;ct++)
                 RealSetVec(ct+(IS_PC98_ARCH ? 0x10 : 0x70),BIOS_DEFAULT_IRQ815_DEF_LOCATION);
+
+            // LIO graphics interface (number of entry points, unknown WORD value and offset into the segment).
+            {
+                callback_pc98_lio.Install(&PC98_BIOS_LIO,CB_IRET,"LIO graphics library");
+
+                Bitu ofs = 0xF990u << 4u; // F990:0000...
+                unsigned int entrypoints = 0x11;
+                Bitu final_addr = callback_pc98_lio.Get_RealPointer();
+
+                /* NTS: Based on GAME/MAZE 999 behavior, these numbers are interrupt vector numbers.
+                 *      The entry point marked 0xA0 is copied by the game to interrupt vector A0 and
+                 *      then called with INT A0h even though it blindly assumes the numbers are
+                 *      sequential from 0xA0-0xAF. */
+                unsigned char entrypoint_indexes[0x11] = {
+                    0xA0,   0xA1,   0xA2,   0xA3,       // +0x00
+                    0xA4,   0xA5,   0xA6,   0xA7,       // +0x04
+                    0xA8,   0xA9,   0xAA,   0xAB,       // +0x08
+                    0xAC,   0xAD,   0xAE,   0xAF,       // +0x0C
+                    0xCE                                // +0x10
+                };
+
+                assert(((entrypoints * 4) + 4) <= 0x50);
+                assert((50 + (entrypoints * 7)) <= 0x100); // a 256-byte region is set aside for this!
+
+                phys_writed(ofs+0,entrypoints);
+                for (unsigned int ent=0;ent < entrypoints;ent++) {
+                    /* each entry point is "MOV AL,<entrypoint> ; JMP FAR <callback>" */
+                    /* Yksoft1's patch suggests a segment offset of 0x50 which I'm OK with */
+                    unsigned int ins_ofs = ofs + 0x50 + (ent * 7);
+
+                    phys_writew(ofs+4+(ent*4)+0,entrypoint_indexes[ent]);
+                    phys_writew(ofs+4+(ent*4)+2,ins_ofs - ofs);
+
+                    phys_writeb(ins_ofs+0,0xB0);                        // MOV AL,(entrypoint index)
+                    phys_writeb(ins_ofs+1,entrypoint_indexes[ent]);
+                    phys_writeb(ins_ofs+2,0xEA);                        // JMP FAR <callback>
+                    phys_writed(ins_ofs+3,final_addr);
+                    // total:   ins_ofs+7
+                }
+            }
         }
 
         // setup a few interrupt handlers that point to bios IRETs by default
@@ -5760,7 +6134,7 @@ private:
             real_writed(0,0x0e*4,CALLBACK_RealPointer(call_default2));  //design your own railroad
 
         if (IS_PC98_ARCH) {
-            real_writew(0,0x58A,0xFFFFU); // countdown timer value
+            real_writew(0,0x58A,0x0000U); // countdown timer value
             PIC_SetIRQMask(0,true); /* PC-98 keeps the timer off unless INT 1Ch is called to set a timer interval */
         }
 
@@ -6019,7 +6393,7 @@ private:
             LOG(LOG_MISC,LOG_DEBUG)("Registered ISA PnP read port at 0x%03x",ISA_PNP_WPORT);
         }
 
-        if (!IS_PC98_ARCH && enable_integration_device) {
+        if (enable_integration_device) {
             /* integration device callout */
             if (dosbox_int_iocallout == IO_Callout_t_none)
                 dosbox_int_iocallout = IO_AllocateCallout(IO_TYPE_MB);
@@ -6034,7 +6408,7 @@ private:
             }
 
             /* DOSBox integration device */
-            if (isapnpigdevice == NULL && enable_integration_device_pnp) {
+            if (!IS_PC98_ARCH && isapnpigdevice == NULL && enable_integration_device_pnp) {
                 isapnpigdevice = new ISAPnPIntegrationDevice;
                 ISA_PNP_devreg(isapnpigdevice);
             }
@@ -6245,6 +6619,13 @@ private:
 
             void BIOS_Post_register_FDC();
             BIOS_Post_register_FDC();
+        }
+
+        if (IS_PC98_ARCH) {
+            /* initialize IRQ0 timer to default tick interval.
+             * PC-98 does not pre-initialize timer 0 of the PIT to 0xFFFF the way IBM PC/XT/AT do */
+            PC98_Interval_Timer_Continue();
+            PIC_SetIRQMask(0,true); /* PC-98 keeps the timer off unless INT 1Ch is called to set a timer interval */
         }
 
         CPU_STI();
@@ -6564,6 +6945,7 @@ private:
             BIOS_Int10RightJustifiedPrint(x,y,"ISA Plug & Play BIOS active\n");
         }
 
+#if !defined(C_EMSCRIPTEN)
         BIOS_Int10RightJustifiedPrint(x,y,"\nHit SPACEBAR to pause at this screen\n");
         y--; /* next message should overprint */
         if (machine != MCH_PC98) {
@@ -6578,6 +6960,7 @@ private:
             reg_edx = (((unsigned int)y * 80u) + (unsigned int)x) * 2u; // byte position
             CALLBACK_RunRealInt(0x18);
         }
+#endif
 
         // TODO: Then at this screen, we can print messages demonstrating the detection of
         //       IDE devices, floppy, ISA PnP initialization, anything of importance.
@@ -6585,6 +6968,14 @@ private:
         //       a "BIOS setup" screen where all DOSBox configuration options can be
         //       modified, with the same look and feel of an old BIOS.
 
+#if C_EMSCRIPTEN
+        Bit32u lasttick=GetTicks();
+        while ((GetTicks()-lasttick)<1000) {
+            void CALLBACK_Idle(void);
+            CALLBACK_Idle();
+            emscripten_sleep_with_yield(100);
+        }
+#else
         if (!control->opt_fastbioslogo) {
             bool wait_for_user = false;
             Bit32u lasttick=GetTicks();
@@ -6631,6 +7022,7 @@ private:
                     break;
             }
         }
+#endif
 
         if (machine == MCH_PC98) {
             reg_eax = 0x4100;   // hide the graphics layer (PC-98)
@@ -6744,6 +7136,24 @@ public:
             // FIXME: Erm, well this couldv'e been named better. It refers to the amount of conventional memory
             //        made available to the operating system below 1MB, which is usually DOS.
             dos_conventional_limit = (unsigned int)section->Get_int("dos mem limit");
+
+            // for PC-98: When accessing the floppy through INT 1Bh, when enabled, run through a waiting loop to make sure
+            //     the timer count is not too high on exit (Ys II)
+            enable_fdc_timer_hack = section->Get_bool("pc-98 int 1b fdc timer wait");
+
+            {
+                std::string s = section->Get_string("unhandled irq handler");
+
+                if (s == "simple")
+                    unhandled_irq_method = UNHANDLED_IRQ_SIMPLE;
+                else if (s == "cooperative_2nd")
+                    unhandled_irq_method = UNHANDLED_IRQ_COOPERATIVE_2ND;
+                // pick default
+                else if (IS_PC98_ARCH)
+                    unhandled_irq_method = UNHANDLED_IRQ_COOPERATIVE_2ND;
+                else
+                    unhandled_irq_method = UNHANDLED_IRQ_SIMPLE;
+            }
         }
 
         if (bochs_port_e9) {
@@ -6882,11 +7292,9 @@ public:
 
         /* Irq 2-7 */
         call_irq07default=CALLBACK_Allocate();
-        CALLBACK_Setup(call_irq07default,NULL,CB_IRET_EOI_PIC1,Real2Phys(BIOS_DEFAULT_IRQ07_DEF_LOCATION),"bios irq 0-7 default handler");
 
         /* Irq 8-15 */
         call_irq815default=CALLBACK_Allocate();
-        CALLBACK_Setup(call_irq815default,NULL,CB_IRET_EOI_PIC2,Real2Phys(BIOS_DEFAULT_IRQ815_DEF_LOCATION),"bios irq 8-15 default handler");
 
         /* BIOS boot stages */
         cb_bios_post.Install(&cb_bios_post__func,CB_RETF,"BIOS POST");
@@ -7168,6 +7576,11 @@ void BIOS_OnResetComplete(Section *x) {
     (void)x;//UNUSED
     INT10_OnResetComplete();
 
+    if (IS_PC98_ARCH) {
+        void PC98_BIOS_Bank_Switch_Reset(void);
+        PC98_BIOS_Bank_Switch_Reset();
+    }
+
     if (biosConfigSeg != 0u) {
         ROMBIOS_FreeMemory((Bitu)(biosConfigSeg << 4u)); /* remember it was alloc'd paragraph aligned, then saved >> 4 */
         biosConfigSeg = 0u;
@@ -7322,6 +7735,23 @@ void ROMBIOS_Init() {
          * allocate this NOW before other things get in the way */
         if (ROMBIOS_GetMemory(128*8,"BIOS 8x8 font (first 128 chars)",1,0xFFA6E) == 0) {
             LOG_MSG("WARNING: Was not able to mark off 0xFFA6E off-limits for 8x8 font");
+        }
+    }
+
+    /* PC-98 BIOS vectors appear to reside at segment 0xFD80. This is so common some games
+     * use it (through INT 1Dh) to detect whether they are running on PC-98 or not (issue #927).
+     *
+     * Note that INT 1Dh is one of the few BIOS interrupts not intercepted by PC-98 MS-DOS */
+    if (IS_PC98_ARCH) {
+        if (ROMBIOS_GetMemory(128,"PC-98 INT vector stub segment 0xFD80",1,0xFD800) == 0) {
+            LOG_MSG("WARNING: Was not able to mark off 0xFD800 off-limits for PC-98 int vector stubs");
+        }
+    }
+
+    /* PC-98 BIOSes have a LIO interface at segment F990 with graphic subroutines for Microsoft BASIC */
+    if (IS_PC98_ARCH) {
+        if (ROMBIOS_GetMemory(256,"PC-98 LIO graphic ROM BIOS library",1,0xF9900) == 0) {
+            LOG_MSG("WARNING: Was not able to mark off 0xF9900 off-limits for PC-98 LIO graphics library");
         }
     }
 

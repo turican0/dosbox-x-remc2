@@ -17,6 +17,8 @@
  */
 
 
+#include "engine/engine.h"
+
 	CASE_B(0x00)												/* ADD Eb,Gb */
 		RMEbGb(ADDB);break;
 	CASE_W(0x01)												/* ADD Ew,Gw */
@@ -1058,6 +1060,7 @@
             //tom call
             int retengine = engine_call(true, Segs.val[cs], reg_eip, here);
             //tom call
+
 
 			continue;
 		}

@@ -33,6 +33,7 @@ int hack_lfb_yadjust = 0;
 extern int vesa_mode_width_cap;
 extern int vesa_mode_height_cap;
 extern bool allow_vesa_lowres_modes;
+extern bool allow_vesa_4bpp_packed;
 extern bool vesa12_modes_32bpp;
 extern bool allow_vesa_32bpp;
 extern bool allow_vesa_24bpp;
@@ -124,11 +125,13 @@ void VESA_OnReset_Clear_Callbacks(void) {
     }
 }
 
+extern bool vesa_bios_modelist_in_info;
+
 Bit8u VESA_GetSVGAInformation(Bit16u seg,Bit16u off) {
 	/* Fill 256 byte buffer with VESA information */
 	PhysPt buffer=PhysMake(seg,off);
 	Bitu i;
-	bool vbe2=false;Bit16u vbe2_pos=256+off;
+	bool vbe2=false;Bit16u vbe2_pos;
 	Bitu id=mem_readd(buffer);
 	if (((id==0x56424532)||(id==0x32454256)) && (!int10.vesa_oldvbe)) vbe2=true;
 	if (vbe2) {
@@ -141,6 +144,8 @@ Bit8u VESA_GetSVGAInformation(Bit16u seg,Bit16u off) {
 	if (!int10.vesa_oldvbe) mem_writew(buffer+0x04,0x200);	//Vesa version 2.0
 	else mem_writew(buffer+0x04,0x102);						//Vesa version 1.2
 	if (vbe2) {
+        vbe2_pos=256+off;
+
 		mem_writed(buffer+0x06,RealMake(seg,vbe2_pos));
 		for (i=0;i<sizeof(string_oem);i++) real_writeb(seg,vbe2_pos++,(Bit8u)string_oem[i]);
 		mem_writew(buffer+0x14,0x200);					//VBE 2 software revision
@@ -150,11 +155,41 @@ Bit8u VESA_GetSVGAInformation(Bit16u seg,Bit16u off) {
 		for (i=0;i<sizeof(string_productname);i++) real_writeb(seg,vbe2_pos++,(Bit8u)string_productname[i]);
 		mem_writed(buffer+0x1e,RealMake(seg,vbe2_pos));
 		for (i=0;i<sizeof(string_productrev);i++) real_writeb(seg,vbe2_pos++,(Bit8u)string_productrev[i]);
-	} else {
-		mem_writed(buffer+0x06,int10.rom.oemstring);	//Oemstring
+    } else {
+        vbe2_pos=0x20+off;
+
+        mem_writed(buffer+0x06,int10.rom.oemstring);	//Oemstring
 	}
+
+    if (vesa_bios_modelist_in_info) {
+        /* put the modelist into the VBE struct itself, as modern BIOSes like to do.
+         * NOTICE: This limits the modelist to what is able to fit! Extended modes may not fit, which is why the option is OFF by default. */
+        uint16_t modesg = int10.rom.vesa_modes >> 16;
+        uint16_t modoff = int10.rom.vesa_modes & 0xFFFF;
+        uint16_t m;
+
+        mem_writed(buffer+0x0e,RealMake(seg,vbe2_pos));	//VESA Mode list
+
+        do {
+            if (vbe2) {
+                if (vbe2_pos >= (509+off)) break;
+            }
+            else {
+                if (vbe2_pos >= (253+off)) break;
+            }
+            m = real_readw(modesg,modoff);
+            if (m == 0xFFFF) break;
+            real_writew(seg,vbe2_pos,m);
+            vbe2_pos += 2;
+            modoff += 2;
+        } while (1);
+        real_writew(seg,vbe2_pos,0xFFFF);
+    }
+    else {
+        mem_writed(buffer+0x0e,int10.rom.vesa_modes);	//VESA Mode list
+    }
+
 	mem_writed(buffer+0x0a,0x0);					//Capabilities and flags
-	mem_writed(buffer+0x0e,int10.rom.vesa_modes);	//VESA Mode list
 	mem_writew(buffer+0x12,(Bit16u)(vga.mem.memsize/(64*1024))); // memory size in 64kb blocks
 	return VESA_SUCCESS;
 }
@@ -206,12 +241,22 @@ foundit:
 		(ModeList_VGA[i].swidth >= 640 && ModeList_VGA[i].sheight >= 400);
 
 	switch (mblock->type) {
+	case M_PACKED4:
+		if (!allow_vesa_4bpp_packed) return VESA_FAIL;//TODO: New option to disable
+		pageSize = mblock->sheight * mblock->swidth/2;
+		var_write(&minfo.BytesPerScanLine,(((mblock->swidth+15U)/8U)&(~1U))*4); /* NTS: 4bpp requires even value due to VGA registers, round up */
+		var_write(&minfo.NumberOfPlanes,0x1);
+		var_write(&minfo.BitsPerPixel,4);
+		var_write(&minfo.MemoryModel,4);	//packed pixel
+		modeAttributes = 0x1b;	// Color, graphics
+		if (!int10.vesa_nolfb) modeAttributes |= 0x80;	// linear framebuffer
+		break;
 	case M_LIN4:
 		if (!allow_vesa_4bpp) return VESA_FAIL;
 		pageSize = mblock->sheight * mblock->swidth/2;
 		var_write(&minfo.BytesPerScanLine,((mblock->swidth+15U)/8U)&(~1U)); /* NTS: 4bpp requires even value due to VGA registers, round up */
 		var_write(&minfo.NumberOfPlanes,0x4);
-		var_write(&minfo.BitsPerPixel,4);
+		var_write(&minfo.BitsPerPixel,4);//FIXME: Shouldn't this say 4 planes, 1 bit per pixel??
 		var_write(&minfo.MemoryModel,3);	//ega planar mode
 		modeAttributes = 0x1b;	// Color, graphics, no linear buffer
 		break;
@@ -435,6 +480,7 @@ Bit8u VESA_ScanLineLength(Bit8u subcall,Bit16u val, Bit16u & bytes,Bit16u & pixe
 		bytes_per_offset = 4;   // 2 characters + 2 attributes
 		break;
 	case M_LIN4:
+	case M_PACKED4:
 		pixels_per_offset = 16;
 		break;
 	case M_LIN8:
@@ -511,6 +557,7 @@ Bit8u VESA_SetDisplayStart(Bit16u x,Bit16u y) {
 	switch (CurMode->type) {
 	case M_TEXT:
 	case M_LIN4:
+	case M_PACKED4:
 		pixels_per_offset = 16;
 		break;
 	case M_LIN8:
@@ -560,6 +607,7 @@ Bit8u VESA_GetDisplayStart(Bit16u & x,Bit16u & y) {
 		pixels_per_offset = 16;
 		break;
 	case M_LIN4:
+	case M_PACKED4:
 		pixels_per_offset = 16;
 		break;
 	case M_LIN8:
@@ -663,8 +711,9 @@ Bitu INT10_WriteVESAModeList(Bitu max_modes) {
                         case M_LIN16:	canuse_mode=allow_vesa_16bpp && allow_res; break;
                         case M_LIN15:	canuse_mode=allow_vesa_15bpp && allow_res; break;
                         case M_LIN8:	canuse_mode=allow_vesa_8bpp && allow_res; break;
-                        case M_LIN4:	canuse_mode=allow_vesa_4bpp; break;
-                        case M_TEXT:	canuse_mode=allow_vesa_tty; break;
+                        case M_LIN4:	canuse_mode=allow_vesa_4bpp && allow_res; break;
+                        case M_PACKED4:	canuse_mode=allow_vesa_4bpp_packed && allow_res; break;
+                        case M_TEXT:	canuse_mode=allow_vesa_tty && allow_res; break;
                         default:	break;
                     }
                 }

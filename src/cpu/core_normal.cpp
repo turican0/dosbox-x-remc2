@@ -154,6 +154,9 @@ static INLINE Bit32u Fetchd() {
 #define EALookupTable (core.ea_table)
 
 Bits CPU_Core_Normal_Run(void) {
+    if (CPU_Cycles <= 0)
+	    return CBRET_NONE;
+
 	while (CPU_Cycles-->0) {
 		LOADIP;
 
@@ -196,6 +199,7 @@ Bits CPU_Core_Normal_Run(void) {
                 {
                     DEBUG_EnableDebugger();
                 }*/
+
 
 		core.opcode_index=cpu.code.big*0x200u;
 		core.prefixes=cpu.code.big;

@@ -20,7 +20,7 @@
 #define DOSBOX_REGS_H
 
 #include <iostream>
-#include "engine/engine.h"
+
 #ifndef DOSBOX_MEM_H
 #include "mem.h"
 #endif

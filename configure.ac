@@ -1,5 +1,5 @@
 dnl Init.
-AC_INIT(dosbox-x,0.82.9,[https://github.com/joncampbell123/dosbox-x/issues],[],[http://dosbox-x.software])
+AC_INIT(dosbox-x,0.82.12,[https://github.com/joncampbell123/dosbox-x/issues],[],[http://dosbox-x.software])
 AC_PREREQ(2.60)
 AC_CONFIG_SRCDIR(README)
 
@@ -156,6 +156,10 @@ dnl This is how the build script can specify a HX DOS extender target
 AH_TEMPLATE(C_HX_DOS,[Define to 1 to target HX DOS])
 AC_ARG_ENABLE(hx-dos,AC_HELP_STRING([--enable-hx-dos],[Enable HX target]),enable_hx=yes)
 
+dnl Let me know if you're targeting Emscripten
+AH_TEMPLATE(C_EMSCRIPTEN,[Define to 1 to target Emscripten])
+AC_ARG_ENABLE(emscripten,AC_HELP_STRING([--enable-emscripten],[Enable Emscripten target]),enable_emscripten=$enableval,enable_emscripten=no)
+
 dnl Optimize for speed by default
 AC_ARG_ENABLE(optimize,AC_HELP_STRING([--disable-optimize],[Don't enable compiler optimizations]))
 
@@ -164,8 +168,17 @@ CFLAGS=["`echo $CFLAGS' ' | sed -e 's/-O[^ ]* //g'`"]
 CXXFLAGS=["`echo $CXXFLAGS' ' | sed -e 's/-O[^ ]* //g'`"]
 
 if test x$enable_optimize != xno; then
-	CFLAGS="$CFLAGS -O2"
-	CXXFLAGS="$CXXFLAGS -O2"
+    if test x$enable_emscripten == xyes; then
+	    CFLAGS="$CFLAGS -Os"
+	    CXXFLAGS="$CXXFLAGS -Os"
+    else
+	    CFLAGS="$CFLAGS -O2"
+	    CXXFLAGS="$CXXFLAGS -O2"
+    fi
+fi
+
+if test x$enable_emscripten == xyes; then
+	AC_DEFINE(C_EMSCRIPTEN,1,[Targeting Emscripten])
 fi
 
 dnl Some stuff for the icon.
@@ -274,13 +287,17 @@ case "$host" in
        ;;
 esac
 
-dnl Some default CPU flags
-case "$host_cpu" in
-  x86_64 | amd64)
-    # SSE is part of the x86_64 ABI
-    CXXFLAGS="$CXXFLAGS -msse"
-    ;;
-esac
+if test x$enable_emscripten == xyes; then
+    CXXFLAGS="$CXXFLAGS"
+else
+    dnl Some default CPU flags
+    case "$host_cpu" in
+        x86_64 | amd64)
+        # SSE is part of the x86_64 ABI
+        CXXFLAGS="$CXXFLAGS -msse"
+        ;;
+    esac
+fi
 
 dnl Some needed libaries for OS2
 dnl perharps join this with the other target depended checks. move them upwards
@@ -331,6 +348,7 @@ esac
        AM_CONDITIONAL(HAVE_WINDRES, test "x$WINDRES" != "x:")
        AC_SUBST(WINDRES)
 
+if test x$enable_emscripten != xyes; then
 dnl Some target detection and actions for them
 case "$host" in
     *-*-cygwin* | *-*-mingw32*)
@@ -358,6 +376,10 @@ case "$host" in
        dnl FEATURE: Whether to support direct parallel port passthrough
        AC_DEFINE(C_DIRECTLPT, 1, [ Define to 1 if you want parallel passthrough support (Win32, Linux).])
        ;;
+    *-*-haiku*)
+       AC_DEFINE(HAIKU, 1, [Compiling on Haiku])
+       AC_DEFINE(C_DIRECTSERIAL, 1, [ Define to 1 if you want serial passthrough support (Win32, Posix and OS/2).])
+       ;;
     *-*-freebsd* | *-*-dragonfly* | *-*-netbsd* | *-*-openbsd*)
        dnl Disabled directserial for now. It doesn't do anything without
        dnl specifying an extra ifdef in directserial_posix.*
@@ -370,8 +392,10 @@ case "$host" in
        AC_DEFINE(OS2, 1, [Compiling on OS/2 EMX])
        ;;
 esac
+fi
 
 AM_CONDITIONAL(MACOSX, test x"$macosx" == x"1")
+AM_CONDITIONAL(EMSCRIPTEN, test x"$enable_emscripten" == x"yes")
 
 dnl The target cpu checks for dynamic cores
 AH_TEMPLATE(C_TARGETCPU,[The type of cpu this target has])
@@ -475,9 +499,11 @@ dnl LIBRARY TEST: SDLnet 1.x
 AC_CHECK_HEADER(SDL_net.h,have_sdl_net_h=yes,)
 AC_CHECK_LIB(SDL_net, SDLNet_Init, have_sdl_net_lib=yes, , )
 
-dnl LIBRARY TEST: X11 Xlib support
-AC_CHECK_LIB(X11, main, have_x11_lib=yes, have_x11_lib=no, )
-AC_CHECK_HEADER(X11/XKBlib.h, have_x11_h=yes, have_x11_h=no, )
+if test x$enable_emscripten != xyes; then
+  dnl LIBRARY TEST: X11 Xlib support
+  AC_CHECK_LIB(X11, main, have_x11_lib=yes, have_x11_lib=no, )
+  AC_CHECK_HEADER(X11/XKBlib.h, have_x11_h=yes, have_x11_h=no, )
+fi
 
 dnl LIBRARY TEST: Fluidsynth support
 AC_CHECK_HEADER(fluidsynth.h,have_fluidsynth_h=yes,)
@@ -510,8 +536,10 @@ dnl FEATURE: xBRZ
 AH_TEMPLATE(C_XBRZ,[Define to 1 to enable XBRZ scaler])
 AC_ARG_ENABLE(xbrz,AC_HELP_STRING([--enable-xbrz],[compile with xBRZ scaler (default yes)]),enable_xbrz=$enableval,enable_xbrz=yes)
 AM_CONDITIONAL(C_XBRZ, test "x$enable_xbrz" == "xyes")
-if test x$enable_xbrz = xyes; then
-AC_DEFINE(C_XBRZ,1)
+if test x$enable_emscripten != xyes; then
+  if test x$enable_xbrz = xyes; then
+    AC_DEFINE(C_XBRZ,1)
+  fi
 fi
 
 dnl FEATURE: MIDI through ALSA
@@ -555,6 +583,24 @@ else
   AC_MSG_RESULT(no)
 fi 
 AM_CONDITIONAL(C_MT32, test "x$enable_mt32" == "xyes")
+
+dnl NASM (Netwide Assembler)
+AC_PATH_PROG([NASM], [nasm])
+if test -z "$ac_cv_path_NASM"; then
+    AC_MSG_WARN([NASM (netwide assembler) not found, you will not be able to compile the external x86 .asm files if they are modified])
+fi
+
+dnl LNKDOS16 (16-bit MS-DOS linker, DOSLIB project)
+dnl To be fair to others compiling this code, search the PATH.
+dnl If not found, let the developer know that they can git clone DOSLIB
+dnl and use GNU Make + GCC to compile lnkdos16 in tool/linker in DOSLIB,
+dnl then include the Linux binary in the PATH variable so this script can find it.
+AC_PATH_PROG([LNKDOS16], [lnkdos16])
+if test -z "$ac_cv_path_LNKDOS16"; then
+    AC_MSG_WARN([LNKDOS16 (DOSLIB 16-bit linker) not found, you will not be able to compile the external x86 .asm files if they are modified.])
+    AC_MSG_WARN([LNKDOS16 can be found in the DOSLIB project under tool/linker. Compile it using GNU make and GCC and then either install it])
+    AC_MSG_WARN([on your system or run this configure script again with PATH directed at the compiled binary in the linux-host directory.])
+fi
 
 dnl FEATURE: DEBUG and HEAVY DEBUG options (debugger)
 AH_TEMPLATE(C_DEBUG,[Define to 1 to enable internal debugger, requires libcurses])
@@ -686,15 +732,30 @@ else
   AC_MSG_WARN([Can't find libpcap, NE2000 ethernet passthrough disabled])
 fi
 
-dnl FEATURE: Whether to use X11 XKBlib
-AH_TEMPLATE(C_X11_XKB,[define to 1 if you have XKBlib.h and X11 lib])
-AC_MSG_CHECKING(for XKBlib support)
-if test x$have_x11_lib = xyes -a x$have_x11_h = xyes ; then
-   LIBS="$LIBS -lX11 -lxkbfile"
-   AC_DEFINE(C_X11_XKB,1)
-   AC_MSG_RESULT(yes)
-else
-   AC_MSG_RESULT(no)
+if test x$enable_emscripten != xyes; then
+  dnl FEATURE: Whether to use X11 XKBlib
+  AH_TEMPLATE(C_X11_XKB,[define to 1 if you have XKBlib.h and X11 lib])
+  AC_MSG_CHECKING(for XKBlib support)
+  if test x$have_x11_lib = xyes -a x$have_x11_h = xyes ; then
+    LIBS="$LIBS -lX11 -lxkbfile"
+    AC_DEFINE(C_X11_XKB,1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+if test x$enable_emscripten != xyes; then
+  dnl FEATURE: Whether to use X11 XRandR
+  AH_TEMPLATE(C_X11_XRANDR,[define to 1 if you have XRandr.h and X11 lib])
+  AC_MSG_CHECKING(for XRandR support)
+  if test x$have_x11_lib = xyes -a x$have_x11_h = xyes ; then
+    LIBS="$LIBS -lXrandr"
+    AC_DEFINE(C_X11_XRANDR,1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
 fi
 
 dnl FEATURE: Whether to use Fluidsynth

@@ -420,7 +420,7 @@ void ffmpeg_reopen_video(double fps,const int bpp) {
 	ffmpeg_vid_ctx->max_b_frames = 0;
 	ffmpeg_vid_ctx->pix_fmt = ffmpeg_choose_pixfmt(ffmpeg_yuv_format_choice);
 	ffmpeg_vid_ctx->thread_count = 0;		// auto-choose
-	ffmpeg_vid_ctx->flags2 = CODEC_FLAG2_FAST;
+	ffmpeg_vid_ctx->flags2 = AV_CODEC_FLAG2_FAST;
 	ffmpeg_vid_ctx->qmin = 1;
 	ffmpeg_vid_ctx->qmax = 63;
 	ffmpeg_vid_ctx->rc_max_rate = ffmpeg_vid_ctx->bit_rate;
@@ -626,6 +626,7 @@ void CAPTURE_VideoEvent(bool pressed) {
 
 	mainMenu.get_item("mapper_video").check(!!(CaptureState & CAPTURE_VIDEO)).refresh_item(mainMenu);
 }
+#endif
 
 void CAPTURE_StartCapture(void) {
 #if (C_SSHOT)
@@ -641,30 +642,43 @@ void CAPTURE_StopCapture(void) {
 #endif
 }
 
+#if !defined(C_EMSCRIPTEN)
 void CAPTURE_WaveEvent(bool pressed);
+#endif
 
 void CAPTURE_StartWave(void) {
+#if !defined(C_EMSCRIPTEN)
 	if (!(CaptureState & CAPTURE_WAVE))
         CAPTURE_WaveEvent(true);
+#endif
 }
 
 void CAPTURE_StopWave(void) {
+#if !defined(C_EMSCRIPTEN)
 	if (CaptureState & CAPTURE_WAVE)
         CAPTURE_WaveEvent(true);
+#endif
 }
 
+#if !defined(C_EMSCRIPTEN)
 void CAPTURE_MTWaveEvent(bool pressed);
+#endif
 
 void CAPTURE_StartMTWave(void) {
+#if !defined(C_EMSCRIPTEN)
 	if (!(CaptureState & CAPTURE_MULTITRACK_WAVE))
         CAPTURE_MTWaveEvent(true);
+#endif
 }
 
 void CAPTURE_StopMTWave(void) {
+#if !defined(C_EMSCRIPTEN)
 	if (CaptureState & CAPTURE_MULTITRACK_WAVE)
         CAPTURE_MTWaveEvent(true);
+#endif
 }
 
+#if (C_SSHOT)
 extern uint32_t GFX_palette32bpp[256];
 #endif
 
@@ -1066,7 +1080,7 @@ skip_shot:
 			ffmpeg_vid_ctx->max_b_frames = 0;
 			ffmpeg_vid_ctx->pix_fmt = ffmpeg_choose_pixfmt(ffmpeg_yuv_format_choice); // TODO: auto-choose according to what codec says is supported, and let user choose as well
 			ffmpeg_vid_ctx->thread_count = 0;		// auto-choose
-			ffmpeg_vid_ctx->flags2 = CODEC_FLAG2_FAST;
+			ffmpeg_vid_ctx->flags2 = AV_CODEC_FLAG2_FAST;
 			ffmpeg_vid_ctx->qmin = 1;
 			ffmpeg_vid_ctx->qmax = 63;
 			ffmpeg_vid_ctx->rc_max_rate = ffmpeg_vid_ctx->bit_rate;
@@ -1400,13 +1414,16 @@ skip_video:
 void CAPTURE_ScreenShotEvent(bool pressed) {
 	if (!pressed)
 		return;
+#if !defined(C_EMSCRIPTEN)
 	CaptureState |= CAPTURE_IMAGE;
+#endif
 }
 #endif
 
 MixerChannel * MIXER_FirstChannel(void);
 
 void CAPTURE_MultiTrackAddWave(Bit32u freq, Bit32u len, Bit16s * data,const char *name) {
+#if !defined(C_EMSCRIPTEN)
     if (CaptureState & CAPTURE_MULTITRACK_WAVE) {
 		if (capture.multitrack_wave.writer == NULL) {
             unsigned int streams = 0;
@@ -1541,9 +1558,11 @@ void CAPTURE_MultiTrackAddWave(Bit32u freq, Bit32u len, Bit16s * data,const char
     return;
 skip_mt_wav:
 	capture.multitrack_wave.writer = avi_writer_destroy(capture.multitrack_wave.writer);
+#endif
 }
 
 void CAPTURE_AddWave(Bit32u freq, Bit32u len, Bit16s * data) {
+#if !defined(C_EMSCRIPTEN)
 #if (C_SSHOT)
 	if (CaptureState & CAPTURE_VIDEO) {
 		Bitu left = WAVE_BUF - capture.video.audioused;
@@ -1614,12 +1633,14 @@ void CAPTURE_AddWave(Bit32u freq, Bit32u len, Bit16s * data) {
 			len -= left;
 		}
 	}
+#endif
 }
 
 void CAPTURE_MTWaveEvent(bool pressed) {
 	if (!pressed)
 		return;
 
+#if !defined(C_EMSCRIPTEN)
     if (CaptureState & CAPTURE_MULTITRACK_WAVE) {
         if (capture.multitrack_wave.writer != NULL) {
             LOG_MSG("Stopped capturing multitrack wave output.");
@@ -1636,12 +1657,14 @@ void CAPTURE_MTWaveEvent(bool pressed) {
     }
 
 	mainMenu.get_item("mapper_recmtwave").check(!!(CaptureState & CAPTURE_MULTITRACK_WAVE)).refresh_item(mainMenu);
+#endif
 }
 
 void CAPTURE_WaveEvent(bool pressed) {
 	if (!pressed)
 		return;
 
+#if !defined(C_EMSCRIPTEN)
     if (CaptureState & CAPTURE_WAVE) {
         /* Check for previously opened wave file */
         if (capture.wave.writer != NULL) {
@@ -1659,6 +1682,7 @@ void CAPTURE_WaveEvent(bool pressed) {
     }
 
 	mainMenu.get_item("mapper_recwave").check(!!(CaptureState & CAPTURE_WAVE)).refresh_item(mainMenu);
+#endif
 }
 
 /* MIDI capturing */
@@ -1813,6 +1837,7 @@ void CAPTURE_Init() {
 
 	CaptureState = 0; // make sure capture is off
 
+#if !defined(C_EMSCRIPTEN)
 	// mapper shortcuts for capture
 	MAPPER_AddHandler(CAPTURE_WaveEvent,MK_w,MMOD3|MMODHOST,"recwave","Rec Wave", &item);
 	item->set_text("Record audio to WAV");
@@ -1830,6 +1855,7 @@ void CAPTURE_Init() {
 	MAPPER_AddHandler(CAPTURE_VideoEvent,MK_v,MMOD3|MMODHOST,"video","Video", &item);
 	item->set_text("Record video to AVI");
 #endif
+#endif
 
 	AddExitFunction(AddExitFunctionFuncPair(CAPTURE_Destroy),true);
 }
@@ -1845,12 +1871,16 @@ void HARDWARE_Init() {
 	AddExitFunction(AddExitFunctionFuncPair(HARDWARE_Destroy),true);
 }
 
+#if !defined(C_EMSCRIPTEN)
 void update_capture_fmt_menu(void) {
+# if (C_SSHOT)
     mainMenu.get_item("capture_fmt_avi_zmbv").check(native_zmbv).refresh_item(mainMenu);
-#if (C_AVCODEC)
+#  if (C_AVCODEC)
     mainMenu.get_item("capture_fmt_mpegts_h264").check(export_ffmpeg).refresh_item(mainMenu);
-#endif
+#  endif
+# endif
 }
+#endif
 
 bool capture_fmt_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
     const char *ts = menuitem->get_name().c_str();
@@ -1886,7 +1916,9 @@ bool capture_fmt_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const 
         CAPTURE_StartCapture();
     }
 
+#if !defined(C_EMSCRIPTEN)
     update_capture_fmt_menu();
+#endif
     return true;
 }
 

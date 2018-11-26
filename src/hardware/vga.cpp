@@ -157,6 +157,7 @@ extern bool                         gdc_5mhz_mode;
 extern bool                         enable_pc98_egc;
 extern bool                         enable_pc98_grcg;
 extern bool                         enable_pc98_16color;
+extern bool                         enable_pc98_188usermod;
 extern bool                         GDC_vsync_interrupt;
 extern uint8_t                      GDC_display_plane;
 
@@ -179,6 +180,7 @@ int enableCGASnow;
 int vesa_modelist_cap = 0;
 int vesa_mode_width_cap = 0;
 int vesa_mode_height_cap = 0;
+bool vesa_bios_modelist_in_info = false;
 bool vga_3da_polled = false;
 bool vga_page_flip_occurred = false;
 bool enable_page_flip_debugging_marker = false;
@@ -207,6 +209,7 @@ unsigned char VGA_AC_remap = AC_4x4;
 unsigned int vga_display_start_hretrace = 0;
 float hretrace_fx_avg_weight = 3;
 
+bool allow_vesa_4bpp_packed = true;
 bool allow_vesa_lowres_modes = true;
 bool vesa12_modes_32bpp = true;
 bool allow_vesa_32bpp = true;
@@ -300,6 +303,7 @@ void VGA_DetermineMode(void) {
     case 5:VGA_SetMode(M_LIN16);break;
     case 7:VGA_SetMode(M_LIN24);break;
     case 13:VGA_SetMode(M_LIN32);break;
+    case 15:VGA_SetMode(M_PACKED4);break;// hacked
     }
 }
 
@@ -665,6 +669,7 @@ void VGA_Reset(Section*) {
     enable_pc98_egc = section->Get_bool("pc-98 enable egc");
     enable_pc98_grcg = section->Get_bool("pc-98 enable grcg");
     enable_pc98_16color = section->Get_bool("pc-98 enable 16-color");
+    enable_pc98_188usermod = section->Get_bool("pc-98 enable 188 user cg");
 
     // EGC implies GRCG
     if (enable_pc98_egc) enable_pc98_grcg = true;
@@ -707,6 +712,7 @@ void VGA_Reset(Section*) {
     mainMenu.get_item("pc98_enable_egc").check(enable_pc98_egc).refresh_item(mainMenu);
     mainMenu.get_item("pc98_enable_grcg").check(enable_pc98_grcg).refresh_item(mainMenu);
     mainMenu.get_item("pc98_enable_analog").check(enable_pc98_16color).refresh_item(mainMenu);
+    mainMenu.get_item("pc98_enable_188user").check(enable_pc98_188usermod).refresh_item(mainMenu);
 
     vga_force_refresh_rate = -1;
     str=section->Get_string("forcerate");
@@ -747,6 +753,7 @@ void VGA_Reset(Section*) {
     hack_lfb_yadjust = section->Get_int("vesa lfb base scanline adjust");
     allow_vesa_lowres_modes = section->Get_bool("allow low resolution vesa modes");
     vesa12_modes_32bpp = section->Get_bool("vesa vbe 1.2 modes are 32bpp");
+    allow_vesa_4bpp_packed = section->Get_bool("allow 4bpp packed vesa modes");
     allow_vesa_32bpp = section->Get_bool("allow 32bpp vesa modes");
     allow_vesa_24bpp = section->Get_bool("allow 24bpp vesa modes");
     allow_vesa_16bpp = section->Get_bool("allow 16bpp vesa modes");
@@ -756,6 +763,7 @@ void VGA_Reset(Section*) {
     allow_vesa_tty = section->Get_bool("allow tty vesa modes");
     enable_vga_resize_delay = section->Get_bool("enable vga resize delay");
     vga_ignore_hdispend_change_if_smaller = section->Get_bool("resize only on vga active display width increase");
+    vesa_bios_modelist_in_info = section->Get_bool("vesa vbe put modelist in vesa information");
 
     /* sanity check: "VBE 1.2 modes 32bpp" doesn't make any sense if neither 24bpp or 32bpp is enabled */
     if (!allow_vesa_32bpp && !allow_vesa_24bpp)

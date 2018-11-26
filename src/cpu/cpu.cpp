@@ -169,9 +169,11 @@ Bitu CPU_extflags_toggle=0;	// ID and AC flags may be toggled depending on emula
 
 unsigned int CPU_PrefetchQueueSize=0;
 
-void CPU_Core_Full_Init(void);
 void CPU_Core_Normal_Init(void);
+#if !defined(C_EMSCRIPTEN)
 void CPU_Core_Simple_Init(void);
+void CPU_Core_Full_Init(void);
+#endif
 #if (C_DYNAMIC_X86)
 void CPU_Core_Dyn_X86_Init(void);
 void CPU_Core_Dyn_X86_Cache_Init(bool enable_cache);
@@ -255,6 +257,7 @@ void menu_update_core(void) {
     mainMenu.get_item("mapper_normal").
         check(cpudecoder == &CPU_Core_Normal_Run || cpudecoder == &CPU_Core_Prefetch_Run).
         refresh_item(mainMenu);
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
     mainMenu.get_item("mapper_simple").
         check(cpudecoder == &CPU_Core_Simple_Run).
         enable(cpudecoder != &CPU_Core_Prefetch_Run).
@@ -263,6 +266,7 @@ void menu_update_core(void) {
         check(cpudecoder == &CPU_Core_Full_Run).
         enable(cpudecoder != &CPU_Core_Prefetch_Run).
         refresh_item(mainMenu);
+#endif
 #if (C_DYNAMIC_X86)
     mainMenu.get_item("mapper_dynamic").
         check(cpudecoder == &CPU_Core_Dyn_X86_Run).
@@ -950,11 +954,11 @@ void CPU_Interrupt(Bitu num,Bitu type,Bitu oldeip) {
 #if C_DEBUG
 # if C_HEAVY_DEBUG
     bool DEBUG_IntBreakpoint(Bit8u intNum);
-    Bitu DEBUG_EnableDebugger(void);
+    void DEBUG_Enable(bool pressed);
 
     if (type != CPU_INT_SOFTWARE) { /* CPU core already takes care of SW interrupts */
         if (DEBUG_IntBreakpoint(num))
-            DEBUG_EnableDebugger();
+            DEBUG_Enable(true);
     }
 # endif
 
@@ -1540,7 +1544,7 @@ void CPU_CALL(bool use32,Bitu selector,Bitu offset,Bitu oldeip) {
     if (retengine == 1)return;
     //tom call end
 
-    Bit32u old_esp = reg_esp;
+	Bit32u old_esp = reg_esp;
 	Bit32u old_eip = reg_eip;
 
 	if (!cpu.pmode || (reg_flags & FLAG_VM)) {
@@ -2817,6 +2821,7 @@ static void CPU_ToggleAutoCycles(bool pressed) {
     }
 }
 
+#if !defined(C_EMSCRIPTEN)
 static void CPU_ToggleFullCore(bool pressed) {
     if (!pressed)
 	return;
@@ -2826,6 +2831,7 @@ static void CPU_ToggleFullCore(bool pressed) {
 	sec->HandleInputline(tmp);
     }
 }
+#endif
 
 static void CPU_ToggleNormalCore(bool pressed) {
     if (!pressed)
@@ -2849,6 +2855,7 @@ static void CPU_ToggleDynamicCore(bool pressed) {
 }
 #endif
 
+#if !defined(C_EMSCRIPTEN)
 static void CPU_ToggleSimpleCore(bool pressed) {
     if (!pressed)
 	return;
@@ -2858,6 +2865,7 @@ static void CPU_ToggleSimpleCore(bool pressed) {
 	sec->HandleInputline(tmp);
     }
 }
+#endif
 
 void CPU_Enable_SkipAutoAdjust(void) {
 	if (CPU_CycleAutoAdjust) {
@@ -3012,8 +3020,10 @@ public:
 
 		/* Init the cpu cores */
 		CPU_Core_Normal_Init();
+#if !defined(C_EMSCRIPTEN)
 		CPU_Core_Simple_Init();
 		CPU_Core_Full_Init();
+#endif
 #if (C_DYNAMIC_X86)
 		CPU_Core_Dyn_X86_Init();
 #endif
@@ -3030,11 +3040,14 @@ public:
 		MAPPER_AddHandler(CPU_ToggleNormalCore,MK_nothing,0,"normal"  ,"NormalCore", &item);
 		item->set_text("Normal core");
 
+#if !defined(C_EMSCRIPTEN)
 		MAPPER_AddHandler(CPU_ToggleFullCore,MK_nothing,0,"full","Full Core", &item);
 		item->set_text("Full core");
-
+#endif
+#if !defined(C_EMSCRIPTEN)
 		MAPPER_AddHandler(CPU_ToggleSimpleCore,MK_nothing,0,"simple","SimpleCore", &item);
 		item->set_text("Simple core");
+#endif
 #if (C_DYNAMIC_X86)
 		MAPPER_AddHandler(CPU_ToggleDynamicCore,MK_nothing,0,"dynamic","DynCore",&item);
 		item->set_text("Dynamic core");
@@ -3195,9 +3208,17 @@ public:
 		if (core == "normal") {
 			cpudecoder=&CPU_Core_Normal_Run;
 		} else if (core =="simple") {
+#if defined(C_EMSCRIPTEN)
+			cpudecoder=&CPU_Core_Normal_Run;
+#else
 			cpudecoder=&CPU_Core_Simple_Run;
+#endif
 		} else if (core == "full") {
+#if defined(C_EMSCRIPTEN)
+			cpudecoder=&CPU_Core_Normal_Run;
+#else
 			cpudecoder=&CPU_Core_Full_Run;
+#endif
 		} else if (core == "auto") {
 			cpudecoder=&CPU_Core_Normal_Run;
 			CPU_AutoDetermineMode|=CPU_AUTODETERMINE_CORE;
@@ -3564,8 +3585,10 @@ Bit16u CPU_FindDecoderType( CPU_Decoder *decoder )
 	if(0) {}
 	else if( cpudecoder == &CPU_Core_Normal_Run ) decoder_idx = 0;
 	else if( cpudecoder == &CPU_Core_Prefetch_Run ) decoder_idx = 1;
+#if !defined(C_EMSCRIPTEN)
 	else if( cpudecoder == &CPU_Core_Simple_Run ) decoder_idx = 2;
 	else if( cpudecoder == &CPU_Core_Full_Run ) decoder_idx = 3;
+#endif
 #if C_DYNAMIC_X86
 	else if( cpudecoder == &CPU_Core_Dyn_X86_Run ) decoder_idx = 4;
 #endif
@@ -3589,8 +3612,10 @@ CPU_Decoder *CPU_IndexDecoderType( Bit16u decoder_idx )
 	switch( decoder_idx ) {
 		case 0: cpudecoder = &CPU_Core_Normal_Run; break;
 		case 1: cpudecoder = &CPU_Core_Prefetch_Run; break;
+#if !defined(C_EMSCRIPTEN)
 		case 2: cpudecoder = &CPU_Core_Simple_Run; break;
 		case 3: cpudecoder = &CPU_Core_Full_Run; break;
+#endif
 #if C_DYNAMIC_X86
 		case 4: cpudecoder = &CPU_Core_Dyn_X86_Run; break;
 #endif

@@ -74,7 +74,7 @@
 /* The type of cpu this target has */
 #define C_TARGETCPU X86
 /* Define to 1 to use x86 dynamic cpu core */
-//# define C_DYNAMIC_X86			1
+# define C_DYNAMIC_X86			1
 #endif
 
 /* Define to 1 to enable fluidsynth MIDI synthesis */
@@ -94,7 +94,7 @@
 #undef C_HAVE_MPROTECT
 
 /* Define to 1 to enable heavy debugging, also have to enable C_DEBUG */
-#undef C_HEAVY_DEBUG
+#define C_HEAVY_DEBUG 1
 
 /* Define to 1 to enable IPX over Internet networking, requires SDL_net */
 #if !defined(C_SDL2)

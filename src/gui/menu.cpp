@@ -622,7 +622,9 @@ static const char *def_menu__toplevel[] = {
     "VideoMenu",
     "SoundMenu",
     "DOSMenu",
+#if !defined(C_EMSCRIPTEN)
     "CaptureMenu",
+#endif
     NULL
 };
 
@@ -633,28 +635,39 @@ static const char *def_menu_main[] = {
 	"--",
     "MainSendKey",
 	"--",
+#if !defined(C_EMSCRIPTEN)
 	"wait_on_error",
+#endif
     "showdetails",
 #if C_DEBUG
 	"--",
 	"mapper_debugger",
 #endif
-#if !defined(MACOSX) && !defined(LINUX) && !defined(HX_DOS)
+#if !defined(MACOSX) && !defined(LINUX) && !defined(HX_DOS) && !defined(C_EMSCRIPTEN)
     "show_console",
 #endif
     "--",
     "mapper_capmouse",
 	"auto_lock_mouse",
+#if !defined(C_EMSCRIPTEN)//FIXME: Reset causes problems with Emscripten
 	"--",
 	"mapper_pause",
+	"mapper_pauseints",
+#endif
+#if !defined(C_EMSCRIPTEN)//FIXME: Reset causes problems with Emscripten
     "--",
     "mapper_reset",
+#endif
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
 	"--",
-#if !defined(HX_DOS)
+#endif
+#if !defined(HX_DOS) && !defined(C_EMSCRIPTEN)
 	"mapper_restart",
     "--",
 #endif
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
     "mapper_shutdown",
+#endif
     NULL
 };
 
@@ -674,8 +687,10 @@ static const char *def_menu_cpu_core[] = {
     "mapper_cycauto",
     "--",
     "mapper_normal",
+#if !defined(C_EMSCRIPTEN)//FIXME: Shutdown causes problems with Emscripten
     "mapper_full",
     "mapper_simple",
+#endif
 #if (C_DYNAMIC_X86)
     "mapper_dynamic",
 #endif
@@ -800,6 +815,7 @@ static const char *def_menu_video_pc98[] = {
     "pc98_enable_egc",
     "pc98_enable_grcg",
     "pc98_enable_analog",
+    "pc98_enable_188user",
     "--",
     "pc98_clear_text",
     "pc98_clear_graphics",
@@ -808,10 +824,8 @@ static const char *def_menu_video_pc98[] = {
 
 /* video menu ("VideoMenu") */
 static const char *def_menu_video[] = {
-#if !defined(C_SDL2)
 	"mapper_aspratio",
 	"--",
-#endif
 #if !defined(C_SDL2) && !defined(HX_DOS)
 	"mapper_fullscr",
 	"--",
@@ -889,24 +903,32 @@ static const char *def_menu_capture[] = {
     "mapper_scrshot",
     "--",
 #endif
+#if !defined(C_EMSCRIPTEN)
+# if (C_SSHOT)
     "CaptureFormatMenu",
     "--",
+# endif
     "mapper_video",
     "mapper_recwave",
     "mapper_recmtwave",
     "mapper_caprawopl",
     "mapper_caprawmidi",
-    NULL
-};
-
-/* capture format menu ("CaptureFormatMenu") */
-static const char *def_menu_capture_format[] = {
-    "capture_fmt_avi_zmbv",
-#if (C_AVCODEC)
-    "capture_fmt_mpegts_h264",
 #endif
     NULL
 };
+
+#if !defined(C_EMSCRIPTEN)
+# if (C_SSHOT)
+/* capture format menu ("CaptureFormatMenu") */
+static const char *def_menu_capture_format[] = {
+    "capture_fmt_avi_zmbv",
+#  if (C_AVCODEC)
+    "capture_fmt_mpegts_h264",
+#  endif
+    NULL
+};
+# endif
+#endif
 
 static DOSBoxMenu::item_handle_t separator_alloc = 0;
 static std::vector<DOSBoxMenu::item_handle_t> separators;
@@ -1045,11 +1067,17 @@ void ConstructMenu(void) {
     /* DOS PC-98 menu */
     ConstructSubMenu(mainMenu.get_item("DOSPC98Menu").get_master_id(), def_menu_dos_pc98);
 
+#if !defined(C_EMSCRIPTEN)
     /* capture menu */
     ConstructSubMenu(mainMenu.get_item("CaptureMenu").get_master_id(), def_menu_capture);
+#endif
 
+#if !defined(C_EMSCRIPTEN)
+# if (C_SSHOT)
     /* capture format menu */
     ConstructSubMenu(mainMenu.get_item("CaptureFormatMenu").get_master_id(), def_menu_capture_format);
+# endif
+#endif
 }
 
 bool MENU_SetBool(std::string secname, std::string value) {
@@ -1064,6 +1092,14 @@ void RENDER_CallBack( GFX_CallBackFunctions_t function );
 void SetScaleForced(bool forced)
 {
 	render.scale.forced = forced;
+
+    Section_prop * section=static_cast<Section_prop *>(control->GetSection("render"));
+    Prop_multival* prop = section->Get_multival("scaler");
+    std::string scaler = prop->GetSection()->Get_string("type");
+
+	auto value = scaler + (render.scale.forced ? " forced" : "");
+	SetVal("render", "scaler", value);
+
 	RENDER_CallBack(GFX_CallBackReset);
     mainMenu.get_item("scaler_forced").check(render.scale.forced).refresh_item(mainMenu);
 }
@@ -1646,7 +1682,9 @@ void DOSBoxMenu::updateRect(void) {
     menuBox.y = 0;
     menuBox.w = menuVisible ? (unsigned int)screenWidth : 0;
     menuBox.h = menuVisible ? (unsigned int)menuBarHeight : 0;
+#if 0
     LOG_MSG("SDL menuBox w=%d h=%d",menuBox.w,menuBox.h);
+#endif
 }
 
 void DOSBoxMenu::layoutMenu(void) {
@@ -1668,7 +1706,9 @@ void DOSBoxMenu::layoutMenu(void) {
     for (auto i=display_list.disp_list.begin();i!=display_list.disp_list.end();i++)
         get_item(*i).layoutSubmenu(*this, /*toplevel*/true);
 
+#if 0
     LOG_MSG("Layout complete");
+#endif
 }
 
 void DOSBoxMenu::item::layoutSubmenu(DOSBoxMenu &menu, bool isTopLevel) {
@@ -1786,12 +1826,15 @@ void DOSBoxMenu::item::placeItemFinal(DOSBoxMenu &menu,int finalwidth,bool isTop
         }
     }
 
+#if 0
     LOG_MSG("Item id=%u name=\"%s\" placed at x,y,w,h=%d,%d,%d,%d. text:x,y,w,h=%d,%d,%d,%d",
         master_id,name.c_str(),
         screenBox.x,screenBox.y,
         screenBox.w,screenBox.h,
         textBox.x,textBox.y,
         textBox.w,textBox.h);
+#endif
+
     boxInit = true;
 }
 

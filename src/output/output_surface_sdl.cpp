@@ -107,7 +107,13 @@ retry:
         {
             sdl.clip.x = (Sint16)((sdl.desktop.full.width - width) / 2);
             sdl.clip.y = (Sint16)((sdl.desktop.full.height - height) / 2);
-            sdl.surface = SDL_SetVideoMode(sdl.desktop.full.width, sdl.desktop.full.height, bpp, wflags);
+            if (sdl.clip.x < 0) sdl.clip.x = 0;
+            if (sdl.clip.y < 0) sdl.clip.y = 0;
+
+            int fw = (std::max)((int)sdl.desktop.full.width,  (sdl.clip.x+sdl.clip.w));
+            int fh = (std::max)((int)sdl.desktop.full.height, (sdl.clip.y+sdl.clip.h));
+
+            sdl.surface = SDL_SetVideoMode(fw, fh, bpp, wflags);
             sdl.deferred_resize = false;
             sdl.must_redraw_all = true;
 
@@ -164,8 +170,15 @@ retry:
 #endif
 
         /* menu size and consideration of width and height */
-        Bitu consider_height = menu.maxwindow ? currentWindowHeight : (height + (unsigned int)menuheight + (sdl.overscan_width * 2));
-        Bitu consider_width = menu.maxwindow ? currentWindowWidth : (width + (sdl.overscan_width * 2));
+        Bitu consider_height = height + (unsigned int)menuheight + (sdl.overscan_width * 2);
+        Bitu consider_width = width + (sdl.overscan_width * 2);
+
+        if (menu.maxwindow) {
+            if (consider_height < currentWindowHeight)
+                consider_height = currentWindowHeight;
+            if (consider_width < currentWindowWidth)
+                consider_width = currentWindowWidth;
+        }
 
 #if DOSBOXMENU_TYPE == DOSBOXMENU_SDLDRAW
         if (mainMenu.isVisible())
