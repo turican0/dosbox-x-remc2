@@ -94,6 +94,17 @@ FILE* fptestepc;
 char charbuffer[500];
 
 
+//call stop
+Bit32u addprocedurestopadress = 0;
+int addprocedurestopcount = -1;
+bool addprocedurestopforce = false;
+void addprocedurestop(Bit32u adress,int count,bool force) {
+    addprocedurestopadress = adress;
+    addprocedurestopcount = count;
+    addprocedurestopadress = force;
+}
+//call stop
+
 
 
 void writesubcall(char* text, int level) {
@@ -106,6 +117,7 @@ void writesubcall(char* text, int level) {
 long xcounter = 0;
 
 void enginestep() {
+    
     if (count == 0) {        
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -117,6 +129,11 @@ void enginestep() {
     }
     if (count > 10000)
     {
+        if ((addprocedurestopcount != -1) && addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
+            if (addprocedurestopcount == 0)DEBUG_EnableDebugger();
+            else addprocedurestopcount--;
+        }
+        /*
         if ((reg_eip==0x218240) && (SegValue(cs) == 0x160))
         {
             if(xcounter>= 0xfe)
@@ -124,7 +141,7 @@ void enginestep() {
                 DEBUG_EnableDebugger();
             }
             xcounter++;
-        }
+        }*/
         if ((SegValue(ds) == findvarseg)&& (SegValue(cs) == 0x160))
         {
             Bit32u actmem = mem_readd(SegPhys(ds) + findvaradr);
@@ -696,24 +713,11 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
         
     case 0x00000160: {
         savecalls(offset);
+        if ((addprocedurestopadress == offset)&&(addprocedurestopcount!=-1)) {
+            if (addprocedurestopcount == 0)DEBUG_EnableDebugger();
+            else addprocedurestopcount--;
+        }
         switch (offset) {
-        case 0xf023C8D0: {//tisk SETTING UP LEVELS - yy // přes int 10
-                //myWriteOut("Video refresh rate.\n\n");
-                /*CConsoleLogger another_console;
-                another_console.Create("This is the first console");
-                another_console.printf("WOW !!! COOLL !!! another console ???");*/
-                /*support_begin();
-                pre_160_0005B8D0();
-                sub_5B8D0();
-                post_160_0005B8D0();
-                support_end();
-                myWriteOut("TomTom\n\n");*/
-                //if(engprg==NULL)engprg = new ENGPRG;
-                //engprg->Run();
-                //WriteOut("Video refresh rate.\n\n");
-                //DEBUG_EnableDebugger();
-                break;
-            }
             case 0x26E8000:{//181000 1A1000 rozdila a rozdil b//main
                 //saveactstate();
                 begin_write();
@@ -784,177 +788,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
 
                 break;
             }
-            case 0x26db3a: {
-                /*fopen_s(&fptestep, findname, "a+");
-                fprintf(fptestep, "0x222a90PAL%04X:%08X\n", 0x0168, reg_esp + 0x10);
-                fclose(fptestep);*/
-                //saveactstate();
-                //DEBUG_EnableDebugger();
-                /*if((SegValue(ds)==0x168)&&(mem_readd(SegPhys(ds) + 0x2b4768) >0x1))
-                    DEBUG_EnableDebugger();
-                if ((SegValue(cs) == 0x160) && (mem_readd(SegPhys(cs) + 0x2b4768) > 0x1))
-                    DEBUG_EnableDebugger();
-                if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x2b4768) > 0x1))
-                    DEBUG_EnableDebugger();*/
-                if ((SegValue(fs) == 0x0) && (mem_readd(SegPhys(fs) + 0x351710) > 0x1))
-                {
-                    //savecalls(offset);
-                    //writecalls();
-                    //DEBUG_EnableDebugger();
-                }
-                //xcounter++;
-                break;
-            }
-            //case 0x257A40: {
-            //case 0x257930: {
-            //case 0x256e70: {
-            //case 0x1fc280: {
-            //case 0x257160: {
-            case 0x25c2500: {//25c26f
-                //case 0x256e70: {
-                //case 0x23cf50: {
-                //case 0x00271D6E: {
-                //case 0x00227830: {
-                //case 0x00279b2c: {
-                //case 0x001f11c0: {
-                //case 0x0027B32d: {//tady   v3 = (x_BYTE *)x_DWORD_E9C30;//002bac30 //je to v 23c8d0, 23cf50, 265250, 27B32d, nekde u 27b381,27b453
-                //case 0x00265250: {
-                //case 0x0023CF50: {
-                //case 0x0023C8D0: {
-                //case 0x0023D1B0: {
-                //case 0x00237210: {
-                //case 0x00266070: {
-                //case 0x00264CD0: {
-                //case 0x00234E60: {
-                //case 0x00235200: {
-                //case 0x00267A00: {                
-                //if (reg_edx & 0xff00)
-                //if (reg_eax > 1)
-                //DEBUG_EnableDebugger();
-                if(mem_readw(SegPhys(ds) + reg_esi +8))
-                //if(xcounter>350)
-                {
-                    //restart_calls();
-                    //saveactstate();
-                    //findvaradr = 0x34eb54;
-                    //DEBUG_EnableDebugger();
-                }
-                //xcounter++;
-                break;
-            }
-            case 0x00279D5200: {//int386
-             /*   
-                Bit32u var1 = mem_readd(SegPhys(ss) + reg_esp + 0x4);
-                Bit32u var2 = mem_readd(SegPhys(ss) + reg_esp + 0x8);
-                Bit32u var3 = mem_readd(SegPhys(ss) + reg_esp + 0xc);
-
-                if (var1 == 0x21)
-                {
-                    pre_160_00279D52();
-                    //Bit32u var1 = mem_readd(SegPhys(ss) + 0x14);
-                    //Bit32u var2 = mem_readd(SegPhys(ss) + 0x18);
-                    //Bit32u var3 = mem_readd(SegPhys(ss) + 0x1C);
-
-                    REGS regs1;
-                    regs1.edx = mem_readd(SegPhys(ds) + var2);
-                    regs1.ecx = mem_readd(SegPhys(ds) + var2 + 0x4);
-                    regs1.ebx = mem_readd(SegPhys(ds) + var2 + 0x8);
-                    regs1.eax = mem_readd(SegPhys(ds) + var2 + 0xc);
-                    regs1.edi = mem_readd(SegPhys(ds) + var2 + 0x10);
-                    regs1.esi = mem_readd(SegPhys(ds) + var2 + 0x14);
-                    regs1.cflag = mem_readd(SegPhys(ds) + var2 + 0x18);
-                    REGS regs2;
-                    regs2.edx = mem_readd(SegPhys(ds) + var3);
-                    regs2.ecx = mem_readd(SegPhys(ds) + var3 + 0x4);
-                    regs2.ebx = mem_readd(SegPhys(ds) + var3 + 0x8);
-                    regs2.eax = mem_readd(SegPhys(ds) + var3 + 0xc);
-                    regs2.edi = mem_readd(SegPhys(ds) + var3 + 0x10);
-                    regs2.esi = mem_readd(SegPhys(ds) + var3 + 0x14);
-                    regs2.cflag = mem_readd(SegPhys(ds) + var3 + 0x18);
-
-                    //(SegPhys(ss) + (new_esp
-                    //esp+14,ebp+4
-                    //esp + 18, ebp + 8
-                    //esp + 1c, ebp + c
-                    int386(var1, &regs1, &regs2);
-                    post_160_00279D52();
-                }
-                else
-                    if (var1 == 0x31)
-                    {                        
-                        if (testcount < 1000)
-                        {
-                            pre_160_00279D52();
-                            //Bit32u var1 = mem_readd(SegPhys(ss) + 0x14);
-                            //Bit32u var2 = mem_readd(SegPhys(ss) + 0x18);
-                            //Bit32u var3 = mem_readd(SegPhys(ss) + 0x1C);
-
-                            REGS regs1;
-                            regs1.edx = mem_readd(SegPhys(ds) + var2);
-                            regs1.ecx = mem_readd(SegPhys(ds) + var2 + 0x4);
-                            regs1.ebx = mem_readd(SegPhys(ds) + var2 + 0x8);
-                            regs1.eax = mem_readd(SegPhys(ds) + var2 + 0xc);
-                            regs1.edi = mem_readd(SegPhys(ds) + var2 + 0x10);
-                            regs1.esi = mem_readd(SegPhys(ds) + var2 + 0x14);
-                            regs1.cflag = mem_readd(SegPhys(ds) + var2 + 0x18);
-                            REGS regs2;
-                            regs2.edx = mem_readd(SegPhys(ds) + var3);
-                            regs2.ecx = mem_readd(SegPhys(ds) + var3 + 0x4);
-                            regs2.ebx = mem_readd(SegPhys(ds) + var3 + 0x8);
-                            regs2.eax = mem_readd(SegPhys(ds) + var3 + 0xc);
-                            regs2.edi = mem_readd(SegPhys(ds) + var3 + 0x10);
-                            regs2.esi = mem_readd(SegPhys(ds) + var3 + 0x14);
-                            regs2.cflag = mem_readd(SegPhys(ds) + var3 + 0x18);
-
-                            //first_shell->WriteOut("\nint31:%08X:%08X\n");
-                            //first_shell->WriteOut("\nint31\n");
-
-                            //(SegPhys(ss) + (new_esp
-                            //esp+14,ebp+4
-                            //esp + 18, ebp + 8
-                            //esp + 1c, ebp + c
-                            //if(callindex>0)DEBUG_EnableDebugger();
-                            if (regs1.edx == 0x100) { /return 0; }//Allocate DOS Memory Block
-                            if (regs1.edx == 0x300) { return 0; }//Simulate Real Mode Interrupt
-                            if (regs1.edx == 0x101) { return 0; }//Free DOS Memory Block
-                            if (regs1.edx == 0x600) { post_160_00279D52();return 0; }//Lock Linear Region
-                            int386(var1, &regs1, &regs2);
-                            post_160_00279D52();
-
-                            long testx = mem_readd(SegPhys(ds) + var2);
-                            if((testx!=0x100)&& (testx != 0x300))
-                                int xx = 1;
-                            testcount++;
-                        }
-                        //else DEBUG_EnableDebugger();
-                    }
-                    //else DEBUG_EnableDebugger();
-                    
-                //int 10 F00 0 300 11   5003 0 300 11
-                
-                //Category: video
-                //INT 10 - VESA SuperVGA BIOS (VBE) - GET SuperVGA INFORMATION
-
-                //AX = 4F00h
-                //ES:DI -> buffer for SuperVGA information (see #00077)
-                //Return: AL = 4Fh if function supported
-                //AH = status
-                //00h successful
-                //ES:DI buffer filled
-                //01h failed
-                //---VBE v2.0---
-                //02h function not supported by current hardware configuration
-                //03h function invalid in current video mode
-                //Desc:	determine whether VESA BIOS extensions are present and the capabilities
-                //supported by the display adapter
-                //SeeAlso: AX=4E00h,AX=4F01h,AX=7F00h"SOLLEX",AX=A00Ch
-                //Index:	installation check;VESA SuperVGA
-                
-
-                return 1;*/
-                break;
-            }
-              
+             
         }
         break;
     }
