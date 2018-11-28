@@ -57,7 +57,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x30c4e000;
+unsigned long findvaradr = 0x2ec4e000+0xb452;
 unsigned long findvarval = 0x002212a0;
 
 
@@ -108,7 +108,7 @@ bool addprocedurestopforce = false;
 void addprocedurestop(Bit32u adress,int count,bool force) {
     addprocedurestopadress = adress;
     addprocedurestopcount = count;
-    addprocedurestopadress = force;
+    addprocedurestopforce = force;
 }
 //call stop
 
@@ -125,7 +125,10 @@ long xcounter = 0;
 
 void enginestep() {
     
-    if (count == 0) {        
+    if (count == 0) {
+        addprocedurestop(0x22a976, 0x3d, true);
+
+
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
         fclose(fptestep);
