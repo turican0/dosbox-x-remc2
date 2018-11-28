@@ -93,6 +93,13 @@ FILE* fptestepc;
 
 char charbuffer[500];
 
+//write sequence
+
+void write_sequence() {
+}
+
+//write sequence
+
 
 //call stop
 Bit32u addprocedurestopadress = 0;
