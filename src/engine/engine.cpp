@@ -57,7 +57,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x002ec4e000 + 0xbe54;
+unsigned long findvaradr = 0x363286;
 unsigned long findvarval = 0x002212a0;
 
 
@@ -126,8 +126,10 @@ long xcounter = 0;
 void enginestep() {
     
     if (count == 0) {
-        addprocedurestop(0x22a976, 0x99, true);
-
+        //addprocedurestop(0x22a976, 0x565, true);
+        //addprocedurestop(0x229b94, 0x2450, true);
+        //addprocedurestop(0x229a20, 0x0, true);
+        addprocedurestop(0x238730, 0x0, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -183,7 +185,7 @@ void enginestep() {
                 fopen_s(&fptestep, findname, "a+");
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
-                if (0x6F732F == oldmem)saveactstate();
+                //if (0x6F732F == oldmem)saveactstate();
                 //DEBUG_EnableDebugger();
                 fclose(fptestep);
                 findvarval = 0;//fix
