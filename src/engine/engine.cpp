@@ -57,7 +57,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x363286;
+unsigned long findvaradr = 0x3632d6;
 unsigned long findvarval = 0x002212a0;
 
 
@@ -99,6 +99,23 @@ void write_sequence() {
 }
 
 //write sequence
+FILE* fseq;
+Bit32u writesequencecodeadress = 0;
+int writesequencecount = -1;
+int writesequencecount2 = -1;
+Bit32u writesequencedataadress = 0;
+void writesequence(Bit32u codeadress, int count, Bit32u dataadress) {
+    Bit32u writesequencecodeadress = codeadress;
+    int writesequencecount = count;
+    Bit32u writesequencedataadress = dataadress;
+}
+
+void savesequence(int actcount, Bit32u dataadress) {
+    fopen_s(&fseq, findname, "a+");
+    fwrite(&actcount, 4, 4, fseq);
+    fwrite(&dataadress, 4, 4, fseq);
+};
+//write sequence
 
 
 //call stop
@@ -129,7 +146,8 @@ void enginestep() {
         //addprocedurestop(0x22a976, 0x565, true);
         //addprocedurestop(0x229b94, 0x2450, true);
         //addprocedurestop(0x229a20, 0x0, true);
-        addprocedurestop(0x238730, 0x0, true);
+        //addprocedurestop(0x238730, 0x0, true);
+        //addprocedurestop(0x23d8d0, 0x0, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -141,12 +159,25 @@ void enginestep() {
     }
     if (count > 10000)
     {
-        if ((addprocedurestopcount != -1) && addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
-            if (addprocedurestopcount == 0) {
-                //saveactstate();
-                DEBUG_EnableDebugger();
+        if (addprocedurestopcount != -1)
+        {
+            if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
+                if (addprocedurestopcount == 0)
+                {
+                    //saveactstate();
+                    DEBUG_EnableDebugger();
+                }
+                else addprocedurestopcount--;
             }
-            else addprocedurestopcount--;
+        }
+        if (writesequencecount != -1) {
+            if (writesequencecodeadress && (reg_eip == writesequencecodeadress)) {
+                if (writesequencecount2 < writesequencecount)
+                {
+                    savesequence(writesequencecount2, writesequencedataadress);
+                    writesequencecount2++;
+                }
+            }
         }
         /*
         if ((reg_eip==0x218240) && (SegValue(cs) == 0x160))
@@ -186,7 +217,7 @@ void enginestep() {
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 //if (0x6F732F == oldmem)saveactstate();
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 fclose(fptestep);
                 findvarval = 0;//fix
             }
