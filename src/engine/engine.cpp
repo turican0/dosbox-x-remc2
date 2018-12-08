@@ -57,8 +57,10 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
-unsigned long findvaradr = 0x3618f2;
-unsigned long findvarval = 0x002212a0;
+//unsigned long findvaradr = 0x35606d;
+unsigned long findvaradr = 0x2537b0;
+
+unsigned long findvarval = 0x034c;
 
 
 unsigned long prepreprepreprelastsel;
@@ -139,6 +141,7 @@ void writesubcall(char* text, int level) {
 };
 
 long xcounter = 0;
+long xcounter2 = 0;
 
 void enginestep() {
     
@@ -147,7 +150,15 @@ void enginestep() {
         //addprocedurestop(0x229b94, 0x2450, true);
         //addprocedurestop(0x229a20, 0x0, true);
         //addprocedurestop(0x238730, 0x0, true);
-        addprocedurestop(0x213420, 0x0, true);
+        //addprocedurestop(0x213420, 0x0, true);
+        //addprocedurestop(0x22b311, 0x42, true);
+        //addprocedurestop(0x22b311, 0x1, true);
+        //addprocedurestop(0x22b257, 0x0, true);
+        //addprocedurestop(0x22af30, 0x0, true);
+        //addprocedurestop(0x22b051, 0xb0, true);
+        //addprocedurestop(0x250150, 0x0, true);
+        //addprocedurestop(0x23d8d0, 0x0, true);
+        //addprocedurestop(0x238d71, 0x90, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -166,6 +177,7 @@ void enginestep() {
                 {
                     //saveactstate();
                     DEBUG_EnableDebugger();
+                    xcounter2++;
                 }
                 else addprocedurestopcount--;
             }
@@ -191,9 +203,10 @@ void enginestep() {
         if ((SegValue(ds) == findvarseg)&& (SegValue(cs) == 0x160))
         {
             Bit32u actmem = mem_readd(SegPhys(ds) + findvaradr);
-            //if (findvarval == actmem)
             if (oldmem != actmem)
             {
+                //if (findvarval == actmem)
+                {
                     fopen_s(&fptestep, findname, "a+");
                     fprintf(fptestep, "PREPREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprepreprelastoff, prepreprepreprelastoff - 0x1E1000, prepreprepreprelastesp);
                     fprintf(fptestep, "PREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, preprepreprelastoff, preprepreprelastoff - 0x1E1000, preprepreprelastesp);
@@ -206,9 +219,10 @@ void enginestep() {
                     pause = true;
                     fclose(fptestep);
                     sprintf(charbuffer, "NEW VALUE%04X:%08X - %04X,%04X\n", findvarseg, findvaradr, oldmem, actmem);
-                    writesubcall(charbuffer, 0);
-                    oldmem = actmem;
-            }            
+                    writesubcall(charbuffer, 0);                    
+                }
+                oldmem = actmem;
+            }
         }
         if(pause)
             if (SegValue(cs) == 0x160)
@@ -219,7 +233,7 @@ void enginestep() {
                 //if (0x6F732F == oldmem)saveactstate();
                 DEBUG_EnableDebugger();
                 fclose(fptestep);
-                findvarval = 0;//fix
+                //findvarval = 0;//fix
             }
     }
     count++;
