@@ -158,7 +158,7 @@ void enginestep() {
         //addprocedurestop(0x22b051, 0xb0, true);
         //addprocedurestop(0x250150, 0x0, true);
         //addprocedurestop(0x23d8d0, 0x0, true);
-        addprocedurestop(0x1f1130, 0x0, true);
+        addprocedurestop(0x1f1130, 0x7d, true);
         //addprocedurestop(0x22fc10, 0x0, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
