@@ -159,7 +159,7 @@ void enginestep() {
         //addprocedurestop(0x250150, 0x0, true);
         //addprocedurestop(0x23d8d0, 0x0, true);
         //addprocedurestop(0x20e710, 0x0, true);
-        addprocedurestop(0x228760, 0x0, true);
+        addprocedurestop(0x20ce30, 0x0, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
