@@ -58,7 +58,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
 //unsigned long findvaradr = 0x35606d;
-unsigned long findvaradr = 0x2a949a;
+unsigned long findvaradr = 0x35932f;
 
 unsigned long findvarval = 0x034c;
 
@@ -159,7 +159,7 @@ void enginestep() {
         //addprocedurestop(0x250150, 0x0, true);
         //addprocedurestop(0x23d8d0, 0x0, true);
         //addprocedurestop(0x20e710, 0x0, true);
-        addprocedurestop(0x235a50, 0x0, true);
+        addprocedurestop(0x20f3b8, 0x0, true);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
