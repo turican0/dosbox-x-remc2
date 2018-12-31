@@ -58,7 +58,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
 //unsigned long findvaradr = 0x35606d;
-unsigned long findvaradr = 0x35932f;
+unsigned long findvaradr = 0x2aa51c;
 
 unsigned long findvarval = 0x034c;
 
@@ -124,10 +124,14 @@ void savesequence(int actcount, Bit32u dataadress) {
 Bit32u addprocedurestopadress = 0;
 int addprocedurestopcount = -1;
 bool addprocedurestopforce = false;
-void addprocedurestop(Bit32u adress,int count,bool force) {
+bool addprocedurestoponmemchange = false;
+bool stoponmemchange = false;
+void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress) {
     addprocedurestopadress = adress;
     addprocedurestopcount = count;
     addprocedurestopforce = force;
+    addprocedurestoponmemchange = memchange;
+    findvaradr = memadress;
 }
 //call stop
 
@@ -146,8 +150,27 @@ long xcounter2 = 0;
 void enginestep() {
     
     if (count == 0) {
-        //addprocedurestop(0x22a976, 0x565, true);
-        //addprocedurestop(0x229b94, 0x2450, true);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2af554);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2af55c);
+
+        //addprocedurestop(0x252890, 0x0, true, true, 0x2c6340);
+
+        addprocedurestop(0x252410, 0x0, true, true, 0x2c6340);
+
+        //addprocedurestop(0x251f50, 0x0, true, true, 0x38cf6a);
+
+        //addprocedurestop(0x232bb0, 0x0, true, true, 0x38cf6a);
+
+        //addprocedurestop(0x23c8d0, 0x0, true, true, 0x12346789);
+        //addprocedurestop(0x23cf50, 0x0, true, true, 0x12346789);
+
+        //addprocedurestop(0x29dd45, 0x0, true, true, 0x2af554);
+
+
+        //addprocedurestop(0x21d3e3, 0x0, true,true);
+
+        //addprocedurestop(0x297253, 0x0, true,false,0x12346789);
+        //addprocedurestop(0x2221a0, 0x0, true, false);
         //addprocedurestop(0x229a20, 0x0, true);
         //addprocedurestop(0x238730, 0x0, true);
         //addprocedurestop(0x213420, 0x0, true);
@@ -159,7 +182,9 @@ void enginestep() {
         //addprocedurestop(0x250150, 0x0, true);
         //addprocedurestop(0x23d8d0, 0x0, true);
         //addprocedurestop(0x20e710, 0x0, true);
-        addprocedurestop(0x20f3b8, 0x0, true);
+        //addprocedurestop(0x244c90, 0x0, true);
+        //addprocedurestop(0x23cf50, 0x0, true);
+        
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -178,6 +203,7 @@ void enginestep() {
                 {
                     //saveactstate();
                     DEBUG_EnableDebugger();
+                    if (addprocedurestoponmemchange)stoponmemchange = true;
                     xcounter2++;
                 }
                 else addprocedurestopcount--;
@@ -232,6 +258,8 @@ void enginestep() {
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 //if (0x6F732F == oldmem)saveactstate();
+                if(stoponmemchange)
+                    DEBUG_EnableDebugger();
                 //DEBUG_EnableDebugger();
                 fclose(fptestep);
                 //findvarval = 0;//fix
@@ -775,8 +803,9 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
     case 0x00000160: {
         savecalls(offset);
         if ((addprocedurestopadress == offset)&&(addprocedurestopcount!=-1)) {
-            if (addprocedurestopcount == 0)DEBUG_EnableDebugger();
-            else addprocedurestopcount--;
+            if (addprocedurestopcount == 0);// DEBUG_EnableDebugger();
+            else
+            addprocedurestopcount--;
         }
         switch (offset) {
             case 0x26E8000:{//181000 1A1000 rozdila a rozdil b//main
