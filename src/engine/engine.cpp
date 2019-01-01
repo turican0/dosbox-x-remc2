@@ -58,7 +58,7 @@ unsigned long findvarseg=0x168;
 //unsigned long findvaradr = 0xaaa355200;
 //unsigned long findvaradr = 0x19f0ec;
 //unsigned long findvaradr = 0x35606d;
-unsigned long findvaradr = 0x2aa51c;
+unsigned long findvaradr = 0x2a5350;
 
 unsigned long findvarval = 0x034c;
 
@@ -155,7 +155,7 @@ void enginestep() {
 
         //addprocedurestop(0x252890, 0x0, true, true, 0x2c6340);
 
-        addprocedurestop(0x252410, 0x0, true, true, 0x2c6340);
+        addprocedurestop(0x21ef76, 0x0, true, true, 0x2c63400);
 
         //addprocedurestop(0x251f50, 0x0, true, true, 0x38cf6a);
 
@@ -260,7 +260,7 @@ void enginestep() {
                 //if (0x6F732F == oldmem)saveactstate();
                 if(stoponmemchange)
                     DEBUG_EnableDebugger();
-                //DEBUG_EnableDebugger();
+                DEBUG_EnableDebugger();
                 fclose(fptestep);
                 //findvarval = 0;//fix
             }
