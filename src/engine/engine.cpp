@@ -122,6 +122,7 @@ void savesequence(int actcount, Bit32u dataadress) {
 
 //call stop
 Bit32u addprocedurestopadress = 0;
+Bit32u addprocedurestopfindvaradr = 0;
 int addprocedurestopcount = -1;
 bool addprocedurestopforce = false;
 bool addprocedurestoponmemchange = false;
@@ -131,7 +132,7 @@ void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u 
     addprocedurestopcount = count;
     addprocedurestopforce = force;
     addprocedurestoponmemchange = memchange;
-    findvaradr = memadress;
+    addprocedurestopfindvaradr = memadress;
 }
 //call stop
 
@@ -150,12 +151,27 @@ long xcounter2 = 0;
 void enginestep() {
     
     if (count == 0) {
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2dc1e0);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2af55c);
+        //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
+        //addprocedurestop(0x228160, 0x0, true, true, 0xa5d57000);
+        addprocedurestop(0x236F70, 0x0, true, true, 0x2bc384);
 
-        addprocedurestop(0x20e710, 0x0, true, true, 0x3aa0a4 + 0x394);
+        //addprocedurestop(0x20f38d, 0x0, true, true, 0x3aa0a400 + 0x4ed);
+        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a400 + 0x125d);
+        //addprocedurestop(0x244600, 0x0, true, true, 0x3aa0a4 + 0x59b);
 
-        //addprocedurestop(0x20e710, 0x0, true, true, 0x2c63400);
+        //addprocedurestop(0x20eaa0, 0x0, true, true, 0x3aa0a4 + 0x59b);
+        //addprocedurestop(0x232120, 0x0, true, true, 0x3633d6 + 0x40);
+        //addprocedurestop(0x20eaa0, 0x0, true, true, 0x35508800);
+
+        //addprocedurestop(0x234160, 0x0, true, true, 0x35932f);
+
+        //addprocedurestop(0x241f53, 0x0, true, true, 0x35508800);
+
+        //addprocedurestop(0x23df40, 0x0, true, true, 0x23df4000);
+
+        //addprocedurestop(0x20f260, 0x0, true, true, 0x2c63400);
 
         //addprocedurestop(0x251f50, 0x0, true, true, 0x38cf6a);
 
@@ -203,7 +219,15 @@ void enginestep() {
                 {
                     //saveactstate();
                     DEBUG_EnableDebugger();
-                    if (addprocedurestoponmemchange)stoponmemchange = true;
+                    if (addprocedurestoponmemchange) {
+                        stoponmemchange = true;
+                        findvaradr = addprocedurestopfindvaradr;
+                        /*if (0x20eaa0 == addprocedurestopadress)
+                        {
+                            addprocedurestopadress = 0x20ef1f;
+                            addprocedurestopcount = 0x3;
+                        }*/
+                    }
                     xcounter2++;
                 }
                 else addprocedurestopcount--;
