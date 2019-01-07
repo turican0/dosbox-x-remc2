@@ -155,15 +155,16 @@ void enginestep() {
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
         //addprocedurestop(0x228160, 0x0, true, true, 0xa5d57000);
-        addprocedurestop(0x236F70, 0x0, true, true, 0x2bc384);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2bc384);
 
         //addprocedurestop(0x20f38d, 0x0, true, true, 0x3aa0a400 + 0x4ed);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a400 + 0x125d);
+        addprocedurestop(0x20ce30, 0x0, true, true, 0x3aa0a400 + 0x125d);
         //addprocedurestop(0x244600, 0x0, true, true, 0x3aa0a4 + 0x59b);
 
         //addprocedurestop(0x20eaa0, 0x0, true, true, 0x3aa0a4 + 0x59b);
         //addprocedurestop(0x232120, 0x0, true, true, 0x3633d6 + 0x40);
-        //addprocedurestop(0x20eaa0, 0x0, true, true, 0x35508800);
+        //addprocedurestop(0x241f53, 0x0, true, true, 0x35508800);
+        //addprocedurestop(0x2343b0, 0x0, true, true, 0x35508800);
 
         //addprocedurestop(0x234160, 0x0, true, true, 0x35932f);
 
