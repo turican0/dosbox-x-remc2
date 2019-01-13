@@ -154,22 +154,43 @@ void enginestep() {
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
-        //addprocedurestop(0x228160, 0x0, true, true, 0xa5d57000);
-        //addprocedurestop(0x225e40, 0x0, true, true, 0xa5d57000);
+
+        //addprocedurestop(0x1f11c0, 0x0, true, true, 0x2bac3000);
+
+        //addprocedurestop(0x1f11ff, 0x0, true, true, 0x2bac3000);
+
+        //next addprocedurestop(0x1f11c0, 0x0, true, true, 0xa5d57000);
+
+        //next addprocedurestop(0x1f1130, 0x0, true, true, 0xa5d57000);
+
+        //next addprocedurestop(0x238a3d, 0x79, true, true, 0xa5d57000);
+
+        //next addprocedurestop(0x236F70, 0x0, true, true, 0x363b0e + 0x4c);
+
+        //next addprocedurestop(0x238a3d, 0xa4, true, true, 0xa5d57000);
+
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2ea12b);
+
         //addprocedurestop(0x228592, 0x0, true, true, 0x2c596200);
 
 
-        //addprocedurestop(0x238730, 0x0, true, true, 0x363a6600 + 0xc);
+        //addprocedurestop(0x244c90, 0x0, true, true, 0x363a6600 + 0xc);
         //addprocedurestop(0x238a3d, 0x79, true, true, 0x363a6600 + 0xc);
 
         //addprocedurestop(0x20f38d, 0x0, true, true, 0x3aa0a400 + 0x4ed);
         //addprocedurestop(0x242cf9, 0xa3, true, true, 0x3aa0a400 + 0x1cde);
         //addprocedurestop(0x244600, 0x0, true, true, 0x3aa0a4 + 0x59b);
 
-        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x26e2);
+        //addprocedurestop(0x21ee85, 0x0, true, true, 0x2c3c3000);
 
-        addprocedurestop(0x244c90, 0x0, true, true, 0x3aa0a400 + 0x26c0);
+        //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
+
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c3c30);
+        addprocedurestop(0x21f1b5, 0x2, true, true, 0x2c3c3000);
+
+        //addprocedurestop(0x222bd3, 0x0, true, true, 0x3aa0a400 + 0x8f09);
+
+        //addprocedurestop(0x244c90, 0x0, true, true, 0x3aa0a400 + 0x26c0);
 
         //addprocedurestop(0x241f53, 0x0, true, true, 0x35508800);
         //addprocedurestop(0x2343b0, 0x0, true, true, 0x35508800);
