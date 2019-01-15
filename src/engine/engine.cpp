@@ -160,7 +160,7 @@ long xcounter2 = 0;
 void enginestep() {
     
     if (count == 0) {
-        writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
+        //writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
@@ -196,7 +196,10 @@ void enginestep() {
         //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
 
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c3c30);
-        addprocedurestop(0x21f1b5, 0x2, true, true, 0x2c3c3000);
+        //addprocedurestop(0x21f1b5, 0x2, true, true, 0x2c3c3000);
+        //addprocedurestop(0x211d50, 0xa, true, true, 0x2c3c3000);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c3c5c);
+        addprocedurestop(0x21d080, 0x0, true, true, 0x2c3c5c00);
 
         //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
