@@ -104,18 +104,27 @@ void write_sequence() {
 FILE* fseq;
 Bit32u writesequencecodeadress = 0;
 int writesequencecount = -1;
+int writesequencesize = 1;
 int writesequencecount2 = -1;
 Bit32u writesequencedataadress = 0;
-void writesequence(Bit32u codeadress, int count, Bit32u dataadress) {
-    Bit32u writesequencecodeadress = codeadress;
-    int writesequencecount = count;
-    Bit32u writesequencedataadress = dataadress;
+Bit32u writesequencedataadress2 = 0;
+Bit32u writesequencedataadress3 = 0;
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u dataadress2, Bit32u dataadress3) {
+    writesequencecodeadress = codeadress;
+    writesequencecount = count;
+    writesequencesize = size;
+    writesequencedataadress = dataadress;
+    writesequencedataadress2 = dataadress2;
+    writesequencedataadress3 = dataadress3;
 }
 
-void savesequence(int actcount, Bit32u dataadress) {
-    fopen_s(&fseq, findname, "a+");
-    fwrite(&actcount, 4, 4, fseq);
-    fwrite(&dataadress, 4, 4, fseq);
+char findnamex[100];
+void savesequence(int actsize, Bit32u dataadress) {
+    sprintf(findnamex, "sequence-%08X.bin", writesequencecodeadress);
+    fopen_s(&fseq, findnamex, "a+");
+    //fwrite(&actcount, 4, 4, fseq);
+    fwrite(&dataadress, actsize, 1, fseq);
+    fclose(fseq);
 };
 //write sequence
 
@@ -151,6 +160,7 @@ long xcounter2 = 0;
 void enginestep() {
     
     if (count == 0) {
+        writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
@@ -191,7 +201,7 @@ void enginestep() {
         //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fd8, 0x12, true, true, 0x3622c6+0x14);
-        addprocedurestop(0x236F70, 0x0, true, true, 0x2c3c3000);
+        addprocedurestop(0x21eb44, 0x0, true, true, 0x2c3c3000);
 
         //addprocedurestop(0x222bd3, 0x0, true, true, 0x3aa0a400 + 0x8f09);
 
@@ -272,7 +282,9 @@ void enginestep() {
             if (writesequencecodeadress && (reg_eip == writesequencecodeadress)) {
                 if (writesequencecount2 < writesequencecount)
                 {
-                    savesequence(writesequencecount2, writesequencedataadress);
+                    savesequence(writesequencesize, writesequencedataadress);
+                    savesequence(writesequencesize, writesequencedataadress2);
+                    savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2++;
                 }
             }
