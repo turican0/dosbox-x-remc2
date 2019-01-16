@@ -123,7 +123,12 @@ void savesequence(int actsize, Bit32u dataadress) {
     sprintf(findnamex, "sequence-%08X.bin", writesequencecodeadress);
     fopen_s(&fseq, findnamex, "a+");
     //fwrite(&actcount, 4, 4, fseq);
-    fwrite(&dataadress, actsize, 1, fseq);
+    unsigned char buffer[1];
+    for (long i = dataadress; i < dataadress+actsize; i++) {
+        buffer[0] = (unsigned char)mem_readb(i);
+        fwrite(buffer, 1, 1, fseq);
+    }
+    //fwrite(&dataadress, actsize, 1, fseq);
     fclose(fseq);
 };
 //write sequence
@@ -160,7 +165,9 @@ long xcounter2 = 0;
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
+        addprocedurestop(0x228560, 0x1, true, true, 0x3aa0a4 + 0x51d);
+
+        //writesequence(0x2285ff, 20,200*320, 0x3aa0a4, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
@@ -199,7 +206,7 @@ void enginestep() {
         //addprocedurestop(0x21f1b5, 0x2, true, true, 0x2c3c3000);
         //addprocedurestop(0x211d50, 0xa, true, true, 0x2c3c3000);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2c3c5c);
-        addprocedurestop(0x21d080, 0x0, true, true, 0x2c3c5c00);
+        //addprocedurestop(0x21d080, 0x0, true, true, 0x2c3c5c00);
 
         //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
@@ -231,23 +238,8 @@ void enginestep() {
         //addprocedurestop(0x29dd45, 0x0, true, true, 0x2af554);
 
 
-        //addprocedurestop(0x21d3e3, 0x0, true,true);
-
         //addprocedurestop(0x297253, 0x0, true,false,0x12346789);
-        //addprocedurestop(0x2221a0, 0x0, true, false);
-        //addprocedurestop(0x229a20, 0x0, true);
-        //addprocedurestop(0x238730, 0x0, true);
-        //addprocedurestop(0x213420, 0x0, true);
-        //addprocedurestop(0x22b311, 0x42, true);
-        //addprocedurestop(0x22b311, 0x1, true);
-        //addprocedurestop(0x22b257, 0x0, true);
-        //addprocedurestop(0x22af30, 0x0, true);
-        //addprocedurestop(0x22b051, 0xb0, true);
-        //addprocedurestop(0x250150, 0x0, true);
-        //addprocedurestop(0x23d8d0, 0x0, true);
-        //addprocedurestop(0x20e710, 0x0, true);
-        //addprocedurestop(0x244c90, 0x0, true);
-        //addprocedurestop(0x23cf50, 0x0, true);
+
         
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -285,9 +277,9 @@ void enginestep() {
             if (writesequencecodeadress && (reg_eip == writesequencecodeadress)) {
                 if (writesequencecount2 < writesequencecount)
                 {
-                    savesequence(writesequencesize, writesequencedataadress);
-                    savesequence(writesequencesize, writesequencedataadress2);
-                    savesequence(writesequencesize, writesequencedataadress3);
+                    if (writesequencedataadress!=0)savesequence(writesequencesize, writesequencedataadress);
+                    if(writesequencedataadress2 != 0)savesequence(writesequencesize, writesequencedataadress2);
+                    if (writesequencedataadress3 != 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2++;
                 }
             }
