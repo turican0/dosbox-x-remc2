@@ -52,6 +52,7 @@ Bit8u temp;
 Bit32u oldmem=-123456789;
 long count = 0;
 FILE *fptestep;
+FILE *fptestepcc;
 unsigned long findvarseg=0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
@@ -94,7 +95,7 @@ char findnamec[100];
 FILE* fptestepc;
 
 char charbuffer[500];
-
+char findnamecc[500];
 //write sequence
 
 void write_sequence() {
@@ -121,9 +122,14 @@ void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bi
 char findnamex[100];
 void savesequence(int actsize, Bit32u dataadress) {
     sprintf(findnamex, "sequence-%08X.bin", writesequencecodeadress);
-    fopen_s(&fseq, findnamex, "a+");
+    fopen_s(&fseq, findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
-    fwrite(&dataadress, actsize, 1, fseq);
+    unsigned char buffer[1];
+    for (long i = 0; i < actsize; i++) {
+        buffer[0] = (unsigned char)mem_readb(i+ dataadress);
+        fwrite(buffer, 1, 1, fseq);
+    }
+
     fclose(fseq);
 };
 //write sequence
@@ -136,12 +142,15 @@ int addprocedurestopcount = -1;
 bool addprocedurestopforce = false;
 bool addprocedurestoponmemchange = false;
 bool stoponmemchange = false;
-void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress) {
+Bit32u addprocedurecounteradress = 0;
+Bit32u addprocedurecount = 0;
+void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress, Bit32u counteradress) {
     addprocedurestopadress = adress;
     addprocedurestopcount = count;
     addprocedurestopforce = force;
     addprocedurestoponmemchange = memchange;
     addprocedurestopfindvaradr = memadress;
+    addprocedurecounteradress = counteradress;
 }
 //call stop
 
@@ -161,9 +170,10 @@ void enginestep() {
     
     if (count == 0) {
         //writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
+        //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c5962);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2b98e0);
 
         //addprocedurestop(0x1f11c0, 0x0, true, true, 0x2bac3000);
 
@@ -195,14 +205,21 @@ void enginestep() {
 
         //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
 
-        //addprocedurestop(0x242a00, 0x1, true, true, 0x3aa0a4 + 0x51d);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x8fa6);
-        addprocedurestop(0x265050, 0x0, true, true, 0x35603800 + 0x8fa6);
-        //addprocedurestop(0x232d10, 0x0, true, true, 0x35603800 + 0x2f7d);
+        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0xddd0);
+        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x51d,0x242cf9);
+        //addprocedurestop(0x242cf9, 0x46A, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x38cfcb,0x12345678);
+        //addprocedurestop(0x1f3330, 0x1, true, true, 0x35603800 + 0x365fc + 8);
+        //addprocedurestop(0x1f3100, 0x0, true, true, 0x35603800 + 0x365fc + 8);
+        //addprocedurestop(0x22b268, 0x16, true, true, 0x35603800 + 0x2f7d);
+
+        //addprocedurestop(0x242a00, 0x1, true, true, 0x35603800 + 0x2f7d);
+
+        //addprocedurestop(0x1f3100, 0x0, true, true, 0x35603800 + 0x2f7d);
 
         //addprocedurestop(0x2342d2, 0x0, true, true, 0x3aa0a400 + 0x51d);
 
-        //addprocedurestop(0x227830, 0x0, true, true, 0x3aa0a400 + 0x51d);
+        //addprocedurestop(0x232bb0, 0x0, true, true, 0x3aa0a400 + 0x51d);
 
         //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
@@ -284,13 +301,20 @@ void enginestep() {
                 else addprocedurestopcount--;
             }
         }
+        if (reg_eip == addprocedurecounteradress) {
+            sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
+            fopen_s(&fptestepcc, findnamecc, "a+");
+            fprintf(fptestepcc, "%d\n", addprocedurecount);
+            fclose(fptestepcc);
+            addprocedurecount++;
+        }
         if (writesequencecount != -1) {
             if (writesequencecodeadress && (reg_eip == writesequencecodeadress)) {
                 if (writesequencecount2 < writesequencecount)
                 {
                     savesequence(writesequencesize, writesequencedataadress);
-                    savesequence(writesequencesize, writesequencedataadress2);
-                    savesequence(writesequencesize, writesequencedataadress3);
+                    if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
+                    if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2++;
                 }
             }
