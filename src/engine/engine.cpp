@@ -204,6 +204,7 @@ void enginestep() {
         //addprocedurestop(0x21ee85, 0x0, true, true, 0x2c3c3000);
 
         //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
+        addprocedurestop(0x23354c, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
 
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0xddd0);
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x51d,0x242cf9);
@@ -300,6 +301,9 @@ void enginestep() {
                 }
                 else addprocedurestopcount--;
             }
+        }
+        if (reg_eip == 0x236FE1) {//skipscreen
+            mem_writeb(0x2a51ad,1);
         }
         if (reg_eip == addprocedurecounteradress) {
             sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
