@@ -171,7 +171,7 @@ bool killmouse = false;
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x235a50, 20,4, 0x2bac30, 0, 0);
+        //writesequence(0x2285ff, 20,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -208,8 +208,12 @@ void enginestep() {
         //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
         //addprocedurestop(0x23354c, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
         //addprocedurestop(0x233d56, 0x2, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x1f8a00, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x35ce7600, 0x242cf9);
+        //addprocedurestop(0x1f8a00, 0x0, true, true, 0x35ce7600, 0x242cf9);
+
+        addprocedurestop(0x232cd2, 0x0, true, true, 0x38cfcb, 0x242cf9);
+        //addprocedurestop(0x228560, 0x0, true, true, 0x38cfcb, 0x242cf9);
+        //addprocedurestop(0x242cf9, 1130, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
+
         //addprocedurestop(0x236F70, 0x0, true, true, 0x351560, 0x242cf9);
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0xddd0);
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x51d,0x242cf9);
@@ -307,13 +311,15 @@ void enginestep() {
                 else addprocedurestopcount--;
             }
         }
-        if (reg_eip == 0x228320) {//skipscreen
+        if (reg_eip == 0x237a30) {//skipscreen
             killmouse = true;
         }
         if ((reg_eip == 0x26db3a)&&killmouse) {//skipscreen
-            reg_ecx = 0;
-            reg_edx = 0;
+            reg_ecx = 0x140;
+            reg_edx = 0xc8;
             //DEBUG_EnableDebugger();
+            //=Segs.phys[eip] = 0;
+            //reg_eip = 0x26dd26;
         }
         if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
