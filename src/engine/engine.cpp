@@ -166,6 +166,8 @@ void writesubcall(char* text, int level) {
 long xcounter = 0;
 long xcounter2 = 0;
 
+bool killmouse = false;
+
 void enginestep() {
     
     if (count == 0) {
@@ -208,7 +210,7 @@ void enginestep() {
         //addprocedurestop(0x233d56, 0x2, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
         //addprocedurestop(0x1f8a00, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
         //addprocedurestop(0x228560, 0x0, true, true, 0x35ce7600, 0x242cf9);
-        addprocedurestop(0x236F70, 0x0, true, true, 0x351560, 0x242cf9);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x351560, 0x242cf9);
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0xddd0);
         //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x51d,0x242cf9);
         //addprocedurestop(0x242cf9, 0x46A, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
@@ -223,7 +225,7 @@ void enginestep() {
 
         //addprocedurestop(0x2342d2, 0x0, true, true, 0x3aa0a400 + 0x51d);
 
-        //addprocedurestop(0x232bb0, 0x0, true, true, 0x3aa0a400 + 0x51d);
+        //addprocedurestop(0x232bb0, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
 
         //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
         //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
@@ -304,6 +306,14 @@ void enginestep() {
                 }
                 else addprocedurestopcount--;
             }
+        }
+        if (reg_eip == 0x228320) {//skipscreen
+            killmouse = true;
+        }
+        if ((reg_eip == 0x26db3a)&&killmouse) {//skipscreen
+            reg_ecx = 0;
+            reg_edx = 0;
+            //DEBUG_EnableDebugger();
         }
         if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
