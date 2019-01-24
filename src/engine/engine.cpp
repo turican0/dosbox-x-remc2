@@ -172,7 +172,7 @@ void enginestep() {
     
     if (count == 0) {
         //writesequence(0x2285ff, 20,320*200, 0x3aa0a4, 0, 0);
-        writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
+        //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -249,44 +249,9 @@ void enginestep() {
 
         //addprocedurestop(0x244c90, 0x0, true, true, 0x3aa0a400 + 0x26c0);
 
-        //addprocedurestop(0x241f53, 0x0, true, true, 0x35508800);
-        //addprocedurestop(0x2343b0, 0x0, true, true, 0x35508800);
 
-        //addprocedurestop(0x234160, 0x0, true, true, 0x35932f);
+        addprocedurestop(0x228560, 0x2, true, true, 0x356038 + 0x120a, 0x242cf9);
 
-        //addprocedurestop(0x241f53, 0x0, true, true, 0x35508800);
-
-        //addprocedurestop(0x23df40, 0x0, true, true, 0x23df4000);
-
-        //addprocedurestop(0x20f260, 0x0, true, true, 0x2c63400);
-
-        //addprocedurestop(0x251f50, 0x0, true, true, 0x38cf6a);
-
-        //addprocedurestop(0x232bb0, 0x0, true, true, 0x38cf6a);
-
-        //addprocedurestop(0x23c8d0, 0x0, true, true, 0x12346789);
-        //addprocedurestop(0x23cf50, 0x0, true, true, 0x12346789);
-
-        //addprocedurestop(0x29dd45, 0x0, true, true, 0x2af554);
-
-
-        //addprocedurestop(0x21d3e3, 0x0, true,true);
-
-        //addprocedurestop(0x297253, 0x0, true,false,0x12346789);
-        //addprocedurestop(0x2221a0, 0x0, true, false);
-        //addprocedurestop(0x229a20, 0x0, true);
-        //addprocedurestop(0x238730, 0x0, true);
-        //addprocedurestop(0x213420, 0x0, true);
-        //addprocedurestop(0x22b311, 0x42, true);
-        //addprocedurestop(0x22b311, 0x1, true);
-        //addprocedurestop(0x22b257, 0x0, true);
-        //addprocedurestop(0x22af30, 0x0, true);
-        //addprocedurestop(0x22b051, 0xb0, true);
-        //addprocedurestop(0x250150, 0x0, true);
-        //addprocedurestop(0x23d8d0, 0x0, true);
-        //addprocedurestop(0x20e710, 0x0, true);
-        //addprocedurestop(0x244c90, 0x0, true);
-        //addprocedurestop(0x23cf50, 0x0, true);
         
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
