@@ -177,6 +177,8 @@ void enginestep() {
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x238a3d, 0x3e8*2, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
+        //writesequence(0x2285ff, 200, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x2285ff, 20, 0x1000, 0x2b3a74, 0, 0);
 
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -281,7 +283,12 @@ void enginestep() {
         //addprocedurestop(0x238a3d, 0x1f6a, true, true, 0x38cfcb00, 0x12345678);
         //addprocedurestop(0x228760, 0x0, true, true, 0x3aa0a400 + 0x1f71, 0x242cf9);
         //addprocedurestop(0x1fc8c0, 0x0, true, true, 0x38cfcb00, 0x12345678);
-        addprocedurestop(0x238a3d, 0x1b83, true, true, 0x35603800 + 0x9022, 0x242cf9);
+        //addprocedurestop(0x238a3d, 0x1b83, true, true, 0x35603800 + 0x9022, 0x242cf9);
+        //addprocedurestop(0x268610, 0x0, true, true, 0x38cfcb00, 0x12345678);
+        //addprocedurestop(0x268580, 0x1, true, true, 0x38cfcb00, 0x12345678);
+        //addprocedurestop(0x268090, 0x0, true, true, 0x38cfcb00, 0x12345678);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x2b3a74 + 0x21f, 0x12345678);
+        addprocedurestop(0x269580, 0x0, true, true, 0x2b3a7400 + 0x21f, 0x12345678);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
