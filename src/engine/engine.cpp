@@ -171,14 +171,21 @@ bool killmouse = false;
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x2285ff, 20,320*200, 0x3aa0a4, 0, 0);
+        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x238a3d, 0x3e8*2, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285ff, 200, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x2285ff, 20, 0x1000, 0x2b3a74, 0, 0);
+        //writesequence(0x2285ff, 2000, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x2285ff, 0x500, 0xc4e, 0x2b3a74, 0, 0);
+        //writesequence(0x2685a7, 200, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x2285ff, 2000, 0xc4e, 0x2b3a74, 0, 0);
+
+        //writesequence(0x269450, 0x300, 0xb0, 0x3514b0, 0, 0);
+
+        //writesequence(0x269450, 0x300, 0xc4e, 0x2b3a74, 0, 0);
+        //writesequence(0x2694bc, 0x300, 0xb0, 0x3514b0, 0, 0);
 
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -290,7 +297,20 @@ void enginestep() {
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2b3a74 + 0x21f, 0x12345678);
         //addprocedurestop(0x269b20, 0x0, true, true, 0x2b3a74 + 0x88d, 0x12345678);
         //addprocedurestop(0x228560, 0x0, true, true, 0x2b3a74 + 0x22, 0x12345678);
-        addprocedurestop(0x269450, 0x0, true, true, 0x2b3a7400 + 0x22, 0x12345678);
+        //addprocedurestop(0x269450, 0x1, true, true, 0x2b3a7400 + 0x22, 0x12345678);
+        //addprocedurestop(0x268b70, 0x1, true, true, 0x2b3a7400 + 0x22, 0x12345678);
+        //addprocedurestop(0x2285e0, 0x0, true, true, 0x2b43b6 + 2, 0x12345678);
+        //addprocedurestop(0x228560, 0x41, true, true, 0x3aa0a4 + 0x1e29, 0x12345678);
+        //addprocedurestop(0x29e550, 0x0, true, true, 0x3514b000 + 0x8e, 0x12345678);
+        //addprocedurestop(0x2459c3, 0x0, true, true, 0x3514b000 + 0x8e, 0x12345678);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0 + 0, 0x268610);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x35153e, 0x268610);
+
+        //addprocedurestop(0x268610, 0x73, true, true, 0x3514b000 + 0, 0x12345678);
+        //addprocedurestop(0x268610, 0x50, true, true, 0x3514b000 + 0, 0x12345678);
+        //addprocedurestop(0x2681f0, 0x0, true, true, 0x35153e00, 0x268610);
+        //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
+        addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd , 0x268610);
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -369,6 +389,7 @@ void enginestep() {
             if (oldmem != actmem)
             {
                 //if (findvarval == actmem)
+                //if (0x77 == actmem&0xff)
                 {
                     fopen_s(&fptestep, findname, "a+");
                     fprintf(fptestep, "PREPREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprepreprelastoff, prepreprepreprelastoff - 0x1E1000, prepreprepreprelastesp);
