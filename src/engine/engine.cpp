@@ -163,6 +163,50 @@ void writesubcall(char* text, int level) {
     fclose(fptestepc);
 };
 
+bool inspect_on = false;
+char findnamespy[100];
+FILE* fptestepspy;
+
+void spywrite(int adress) {
+    Bit32u actmem = mem_readd(SegPhys(ds) + adress);
+    fprintf(fptestepspy, "%08X:%08X |", adress, actmem);    
+}
+
+void spytest(int procedure) {
+    if (reg_eip == procedure)
+    {
+        sprintf(findnamespy, "spy.txt");
+        fopen_s(&fptestepspy, findnamespy, "a+");
+
+        fprintf(fptestepspy, "-----------------------\n");
+        fprintf(fptestepspy, "proc:%08X\n", procedure);
+        spywrite(0x3514b0);//adress
+        spywrite(0x3514cc);//adress
+        spywrite(0x3514b0+0x88);//adress
+        fprintf(fptestepspy, "\n");
+        fclose(fptestepspy);
+    }
+}
+
+void spyinspect() {
+    if (inspect_on)
+    {
+        
+        spytest(0x268610);//procedure
+        //spytest(0x228560);//procedure
+        spytest(0x269450);//procedure
+        spytest(0x268580);//procedure       
+        
+    }
+}
+
+void addspy() {
+    sprintf(findnamespy, "spy.txt");
+    fopen_s(&fptestepspy, findnamespy, "wt");
+    fclose(fptestepspy);
+    inspect_on = true;
+};
+
 long xcounter = 0;
 long xcounter2 = 0;
 
@@ -310,7 +354,8 @@ void enginestep() {
         //addprocedurestop(0x268610, 0x50, true, true, 0x3514b000 + 0, 0x12345678);
         //addprocedurestop(0x2681f0, 0x0, true, true, 0x35153e00, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
-        addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd , 0x268610);
+        //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd , 0x268610);
+        addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -322,6 +367,7 @@ void enginestep() {
     }
     if (count > 10000)
     {
+        spyinspect();
         if (addprocedurestopcount != -1)
         {
             if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
