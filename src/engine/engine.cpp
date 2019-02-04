@@ -181,6 +181,9 @@ void spytest(int procedure) {
         fprintf(fptestepspy, "-----------------------\n");
         fprintf(fptestepspy, "proc:%08X\n", procedure);
         spywrite(0x3514b0);//adress
+        spywrite(0x3514b4);//adress
+        spywrite(0x3514b8);//adress
+        spywrite(0x3514bc);//adress
         spywrite(0x3514cc);//adress
         spywrite(0x3514b0+0x88);//adress
         fprintf(fptestepspy, "\n");
@@ -190,13 +193,15 @@ void spytest(int procedure) {
 
 void spyinspect() {
     if (inspect_on)
-    {
-        
+    {        
         spytest(0x268610);//procedure
-        //spytest(0x228560);//procedure
+        spytest(0x228560);//procedure
         spytest(0x269450);//procedure
-        spytest(0x268580);//procedure       
-        
+        spytest(0x268580);//procedure
+        spytest(0x26a520);//procedure
+        spytest(0x26a5be);//procedure
+        spytest(0x26a830);//procedure
+        spytest(0x26a893);//procedure    
     }
 }
 
