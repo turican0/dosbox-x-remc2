@@ -184,9 +184,37 @@ void spytest(int procedure) {
         spywrite(0x3514b4);//adress
         spywrite(0x3514b8);//adress
         spywrite(0x3514bc);//adress
-        spywrite(0x3514cc);//adress
-        spywrite(0x3514b0+0x88);//adress
         fprintf(fptestepspy, "\n");
+        spywrite(0x3514c0);//adress
+        spywrite(0x3514c4);//adress
+        spywrite(0x3514c8);//adress
+        spywrite(0x3514cc);//adress
+        fprintf(fptestepspy, "\n\n");
+        spywrite(0x3514b0 + 0x80);//adress
+        spywrite(0x3514b0+0x84);//adress
+        spywrite(0x3514b0+0x88);//adress
+        spywrite(0x3514b0+0x8c);//adress
+        fprintf(fptestepspy, "\n");
+        fclose(fptestepspy);
+    }
+}
+
+void spytest_269497() {
+    if (reg_eip == 0x269497)
+    {
+        sprintf(findnamespy, "spy.txt");
+        fopen_s(&fptestepspy, findnamespy, "a+");
+
+        fprintf(fptestepspy, "**********************\n");
+        fprintf(fptestepspy, "v1:%08X,v4:%08X,v3:%08X,v2:%08X,v0:%08X\n", reg_edx, reg_edi, reg_ecx, reg_eax, reg_ebx);
+        /*reg_ecx
+        edx - v1
+        edi    v4
+        ecx v3
+         eax   v2
+         ebx   v0*/
+
+        
         fclose(fptestepspy);
     }
 }
@@ -195,13 +223,17 @@ void spyinspect() {
     if (inspect_on)
     {        
         spytest(0x268610);//procedure
-        spytest(0x228560);//procedure
+        //spytest(0x228560);//procedure
         spytest(0x269450);//procedure
         spytest(0x268580);//procedure
         spytest(0x26a520);//procedure
         spytest(0x26a5be);//procedure
         spytest(0x26a830);//procedure
-        spytest(0x26a893);//procedure    
+        spytest(0x26a893);//procedure
+        spytest(0x268610);//procedure
+        spytest(0x268c10);//procedure
+        spytest(0x2682a0);//procedure
+        spytest_269497();//procedure    
     }
 }
 
@@ -360,7 +392,8 @@ void enginestep() {
         //addprocedurestop(0x2681f0, 0x0, true, true, 0x35153e00, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd , 0x268610);
-        addspy();
+        addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0+0x86, 0x268610);
+        //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
