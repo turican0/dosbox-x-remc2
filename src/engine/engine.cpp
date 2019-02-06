@@ -299,9 +299,13 @@ void enginestep() {
         //writesequence(0x2285ff, 2000, 0xc4e, 0x2b3a74, 0, 0);
 
         //writesequence(0x269450, 0x300, 0xb0, 0x3514b0, 0, 0);
-
         //writesequence(0x269450, 0x300, 0xc4e, 0x2b3a74, 0, 0);
+
         //writesequence(0x2694bc, 0x300, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x2694bc, 0x300, 0xc4e, 0x2b3a74, 0, 0);
+
+        //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x268858, 0x300, 0xb0, 0x3514b0, 0, 0);
 
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -428,6 +432,7 @@ void enginestep() {
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd00 , 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0+0x0, 0x268610);
+        addprocedurestop(0x236F70, 0x0, true, true, 0x3516e4, 0x268610);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
