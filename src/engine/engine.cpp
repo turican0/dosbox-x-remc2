@@ -433,7 +433,7 @@ void enginestep() {
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd00 , 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0+0x0, 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2bc3a8, 0x268610);
-        addprocedurestop(0x2562c0, 0x0, true, true, 0x2bc3a8, 0x268610);
+        //addprocedurestop(0x2562c0, 0x0, true, true, 0x2bc3a800, 0x268610);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -469,7 +469,7 @@ void enginestep() {
             }
         }
         if (reg_eip == 0x237a30) {//skipscreen
-            killmouse = true;
+            //killmouse = true;
         }
         if ((reg_eip == 0x26db3a)&&killmouse) {//skipscreen
             reg_ecx = 0x140;
