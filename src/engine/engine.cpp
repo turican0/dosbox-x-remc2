@@ -432,7 +432,7 @@ void enginestep() {
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd00 , 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0+0x0, 0x268610);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2bc3a8, 0x268610);
+        addprocedurestop(0x20fcc0, 0x0, true, true, 0x34eb5400, 0x268610);
         //addprocedurestop(0x2562c0, 0x0, true, true, 0x2bc3a800, 0x268610);
         //addspy();
 
