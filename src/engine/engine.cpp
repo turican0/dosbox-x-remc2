@@ -283,18 +283,19 @@ long xcounter = 0;
 long xcounter2 = 0;
 
 bool killmouse = false;
+int mousetest = 0;
 
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x238a3d, 0x3e8*2, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285ff, 2000, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x2285ff, 0x500, 0xc4e, 0x2b3a74, 0, 0);
+        //writesequence(0x2285ff, 0x20*0xb0, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x2285ff, 0x20 * 0xc4e, 0xc4e, 0x2b3a74, 0, 0);
         //writesequence(0x2685a7, 200, 0xb0, 0x3514b0, 0, 0);
         //writesequence(0x2285ff, 2000, 0xc4e, 0x2b3a74, 0, 0);
 
@@ -432,7 +433,7 @@ void enginestep() {
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
         //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd00 , 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0+0x0, 0x268610);
-        addprocedurestop(0x20fcc0, 0x0, true, true, 0x34eb5400, 0x268610);
+        //addprocedurestop(0x20fcc0, 0x0, true, true, 0x34eb5400, 0x268610);
         //addprocedurestop(0x2562c0, 0x0, true, true, 0x2bc3a800, 0x268610);
         //addspy();
 
@@ -468,8 +469,24 @@ void enginestep() {
                 else addprocedurestopcount--;
             }
         }
+        if (reg_eip == 0x228388) {//test mouse
+            if (mousetest == 2)
+            {
+                //if (!x_WORD_18074A_mouse_right2_button && !x_WORD_180744_mouse_right_button)//first cycle after press and ...
+                {
+                    //x_WORD_180744_mouse_right_button = 1;
+                    mem_writew(0x351744, 1);
+                    //x_WORD_E375C_mouse_position_x = temp_mouse_x;
+                    //mouse_state = temp_mouse_y;
+                    //x_WORD_E375E_mouse_position_y = temp_mouse_y;
+                }
+                //x_WORD_18074A_mouse_right2_button = 1;
+                mem_writew(0x35174a, 1);
+            }
+            mousetest++;
+        }
         if (reg_eip == 0x237a30) {//skipscreen
-            //killmouse = true;
+            killmouse = true;
         }
         if ((reg_eip == 0x26db3a)&&killmouse) {//skipscreen
             reg_ecx = 0x140;
