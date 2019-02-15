@@ -442,7 +442,8 @@ void enginestep() {
         //addprocedurestop(0x20fcc0, 0x0, true, true, 0x34eb5400, 0x268610);
         //addprocedurestop(0x21f370, 0x92, true, true, 0x2bc3a800, 0x268610);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x3655f6+0x1c, 0x268610);
-        addprocedurestop(0x246f60, 0x0, true, true, 0x3655f6 + 0x1c, 0x268610);
+        //addprocedurestop(0x246f60, 0x0, true, true, 0x3655f6 + 0x1c, 0x268610);
+        addprocedurestop(0x249226, 0x9, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
