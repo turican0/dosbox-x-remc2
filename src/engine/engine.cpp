@@ -288,7 +288,7 @@ int mousetest = 0;
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
@@ -445,7 +445,7 @@ void enginestep() {
         //addprocedurestop(0x246f60, 0x0, true, true, 0x3655f6 + 0x1c, 0x268610);
         //addprocedurestop(0x249226, 0x9, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addprocedurestop(0x1f1780, 0x0, true, true, 0x3655f600 + 0x1c, 0x268610);
-        addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
+        //addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -480,13 +480,16 @@ void enginestep() {
                 else addprocedurestopcount--;
             }
         }
-        /*if (reg_eip == 0x228388) {//test mouse
+        if (reg_eip == 0x228388) {//test mouse
             if (mousetest == 2)
             {
                 //if (!x_WORD_18074A_mouse_right2_button && !x_WORD_180744_mouse_right_button)//first cycle after press and ...
                 {
                     //x_WORD_180744_mouse_right_button = 1;
                     mem_writew(0x351744, 1);
+                    //castle change
+                    mem_writed(0x2a5c52 + 0x1856 + 6, 0x240a70);
+
                     //x_WORD_E375C_mouse_position_x = temp_mouse_x;
                     //mouse_state = temp_mouse_y;
                     //x_WORD_E375E_mouse_position_y = temp_mouse_y;
@@ -505,7 +508,7 @@ void enginestep() {
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
-        }*/
+        }
         if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
         }
