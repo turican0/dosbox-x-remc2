@@ -288,7 +288,9 @@ int mousetest = 0;
 void enginestep() {
     
     if (count == 0) {
-        writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
+        //writesequence(0x2285ff, 0x50, 0x14600, 0x2c7ee0, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
@@ -446,6 +448,7 @@ void enginestep() {
         //addprocedurestop(0x249226, 0x9, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addprocedurestop(0x1f1780, 0x0, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
+        addprocedurestop(0x242a00, 0x8, true, true, 0x3aa0a400 + 0x21df, 0x268610);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
