@@ -288,11 +288,11 @@ int mousetest = 0;
 void enginestep() {
     
     if (count == 0) {
-        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2c7ee0, 0, 0);
-        writesequence(0x2285ff, 0x50, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285d1, 20, 0x36e16, 0x356038, 0, 0);
+        //writesequence(0x2285ff, 0x50, 0x36e16, 0x356038, 0, 0);
+        //writesequence(0x2285d1, 0x50, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x238a3d, 0x3e8*2, 0x36e16, 0x356038, 0, 0);
         //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
@@ -303,8 +303,11 @@ void enginestep() {
 
         //writesequence(0x2285ff, 0x10, 0x14600, 0x2c7ee0, 0, 0);//x_BYTE_F6EE0_tablesx
         //writesequence(0x2285ff, 0x10, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
-        //writesequence(0x21f370, 0x10000, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
+        //writesequence(0x2285ff, 0x10000, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
 
+        //writesequence(0x2285ff, 0x20, 0x10000, 0x2dc4e0, 0, 0);//x_BYTE_10B4E0
+        //writesequence(0x2285ff, 0x20, 0x10000, 0x2fc4e0, 0, 0);//x_BYTE_12B4E0
+        //writesequence(0x2285ff, 0x20, 0x10000, 0x30c4e0, 0, 0);//x_BYTE_13B4E0
 
         //writesequence(0x269450, 0x300, 0xb0, 0x3514b0, 0, 0);
         //writesequence(0x269450, 0x300, 0xc4e, 0x2b3a74, 0, 0);
@@ -449,7 +452,11 @@ void enginestep() {
         //addprocedurestop(0x1f1780, 0x0, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
         //addprocedurestop(0x242a00, 0x7, true, true, 0x356038 + 0x1154e, 0x268610);
-        addprocedurestop(0x228560, 0x8, true, true, 0x356038 + 0x1153e + 0x45, 0x268610);
+        //addprocedurestop(0x228560, 0x8, true, true, 0x356038 + 0x1153e + 0x45, 0x268610);
+        //addprocedurestop(0x2285ff, 0x7, true, true, 0x2dc4e0, 0x268610);
+        //addprocedurestop(0x2285ff, 0xb, true, true, 0x30c4e0 + 0x2, 0x2272a000);
+        //addprocedurestop(0x2285ff, 0x1a, true, true, 0x356038 + 0x1156c, 0x2272a000);
+        //addprocedurestop(0x22ba40, 0x0, true, true, 0x30c4e000 + 0x2, 0x2272a000);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -491,8 +498,9 @@ void enginestep() {
                 {
                     //x_WORD_180744_mouse_right_button = 1;
                     mem_writew(0x351744, 1);
+
                     //castle change
-                    mem_writed(0x2a5c52 + 0x1856 + 6, 0x240a70);
+                    //mem_writed(0x2a5c52 + 0x1856 + 6, 0x22ba40);
 
                     //x_WORD_E375C_mouse_position_x = temp_mouse_x;
                     //mouse_state = temp_mouse_y;
