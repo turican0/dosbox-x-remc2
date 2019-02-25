@@ -288,7 +288,7 @@ int mousetest = 0;
 void enginestep() {
     
     if (count == 0) {
-        writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
+        //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2c7ee0, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x36e16, 0x356038, 0, 0);
@@ -515,7 +515,7 @@ void enginestep() {
             killmouse = true;
         }
         if ((reg_eip == 0x26db3a)&&killmouse) {//skipscreen
-            reg_ecx = 0x140;
+            reg_ecx = 0x160;
             reg_edx = 0xc8;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
