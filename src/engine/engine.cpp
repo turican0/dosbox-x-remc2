@@ -301,7 +301,7 @@ void enginestep() {
         //writesequence(0x2685a7, 200, 0xb0, 0x3514b0, 0, 0);
         //writesequence(0x2285ff, 2000, 0xc4e, 0x2b3a74, 0, 0);
 
-        writesequence(0x222bd3, 0x500, 0x28*4, 0x2c3c20, 0, 0);
+        //writesequence(0x222bd3, 0x500, 0x28*4, 0x2c3c20, 0, 0);
 
         //writesequence(0x2285ff, 0x10, 0x14600, 0x2c7ee0, 0, 0);//x_BYTE_F6EE0_tablesx
         //writesequence(0x2285ff, 0x10, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
@@ -454,11 +454,11 @@ void enginestep() {
         //addprocedurestop(0x1f1780, 0x0, true, true, 0x3655f600 + 0x1c, 0x268610);
         //addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
         //addprocedurestop(0x242a00, 0x7, true, true, 0x356038 + 0x1154e, 0x268610);
-        addprocedurestop(0x228560, 0x0, true, true, 0x35603800 + 0x1153e + 0x45, 0x268610);
+        //addprocedurestop(0x228560, 0x0, true, true, 0x35603800 + 0x1153e + 0x45, 0x268610);
         //addprocedurestop(0x2285ff, 0x7, true, true, 0x2dc4e0, 0x268610);
         //addprocedurestop(0x2285ff, 0xb, true, true, 0x30c4e0 + 0x2, 0x2272a000);
         //addprocedurestop(0x2285ff, 0x1a, true, true, 0x356038 + 0x1156c, 0x2272a000);
-        //addprocedurestop(0x2285ff, 0x1el, true, true, 0x3aa0a4 + 0x2167, 0x2272a000);
+        addprocedurestop(0x2285ff, 0x0, true, true, 0x3aa0a4 + 0xe051, 0x2272a000);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
