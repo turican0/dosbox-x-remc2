@@ -466,7 +466,7 @@ void enginestep() {
         //addprocedurestop(0x21f370, 0x5f, true, true, 0x400604, 0x2272a000);
         //addprocedurestop(0x238b20, 0x0, true, true, 0x3aa0a400 + 0xe051el, 0x2272a000);
         //addprocedurestop(0x20fcc0, 0x0, true, true, 0x35159c00, 0x2272a000);
-        addprocedurestop(0x20fcc0, 0x0, true, true, 0x2aa4ff00, 0x2272a000);
+        addprocedurestop(0x26a03c, 0x0, true, true, 0x2b446a00 + 0xa, 0x2272a000);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -531,13 +531,13 @@ void enginestep() {
         if (reg_eip == 0x237a30) {//skipscreen
             killmouse = true;
         }
-        if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
+        /*if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
             reg_ecx = 0x140;
             reg_edx = 0xc8;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
-        }
+        }*/
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
             reg_ecx = 0xc8;
             reg_edx = 0x160;
@@ -545,12 +545,12 @@ void enginestep() {
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
         }*/
-        if ((reg_eip == 0x238c10) && killmouse) {//rotate
+        /*if ((reg_eip == 0x238c10) && killmouse) {//rotate
             reg_ax = 0x6;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
-        }
+        }*/
         if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
         }
