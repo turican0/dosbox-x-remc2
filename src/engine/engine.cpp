@@ -321,8 +321,8 @@ void enginestep() {
         //writesequence(0x2694bc, 0x300, 0xc4e, 0x2b3a74, 0, 0);
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x268858, 0x300, 0xb0, 0x3514b0, 0, 0);
-
+        writesequence(0x227830, 0x1, 0x36e16, 0x356038, 0, 0);
+        
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x2b98e0);
