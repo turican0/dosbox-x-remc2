@@ -102,35 +102,41 @@ void write_sequence() {
 }
 
 //write sequence
-FILE* fseq;
-Bit32u writesequencecodeadress = 0;
-int writesequencecount = -1;
-int writesequencesize = 1;
-int writesequencecount2 = -1;
-Bit32u writesequencedataadress = 0;
-Bit32u writesequencedataadress2 = 0;
-Bit32u writesequencedataadress3 = 0;
-void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u dataadress2, Bit32u dataadress3) {
-    writesequencecodeadress = codeadress;
-    writesequencecount = count;
-    writesequencesize = size;
-    writesequencedataadress = dataadress;
-    writesequencedataadress2 = dataadress2;
-    writesequencedataadress3 = dataadress3;
+int lastwriteindexsequence = 0;
+FILE* fseq[10];
+Bit32u writesequencecodeadress[10];
+int writesequencecount[10];
+int writesequencesize[10];
+int writesequencecount2[10];
+Bit32u writesequencedataadress[10];
+//Bit32u writesequencedataadress2 = 0;
+//Bit32u writesequencedataadress3 = 0;
+char findnamex[100];
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress) {
+    writesequencecodeadress[lastwriteindexsequence] = codeadress;
+    writesequencecount[lastwriteindexsequence] = count;
+    writesequencesize[lastwriteindexsequence] = size;
+    writesequencedataadress[lastwriteindexsequence] = dataadress;
+    writesequencecount2[lastwriteindexsequence] = 0;
+    //writesequencedataadress2 = dataadress2;
+    //writesequencedataadress3 = dataadress3;
+    sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress, dataadress);
+    fopen_s(&fseq[lastwriteindexsequence], findnamex, "ab");
+    fclose(fseq[lastwriteindexsequence]);
+    lastwriteindexsequence++;
 }
 
-char findnamex[100];
-void savesequence(int actsize, Bit32u dataadress) {
-    sprintf(findnamex, "sequence-%08X.bin", writesequencecodeadress);
-    fopen_s(&fseq, findnamex, "ab+");
+void savesequence(int index,int actsize, Bit32u dataadress) {
+    sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
+    fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
     for (long i = 0; i < actsize; i++) {
         buffer[0] = (unsigned char)mem_readb(i+ dataadress);
-        fwrite(buffer, 1, 1, fseq);
+        fwrite(buffer, 1, 1, fseq[index]);
     }
 
-    fclose(fseq);
+    fclose(fseq[index]);
 };
 //write sequence
 
@@ -322,8 +328,8 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        //writesequence(0x00228320, 0x1, 0x70000, 0x2dc4e0, 0, 0);
-        writesequence(0x00228323, 0x20, 0x36e16, 0x356038, 0, 0);
+        writesequence(0x00228320, 0x1, 0x70000, 0x2dc4e0);
+        writesequence(0x00228320, 0x1, 0x36e16, 0x356038);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -567,14 +573,15 @@ void enginestep() {
             fclose(fptestepcc);
             addprocedurecount++;
         }
-        if (writesequencecount != -1) {
-            if (writesequencecodeadress && (reg_eip == writesequencecodeadress)) {
-                if (writesequencecount2 < writesequencecount)
+        for(int ii=0;ii< lastwriteindexsequence;ii++)
+        if (writesequencecount[ii] != -1) {
+            if (reg_eip == writesequencecodeadress[ii]) {
+                if (writesequencecount2[ii] < writesequencecount[ii])
                 {
-                    savesequence(writesequencesize, writesequencedataadress);
-                    if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
-                    if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
-                    writesequencecount2++;
+                    savesequence(ii,writesequencesize[ii], writesequencedataadress[ii]);
+                    //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
+                    //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
+                    writesequencecount2[ii]++;
                 }
             }
         }
