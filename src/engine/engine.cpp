@@ -328,8 +328,8 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        writesequence(0x00228560, 0x30, 0x70000, 0x2dc4e0);
-        writesequence(0x00228560, 0x30, 0x36e16, 0x356038);
+        writesequence(0x00211d50, 0x30, 0x70000, 0x2dc4e0);
+        writesequence(0x00211d50, 0x30, 0x36e16, 0x356038);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -474,7 +474,7 @@ void enginestep() {
         //addprocedurestop(0x21f370, 0x5f, true, true, 0x400604, 0x2272a000);
         //addprocedurestop(0x238b20, 0x0, true, true, 0x3aa0a400 + 0xe051el, 0x2272a000);
         //addprocedurestop(0x20fcc0, 0x0, true, true, 0x35159c00, 0x2272a000);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x351660, 0x2272a000);
+        //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
 
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -563,7 +563,7 @@ void enginestep() {
             mem_writeb(0x2a51ad,1);
         }
         if ((reg_eip == 0x2285ff)&&(firstrunx)) {//skipscreen
-            DEBUG_EnableDebugger();
+            //DEBUG_EnableDebugger();
             firstrunx = false;
         }
         if (reg_eip == addprocedurecounteradress) {
