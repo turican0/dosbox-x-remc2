@@ -120,7 +120,7 @@ void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress) {
     writesequencecount2[lastwriteindexsequence] = 0;
     //writesequencedataadress2 = dataadress2;
     //writesequencedataadress3 = dataadress3;
-    sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress, dataadress);
+    sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
     fopen_s(&fseq[lastwriteindexsequence], findnamex, "ab");
     fclose(fseq[lastwriteindexsequence]);
     lastwriteindexsequence++;
@@ -328,8 +328,8 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        writesequence(0x00218240, 0x30, 0x70000, 0x2dc4e0);
-        writesequence(0x00218240, 0x30, 0x36e16, 0x356038);
+        writesequence(0x00238CF0, 0x38, 0x70000, 0x2dc4e0);
+        writesequence(0x00238CF0, 0x38, 0x36e16, 0x356038);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
