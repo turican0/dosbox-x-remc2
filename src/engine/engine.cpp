@@ -329,8 +329,8 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        writesequence(0x00218240, 0x400, 0x70000, 0x2dc4e0);
-        writesequence(0x00218240, 0x400, 0x36e16, 0x356038);
+        writesequence(0x00228583, 0x35, 0x70000, 0x2dc4e0);
+        writesequence(0x00228583, 0x35, 0x36e16, 0x356038);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -540,13 +540,13 @@ void enginestep() {
         if (reg_eip == 0x237a30) {//skipscreen
             killmouse = true;
         }
-        /*if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
+        if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
             reg_ecx = 0x140;
             reg_edx = 0xc8;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
-        }*/
+        }
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
             reg_ecx = 0xc8;
             reg_edx = 0x160;
