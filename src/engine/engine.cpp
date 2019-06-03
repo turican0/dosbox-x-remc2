@@ -109,15 +109,17 @@ int writesequencecount[10];
 int writesequencesize[10];
 int writesequencecount2[10];
 Bit32u writesequencedataadress[10];
+Bit32u writesequencesavefrom[10];
 //Bit32u writesequencedataadress2 = 0;
 //Bit32u writesequencedataadress3 = 0;
 char findnamex[100];
-void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress) {
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
     writesequencesize[lastwriteindexsequence] = size;
     writesequencedataadress[lastwriteindexsequence] = dataadress;
     writesequencecount2[lastwriteindexsequence] = 0;
+    writesequencesavefrom[lastwriteindexsequence] = savefrom;
     //writesequencedataadress2 = dataadress2;
     //writesequencedataadress3 = dataadress3;
     sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
@@ -329,9 +331,11 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        writesequence(0x002285FF, 0x30, 0x70000, 0x2dc4e0);
-        writesequence(0x002285FF, 0x30, 0x36e16, 0x356038);
-        writesequence(0x002285FF, 0x30, 320*200, 0x3aa0a4);
+        //writesequence(0x002285FF, 0x30, 0x70000, 0x2dc4e0);
+        //writesequence(0x002285FF, 0x30, 0x36e16, 0x356038);
+        //writesequence(0x002285FF, 0x30, 320*200, 0x3aa0a4);
+
+        writesequence(0x00241F7A, 0x30, 0x36e16, 0x356038);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -479,7 +483,7 @@ void enginestep() {
         //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
     //addprocedurestop(0x241f00, 0x0, true, true, 0x356038 +0x3100, 0x211fd8);
-    addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
+    //addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
         fclose(fptestep);
@@ -581,7 +585,7 @@ void enginestep() {
             if (reg_eip == writesequencecodeadress[ii]) {
                 if (writesequencecount2[ii] < writesequencecount[ii])
                 {
-                    savesequence(ii,writesequencesize[ii], writesequencedataadress[ii]);
+                    if(writesequencesavefrom[ii]<=writesequencecount2[ii])savesequence(ii,writesequencesize[ii], writesequencedataadress[ii]);
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2[ii]++;
