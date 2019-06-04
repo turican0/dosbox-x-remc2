@@ -483,7 +483,7 @@ void enginestep() {
         //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
     //addprocedurestop(0x241f00, 0xb, true, true, 0x356038 +0x3100, 0x211fd8);
-    addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x91a6, 0x211fd8);
+    addprocedurestop(0x1fc8c0, 0, true, true, 0x356038 + 0x91a6, 0x211fd8);
     //addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -499,6 +499,7 @@ void enginestep() {
         if (addprocedurestopcount != -1)
         {
             if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
+                if(mem_readb(0x356038 + 0x91a6)==0xd0)
                 if (addprocedurestopcount == 0)
                 {
                     //saveactstate();
