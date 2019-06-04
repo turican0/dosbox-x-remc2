@@ -331,9 +331,9 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        writesequence(0x002285FF, 0x300, 0x70000, 0x2dc4e0);
-        writesequence(0x002285FF, 0x300, 0x36e16, 0x356038);
-        writesequence(0x002285FF, 0x300, 320*200, 0x3aa0a4);
+        //writesequence(0x002285FF, 0x300, 0x70000, 0x2dc4e0);
+        //writesequence(0x002285FF, 0x300, 0x36e16, 0x356038);
+        //writesequence(0x002285FF, 0x300, 320*200, 0x3aa0a4);
 
         //writesequence(0x00241F00, 0x30, 0x36e16, 0x356038);
         
@@ -483,6 +483,7 @@ void enginestep() {
         //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
     //addprocedurestop(0x241f00, 0xb, true, true, 0x356038 +0x3100, 0x211fd8);
+    addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x91a6, 0x211fd8);
     //addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
