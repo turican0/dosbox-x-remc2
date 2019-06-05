@@ -337,7 +337,7 @@ void enginestep() {
 
         //writesequence(0x00241F00, 0x30, 0x36e16, 0x356038);
 
-        writesequence(0x001fc8c0, 0x3000, 0x36e16, 0x356038,0x2f00);
+        writesequence(0x001fc8c0, 0x3000, 0x36e16, 0x356038,0x2fab);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -589,8 +589,11 @@ void enginestep() {
             if (reg_eip == writesequencecodeadress[ii]) {
                 if (writesequencecount2[ii] < writesequencecount[ii])
                 {
-                    if(writesequencesavefrom[ii]<=writesequencecount2[ii])
-                        savesequence(ii,writesequencesize[ii], writesequencedataadress[ii]);
+                    if (writesequencesavefrom[ii] <= writesequencecount2[ii])
+                    {
+                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii]);
+                        DEBUG_EnableDebugger();
+                    }
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2[ii]++;
