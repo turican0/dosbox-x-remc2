@@ -331,13 +331,15 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        //writesequence(0x002285FF, 0x300, 0x70000, 0x2dc4e0);
-        //writesequence(0x002285FF, 0x300, 0x36e16, 0x356038);
-        //writesequence(0x002285FF, 0x300, 320*200, 0x3aa0a4);
+        //writesequence(0x0022860f, 0x300, 0x70000, 0x2dc4e0);
+        //writesequence(0x0022860f, 0x300, 0x36e16, 0x356038);
+        //writesequence(0x0022860f, 0x300, 320*200, 0x3aa0a4);
+
+        writesequence(0x00268610, 0x300, 0xab, 0x3514b0);
 
         //writesequence(0x00241F00, 0x30, 0x36e16, 0x356038);
 
-        writesequence(0x001fc8c0, 0x3000, 0x36e16, 0x356038,0x2fab);
+        //writesequence(0x001fc8c0, 0x3000, 0x36e16, 0x356038,0x2fab);
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
@@ -592,7 +594,7 @@ void enginestep() {
                     if (writesequencesavefrom[ii] <= writesequencecount2[ii])
                     {
                         savesequence(ii, writesequencesize[ii], writesequencedataadress[ii]);
-                        DEBUG_EnableDebugger();
+                       //DEBUG_EnableDebugger();
                     }
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
