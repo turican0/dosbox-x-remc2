@@ -331,11 +331,13 @@ void enginestep() {
 
         //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
 
-        //writesequence(0x0022860f, 0x300, 0x70000, 0x2dc4e0);
-        //writesequence(0x0022860f, 0x300, 0x36e16, 0x356038);
-        //writesequence(0x0022860f, 0x300, 320*200, 0x3aa0a4);
+        writesequence(0x0022860f, 0x300, 0x70000, 0x2dc4e0);
+        writesequence(0x0022860f, 0x300, 0x36e16, 0x356038);
+        writesequence(0x0022860f, 0x300, 320*200, 0x3aa0a4);
 
-        writesequence(0x00268610, 0x300, 0xab, 0x3514b0);
+        //writesequence(0x1f1130, 0x300, 700 * 4 * 2, 0x2b8ee0);
+
+        //writesequence(0x00268610, 0x300, 0xab, 0x3514b0);
 
         //writesequence(0x00241F00, 0x30, 0x36e16, 0x356038);
 
@@ -487,7 +489,7 @@ void enginestep() {
         //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
     //addprocedurestop(0x241f00, 0xb, true, true, 0x356038 +0x3100, 0x211fd8);
-    //addprocedurestop(0x1fc8c0, 0, true, true, 0x356038 + 0x91a6, 0x211fd8);
+    //addprocedurestop(0x2454f0, 0, true, true, 0x3aa0a4 + 0x1a4d, 0x12345678);
     //addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -503,7 +505,7 @@ void enginestep() {
         if (addprocedurestopcount != -1)
         {
             if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
-                //if(mem_readb(0x356038 + 0x91a6)==0xd0)
+                //if(mem_readb(0x3aa0a4 + 0x1a4d)==0xb8)
                 if (addprocedurestopcount == 0)
                 {
                     //saveactstate();
@@ -528,7 +530,8 @@ void enginestep() {
                 //if (!x_WORD_18074A_mouse_right2_button && !x_WORD_180744_mouse_right_button)//first cycle after press and ...
                 {
                     //x_WORD_180744_mouse_right_button = 1;
-                    mem_writew(0x351744, 1);
+                    //mem_writew(0x351744, 1);
+                    mem_writew(0x351746, 1);
 
                     //castle change
                     //mem_writed(0x2a5c52 + 0x1856 + 6, 0x22ba40);
@@ -538,7 +541,8 @@ void enginestep() {
                     //x_WORD_E375E_mouse_position_y = temp_mouse_y;
                 }
                 //x_WORD_18074A_mouse_right2_button = 1;
-                mem_writew(0x35174a, 1);
+                //mem_writew(0x35174a, 1);
+                mem_writew(0x35174c, 1);
             }
             mousetest++;
         }
@@ -559,6 +563,13 @@ void enginestep() {
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
         }
+        /*if (reg_eip == 0x238b2f) {//rotate player
+            mem_writew(reg_esi+0x1c,0x300);
+        }//rotate */
+        if (reg_eip == 0x238b2f) {//move player
+            mem_writew(reg_esi + 0x4c, 0x73a0);
+            mem_writew(reg_esi + 0x4e, 0xd5e6);
+        }//rotate 
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
             reg_ecx = 0xc8;
             reg_edx = 0x160;
