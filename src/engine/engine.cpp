@@ -296,6 +296,8 @@ int mousetest = 0;
 
 bool firstrunx = true;
 
+int debugcounter_238b2f = 0;
+
 void enginestep() {
     
     if (count == 0) {
@@ -567,8 +569,17 @@ void enginestep() {
             mem_writew(reg_esi+0x1c,0x300);
         }//rotate */
         if (reg_eip == 0x238b2f) {//move player
-            mem_writew(reg_esi + 0x4c, 0x73a0);
-            mem_writew(reg_esi + 0x4e, 0xd5e6);
+            if (debugcounter_238b2f < 10)
+            {
+                mem_writew(reg_esi + 0x4c, 0x73a0);
+                mem_writew(reg_esi + 0x4e, 0xd5e6);
+            }
+            else
+            {
+                mem_writew(reg_esi + 0x4c, 0xc1aa);
+                mem_writew(reg_esi + 0x4e, 0xd542);
+            }
+            debugcounter_238b2f++;
         }//rotate 
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
             reg_ecx = 0xc8;
