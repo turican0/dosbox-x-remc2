@@ -40,6 +40,13 @@
 //#include "test-engine.h"
 
 
+int debugafterload = 1;
+int count_begin = 1;//1
+
+int stage__4A190_0x6E8E = 1;
+//int minstage__4A190_0x6E8E = 0x490;
+int debugafter_215540 = 1;
+
 Bit8u pretemp;
 Bit8u pre2temp;
 Bit8u pre3temp;
@@ -103,16 +110,22 @@ void write_sequence() {
 
 //write sequence
 int lastwriteindexsequence = 0;
-FILE* fseq[10];
-Bit32u writesequencecodeadress[10];
-int writesequencecount[10];
-int writesequencesize[10];
-int writesequencecount2[10];
-Bit32u writesequencedataadress[10];
-Bit32u writesequencesavefrom[10];
+FILE* fseq[300];
+Bit32u writesequencecodeadress[300];
+long writesequencecount[300];
+long writesequencesize[300];
+long writesequencecount2[300];
+Bit32u writesequencedataadress[300];
+Bit32u writesequencesavefrom[300];
+
+int lastwriteindexseq_D41A0 = 0;
+Bit32u writeseq_D41A0codeadress[300];
+Bit32u writeseq_D41A0count[300];
+Bit32u writeseq_D41A0count2[300];
 //Bit32u writesequencedataadress2 = 0;
 //Bit32u writesequencedataadress3 = 0;
-char findnamex[100];
+char findnamex[300];
+#define TEST_REGRESSIONS
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
@@ -125,11 +138,20 @@ void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bi
     sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
     remove(findnamex);
     //fopen_s(&fseq[lastwriteindexsequence], findnamex, "ab");
-    //fclose(fseq[lastwriteindexsequence]);
+    //fclose(fseq[lastwriteindexsequence]);    
     lastwriteindexsequence++;
 }
 
-void savesequence(int index,int actsize, Bit32u dataadress) {
+void writeseq_D41A0(Bit32u codeadress, int count) {
+    writeseq_D41A0codeadress[lastwriteindexseq_D41A0] = codeadress;
+    writeseq_D41A0count[lastwriteindexseq_D41A0] = count;
+    writeseq_D41A0count2[lastwriteindexseq_D41A0] = 0;
+    sprintf(findnamex, "seq_D41A0-%08X.bin", codeadress);
+    remove(findnamex);
+    lastwriteindexseq_D41A0++;
+}
+
+void savesequence(int index,long actsize, Bit32u dataadress) {
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
@@ -138,10 +160,25 @@ void savesequence(int index,int actsize, Bit32u dataadress) {
         buffer[0] = (unsigned char)mem_readb(i+ dataadress);
         fwrite(buffer, 1, 1, fseq[index]);
     }
-
-    fclose(fseq[index]);
+    fclose(fseq[index]);    
 };
 //write sequence
+void saveseq_D41A0(int index) {
+    sprintf(findnamex, "seq_D41A0-%08X.bin", writeseq_D41A0codeadress[index]);
+    fopen_s(&fseq[index], findnamex, "ab+");
+    //fwrite(&actcount, 4, 4, fseq);
+    for (int ea = 0; ea < 0x3E9; ea++)
+    {
+        Bit32u nextadress=mem_readd(0x2bb3e4+4*ea);
+
+        unsigned char buffer[1];
+        for (long i = 0; i < 0xa8; i++) {
+            buffer[0] = (unsigned char)mem_readb(i + nextadress);
+            fwrite(buffer, 1, 1, fseq[index]);
+        }
+    }
+    fclose(fseq[index]);
+};
 
 
 //call stop
@@ -292,15 +329,40 @@ long xcounter = 0;
 long xcounter2 = 0;
 
 bool killmouse = false;
+bool killmouse2 = false;
 int mousetest = 0;
 
 bool firstrunx = true;
 
 int debugcounter_238b2f = 0;
 
+int debugcounter_47560 = 0;
+int debugcounter_258350 = 0;
+
+int debugcounter_1fb7a0 = 0;
+
+void writeseqall(Bit32u adress) {
+    writesequence(adress, 0x10000, 0x70000, 0x2dc4e0);
+    writesequence(adress, 0x10000, 0x36e16, 0x356038);
+    writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4);
+    writesequence(adress, 0x10000, 0xab, 0x3514b0);
+    writesequence(adress, 0x10000, 0xc4e, 0x2b3a74);
+    writesequence(adress, 0x10000, 0x2, 0x34c4e0);
+}
+
+int oneindex=0;
+Bit32u oneadress;
+void add_index(Bit32u adress) {
+    oneadress = adress;
+}
+
+
 void enginestep() {
     
     if (count == 0) {
+        #ifdef TEST_REGRESSIONS
+            writeseqall(0x2285ff);
+        #else
         //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x1b50, 0x2aa51c, 0, 0);//x_BYTE_D951C
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
@@ -331,11 +393,134 @@ void enginestep() {
         //writesequence(0x2694bc, 0x300, 0xb0, 0x3514b0, 0, 0);
         //writesequence(0x2694bc, 0x300, 0xc4e, 0x2b3a74, 0, 0);
 
-        //writesequence(0x268610, 0x300, 0xb0, 0x3514b0, 0, 0);
+        //writesequence(0x0021f360, 0x3000, 0x36e16, 0x356038);
+        
+      /*writesequence(0x0022860F, 0x3000, 0x70000, 0x2dc4e0);
+        writesequence(0x0022860F, 0x3000, 0x36e16, 0x356038);
+        writesequence(0x0022860F, 0x3000, 320*200, 0x3aa0a4);
+        writesequence(0x0022860F, 0x3000, 0xab, 0x3514b0);
+        writesequence(0x0022860F, 0x3000, 0xc4e, 0x2b3a74);
+        writesequence(0x0022860F, 0x3000, 0x2, 0x34c4e0);*/
 
-        writesequence(0x0022860f, 0x300, 0x70000, 0x2dc4e0);
-        writesequence(0x0022860f, 0x300, 0x36e16, 0x356038);
-        writesequence(0x0022860f, 0x300, 320*200, 0x3aa0a4);
+        /*writeseqall(0x237B05);
+        writeseqall(0x237B55);
+        writeseqall(0x237BB0);
+        writeseqall(0x237BB9);
+        writeseqall(0x237BC7);
+        writeseqall(0x237BF0);
+        writeseqall(0x22A280);
+        writeseqall(0x22A288);
+
+        writeseqall(0x228323);*/
+        writeseqall(0x2285ff);
+
+        /*writeseqall(0x22A280);
+        writeseqall(0x22A288);
+
+        writeseqall(0x22A388);
+
+        writeseqall(0x238734);
+
+        writeseqall(0x238756);*/
+
+        //writeseqall(0x22A2E3);
+
+        //writeseqall(0x249c1b);
+        //writeseqall(0x265b84);
+
+        //writeseqall(0x203e64);
+        
+
+        //writeseqall(0x238fa3);
+
+        //writeseqall(0x24b5c4);
+        //writeseqall(0x22860F);
+        /*writeseqall(0x203e64);
+        writeseqall(0x218244);
+
+        writeseqall(0x21b8b4);
+        writeseqall(0x233d56);
+        writeseqall(0x23d954);
+
+        writeseqall(0x247754);*/
+
+        //add_index(0x203e64);
+        /*writeseqall(0x237B05);
+        writeseqall(0x237B55);
+        writeseqall(0x237BB0);
+        writeseqall(0x237BB9);
+        writeseqall(0x237Bc7);
+        writeseqall(0x237Bf0);*/
+
+        /*writeseqall(0x22A383);
+        writeseqall(0x22A388);
+        writeseqall(0x22A3D7);
+        writeseqall(0x22A422);
+        writeseqall(0x22A427);
+        writeseqall(0x22A4D6);
+        writeseqall(0x22A52C);*/
+
+        //add_index(0x00238A8A);
+        //writeseqall(0x22A977);
+        //writeseqall(0x212f04);
+        //writeseqall(0x237BF0);
+        //writeseqall(0x237BB9);
+
+        //writeseqall(0x237BB0);
+        //writeseqall(0x237BC7);
+        //writeseqall(0x1fad63);
+        //writeseqall(0x1f3504);
+        //writeseqall(0x1F3783);
+        //writeseqall(0x238A8A);
+        //writeseqall(0x22b268);
+
+
+        
+        /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
+        writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
+        writesequence(0x0022A3D7, 0x3000, 320 * 200, 0x3aa0a4);
+        writesequence(0x0022A3D7, 0x3000, 0xab, 0x3514b0);
+        writesequence(0x0022A3D7, 0x3000, 0xc4e, 0x2b3a74);
+        */
+
+        /*writesequence(0x001FEDA0, 0x3000, 0x70000, 0x2dc4e0);
+        writesequence(0x001FEDA0, 0x3000, 0x36e16, 0x356038);
+        writesequence(0x001FEDA0, 0x3000, 320 * 200, 0x3aa0a4);
+        writesequence(0x001FEDA0, 0x3000, 0xab, 0x3514b0);
+        writesequence(0x001FEDA0, 0x3000, 0xc4e, 0x2b3a74);*/
+        //writeseq_D41A0(0x00238A3D, 0x3000);
+
+        
+        /*writesequence(0x00238A8A, 0x3000, 0x70000, 0x2dc4e0);
+        writesequence(0x00238A8A, 0x3000, 0x36e16, 0x356038);
+        writesequence(0x00238A8A, 0x3000, 320 * 200, 0x3aa0a4);
+        writesequence(0x00238A8A, 0x3000, 0xab, 0x3514b0);
+        writesequence(0x00238A8A, 0x3000, 0xc4e, 0x2b3a74);*/
+
+        //writesequence(0x00238A3D, 0x3000, 0x36e16, 0x356038);
+
+        //writesequence(0x001F1C80, 0x3000, 0x36e16, 0x356038);
+
+        //writesequence(0x002156d8, 0x3000, 0x20, 0x2c1200);
+
+
+        //writesequence(0x00260092, 0x3000, 640 * 480, 0x3aa0a4);
+
+        //writesequence(0x0021d080, 0x3000, 36916*2, 0x3f52a4);
+        //0x21d080
+        /*writesequence(0x0024128D, 0x3000, 0x70000, 0x2dc4e0);
+        writesequence(0x0024128D, 0x3000, 0x36e16, 0x356038);
+        writesequence(0x0024128D, 0x3000, 320 * 200, 0x3aa0a4);
+        writesequence(0x0024128D, 0x3000, 0xab, 0x3514b0);
+        writesequence(0x0024128D, 0x3000, 0xc4e, 0x2b3a74);*/
+
+        //writesequence(0x00236708, 2, 0x36e16, 0x356038);
+
+        //writesequence(0x00256200, 0x3000, 320 * 200, 0x3aa0a4);
+
+        /*writesequence(0x00218240, 0x1, 0x70000, 0x2dc4e0);
+        writesequence(0x00218240, 0x1, 0x36e16, 0x356038);
+        writesequence(0x00218240, 0x1, 320 * 200, 0x3aa0a4);*/
 
         //writesequence(0x1f1130, 0x300, 700 * 4 * 2, 0x2b8ee0);
 
@@ -488,11 +673,84 @@ void enginestep() {
         //addprocedurestop(0x21f370, 0x5f, true, true, 0x400604, 0x2272a000);
         //addprocedurestop(0x238b20, 0x0, true, true, 0x3aa0a400 + 0xe051el, 0x2272a000);
         //addprocedurestop(0x20fcc0, 0x0, true, true, 0x35159c00, 0x2272a000);
-        //addprocedurestop(0x20D87A, 0x0, true, true, 0x351660, 0x2272a000);
+        //addprocedurestop(0x235a50, 0x0, true, true, 0x351660, 0x2272a000);
         //addspy();
-    //addprocedurestop(0x241f00, 0xb, true, true, 0x356038 +0x3100, 0x211fd8);
-    //addprocedurestop(0x2454f0, 0, true, true, 0x3aa0a4 + 0x1a4d, 0x12345678);
-    //addprocedurestop(0x241FBF, 0x0, true, true, 0x356038 + 0x3100, 0x211fd8);
+
+    //addprocedurestop(0x22860f, 0x0, true, true, 0x32C4E0 + 0x18802, 0x12345678);
+
+    //addprocedurestop(0x238d01, 0x820, true, true, 0x12345678, 0x12345678);
+
+//addprocedurestop(0x1f3e72, 0x44, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1f45c0, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1f3e72, 0xb5, true, true, 0x356038 + 0x3964, 0x12345678);
+
+    //addprocedurestop(0x237f12, 0x1, true, true, 0x12345678, 0x12345678);
+    //addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x17732, 0x12345678);
+    //addprocedurestop(0x22860f, 0x117, true, true, 0x356038 + 0x194ba, 0x12345678);
+    //addprocedurestop(0x1f1c84, 0xec, true, true, 0x356038 + 0x70e4, 0x12345678);
+
+//addprocedurestop(0x259260, 0, true, true, 0x34ef04, 0x12345678);
+//addprocedurestop(0x2368e0, 0, true, true, 0x32c4e0 + 0x466e, 0x12345678);
+//addprocedurestop(0x236F70, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x279817, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x2368e2, 0, true, true, 0x32c4e0 + 0x1313a, 0x12345678);
+
+//addprocedurestop(0x22860f, 0x0, true, true, 0x356038 + 0x315a, 0x12345678);
+//addprocedurestop(0x20e710, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1f69e0, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x23f310, 0x0, true, true, 0x32c4e0 + 0xebba, 0x12345678);
+//addprocedurestop(0x213420, 0x0, true, true, 0x356038 + 0x7e3a, 0x12345678);
+//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0x1a02c, 0x12345678);
+//addprocedurestop(0x2368e2, 0x0, true, true, 0x356038 + 0x77de, 0x12345678);
+//addprocedurestop(0x236F70, 0x0, true, true, 0x2dc4e0 + 0x66, 0x12345678);
+//addprocedurestop(0x22860F, 0x87, true, true, 0x3aa0a4 + 0x0, 0x12345678);
+//addprocedurestop(0x2225cb, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x25fae0, 0x0, true, true, 0x3aa0a4 + 0x85c, 0x12345678);
+//addprocedurestop(0x22a090, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x213880, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x239940, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x36552, 0x12345678);
+
+//  addprocedurestop(0x22b268, 0x1b0, true, true, 0x12345678, 0x12345678);
+
+//addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x16654, 0x12345678);
+//addprocedurestop(0x22860F, 0x18, true, true, 0x30c4e0 + 0xb97c, 0x12345678);
+//addprocedurestop(0x2423d0, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
+
+//addprocedurestop(0x246080, 0x0, true, true, 0x356038 + 0xa20a, 0x12345678);
+//addprocedurestop(0x1F69E4, 0x1, true, true, 0x356038 + 0x4aac, 0x12345678);
+//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0xdcdc, 0x12345678);
+
+//addprocedurestop(0x240a70, 0x0, true, true, 0x356038 + 0x35, 0x12345678);
+//addprocedurestop(0x227573, 0x184d, true, true, 0x002ec4e0 +  0x5db, 0x12345678);
+//addprocedurestop(0x22A977, 0x7a, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x237F12, 0x2551, true, true, 0x356038 + 0x35, 0x12345678);
+//addprocedurestop(0x2075a4, 0x2, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x00238A3D, 0x2, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0x6104, 0x12345678);
+
+//addprocedurestop(0x1f56f4, 0x50, true, true, 0x32c4e0 + 0x5d04, 0x12345678);
+//addprocedurestop(0x238A8A, 0x1b4, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x22A388, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x22860F, 0x7, true, true, 0x32c4e0 + 0x1c2a, 0x12345678);
+//addprocedurestop(0x22A388, 0, true, true, 0x356038 + 0x35, 0x12345678);
+//addprocedurestop(0x218389, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x22A977, 0xb8, true, true, 0x30c4e0+0xf36e, 0x12345678);
+//addprocedurestop(0x226dc4, 0x2551, true, true, 0x356038 + 0x6f3e, 0x12345678);
+//addprocedurestop(0x237B05, 0, true, true, 0x002ec4e0 + 0xf8, 0x12345678);
+//addprocedurestop(0x229B94, 0x00001C43, true, true, 0x002ec4e0 + 0xf8, 0x12345678);
+//addprocedurestop(0x229B94, 0x00001d5d, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x0022860F, 0x11, true, true, 0x356038 + 0x3c6e, 0x12345678);
+
+//addprocedurestop(0x238A8A, 0xc95, true, true, 0x356038 + 0xb382, 0x12345678);
+
+//addprocedurestop(0x238A8A, 0x1371, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
+//addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
+
+//addprocedurestop(0x260cb0, 0, true, true, 0x12345678, 0x12345678);
+#endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
         fclose(fptestep);
@@ -504,6 +762,7 @@ void enginestep() {
     if (count > 10000)
     {
         spyinspect();
+        if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         if (addprocedurestopcount != -1)
         {
             if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
@@ -511,7 +770,8 @@ void enginestep() {
                 if (addprocedurestopcount == 0)
                 {
                     //saveactstate();
-                    DEBUG_EnableDebugger();
+                    //if (mem_readb(0x32c4e0 + 0xdcdc) == 0x02)
+                        DEBUG_EnableDebugger();
                     if (addprocedurestoponmemchange) {
                         stoponmemchange = true;
                         findvaradr = addprocedurestopfindvaradr;
@@ -526,8 +786,10 @@ void enginestep() {
                 else addprocedurestopcount--;
             }
         }
-        if (reg_eip == 0x228388) {//test mouse
-            if (mousetest == 2)
+        /*
+        if(debugafterload)
+        if (reg_eip == 0x228388) {//mouse button
+            if (mousetest%10 == 8)
             {
                 //if (!x_WORD_18074A_mouse_right2_button && !x_WORD_180744_mouse_right_button)//first cycle after press and ...
                 {
@@ -547,6 +809,9 @@ void enginestep() {
                 mem_writew(0x35174c, 1);
             }
             mousetest++;
+        }*/
+        if (reg_eip == 0x26508d) {//fix computer speed
+                mem_writeb(0x35522c, 0x5);
         }
         /*if (reg_eip == 0x22857e) {//test mouse
             if (mousetest >= 1)
@@ -555,32 +820,137 @@ void enginestep() {
             }
             mousetest++;
         }*/
-        if (reg_eip == 0x237a30) {//skipscreen
-            killmouse = true;
+        if (reg_eip == 0x228560) {//find game state
+            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+                debugcounter_47560++;
         }
-        if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
+        if ((reg_eip == 0x22a9d8) ||
+            (reg_eip == 0x22a976) ||
+            (reg_eip == 0x238a8a))
+        {
+            stage__4A190_0x6E8E++;
+        }
+        /*if (reg_eip == 0x258350) {//find game state
+            if (debugcounter_47560 > 0) {
+                debugcounter_258350++;
+            }
+            if (debugcounter_258350 == 1)
+            {
+                stoponmemchange = true;
+                findvaradr = 0x3aa0a4 + 0x7da0;
+            }
+        }*/
+        if (reg_eip == 0x237a30) {//kill mouses
+            killmouse = true;
+            killmouse2 = true;
+        }
+        if((debugafterload) && (count_begin == 1))
+        if (reg_eip == oneadress) {//kill mouses
+            FILE* indexfile;
+            indexfile=fopen("index.txt","wt");
+            char bufferin[500];
+            sprintf(bufferin,"index:%08X\n", oneindex);
+            fwrite(bufferin,sizeof(bufferin),1, indexfile);
+            fclose(indexfile);
+            oneindex++;
+
+        }
+
+        if (reg_eip == 0x2368e4) {//fix load            
+            mem_writed(0x3965c7, 0x35cf6e);
+        }
+
+        /*if (reg_eip == 0x237bb0) {//setobjective
+            mem_writeb(0x356038 + 0x3659C + 0 + 3, 2);
+            mem_writeb(0x356038 + 0x3659C + 1 + 3, 2);
+            mem_writeb(0x356038 + 0x3659C + 2 + 3, 2);
+            mem_writeb(0x356038 + 0x3659C + 3 + 3, 2);
+            mem_writeb(0x356038 + 0x3659C + 1, 4);
+            //mem_writew(0x356038 + 0x3654C + 2, 40);
+            //mem_writew(0x356038 + 0x3654C + 4, 40);
+            //D41A0_BYTESTR_0.struct_0x3659C[0].array_0x3659C_byte[0 + 3] = 2;
+            //D41A0_BYTESTR_0.struct_0x3659C[0].array_0x3659C_byte[1] = 1;
+        }*/
+
+
+        /*if ((reg_eip == 0x26db3a)&&killmouse) {//rotate off
             reg_ecx = 0x140;
             reg_edx = 0xc8;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
-        }
-        /*if (reg_eip == 0x238b2f) {//rotate player
-            mem_writew(reg_esi+0x1c,0x300);
-        }//rotate */
-        if (reg_eip == 0x238b2f) {//move player
-            if (debugcounter_238b2f < 10)
+        }*/
+
+        
+        if (reg_eip == 0x1fb7a3) {//fix mouse special
+            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
             {
-                mem_writew(reg_esi + 0x4c, 0x73a0);
-                mem_writew(reg_esi + 0x4e, 0xd5e6);
+                if(debugcounter_1fb7a0<1000) {
+                    //mem_writew(0x356038 + 0x36dec, 0x128);
+                    //mem_writew(0x356038 + 0x36dec + 2, 0x7e);
+                    mem_writew(0x3515b8, 0x128);
+                    mem_writew(0x3515bc, 0x7e);
+                }
+                debugcounter_1fb7a0++;
             }
-            else
-            {
-                mem_writew(reg_esi + 0x4c, 0xc1aa);
-                mem_writew(reg_esi + 0x4e, 0xd542);
+        }
+        
+        if ((reg_eip == 0x1f806b)&&killmouse2) {//rotate off2
+            reg_edx = 0x140;
+            reg_ecx = 0xc8;
+            //DEBUG_EnableDebugger();
+            //=Segs.phys[eip] = 0;
+            //reg_eip = 0x26dd26;
+        }
+        if (reg_eip == 0x1f8190) {//exit pause
+            if (debugcounter_47560 == 5)
+                mem_writeb(0x38cf50 + 24, mem_readb(0x38cf50 + 24) & 0xfe);
+        }
+        if (reg_eip == 0x2368e0) {//after load
+            debugafterload = 1;
+            mem_writeb(0x38cf50 + 0x1e, 0x3d);//fix same run after load
+            mem_writew(0x34c4e0, 0x21ed);//fix same run after load
+        }
+        if (reg_eip == 0x227af1) {//after count init level
+            count_begin++;
+       }
+        if (reg_eip == 0x237a30) {//set level
+            //DEBUG_EnableDebugger();
+            //mem_writeb(0x38CF50 + 43, 1);
+        }//set level
+        if (reg_eip == 0x238b2f) {//rotate player
+            //mem_writew(reg_esi+0x1c, 0x900);
+        }//rotate
+        if (reg_eip == 0x238682) {//saveload fix
+            mem_writed(0x38c684 + 0xa, 0x0);
+        }
+        /*if (reg_eip == 0x238b2f) {//move player
+            if (debugcounter_238b2f == 10) {
+                mem_writew(reg_esi + 0x4c, 0x8c07);
+                mem_writew(reg_esi + 0x4e, 0xb427);
             }
             debugcounter_238b2f++;
-        }//rotate 
+        }*/
+        /*
+
+
+        if (reg_eip == 0x238b2f) {//move player
+            if (debugcounter_238b2f == 10) {
+                mem_writew(reg_esi + 130, 0x300);
+            }
+            if (debugcounter_238b2f == 200) {
+                mem_writew(reg_esi + 0x1c, -0x10);
+                mem_writew(reg_esi + 130, 0x200);
+            }
+            if (debugcounter_238b2f > 250)
+                if (debugcounter_238b2f % 50 == 0)
+                {
+                    mem_writew(reg_esi + 0x1c, mem_readw(reg_esi + 0x1c) - 0x10);
+                    mem_writew(reg_esi + 130, 0x200);
+                }
+                
+            debugcounter_238b2f++;
+        }//rotate */
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
             reg_ecx = 0xc8;
             reg_edx = 0x160;
@@ -594,12 +964,20 @@ void enginestep() {
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
         }*/
-        if (reg_eip == 0x236FE1) {//skipscreen
+        /*if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
-        }
-        if ((reg_eip == 0x2285ff)&&(firstrunx)) {//skipscreen
+        }*/
+        if ((reg_eip == 0x2285ff)&&(firstrunx)) {
             //DEBUG_EnableDebugger();
             firstrunx = false;
+        }
+        if (reg_eip == 0x229935) {//fix sub_48930
+            mem_writew(reg_ebp-0xc, 0);
+            mem_writew(reg_ebp-0x4, 0);
+        }
+        if (reg_eip == 0x215540) {
+            //DEBUG_EnableDebugger();
+            debugafter_215540 = true;
         }
         if (reg_eip == addprocedurecounteradress) {
             sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
@@ -608,6 +986,9 @@ void enginestep() {
             fclose(fptestepcc);
             addprocedurecount++;
         }
+        //if (debugcounter_258350>0)
+        if(debugafter_215540)
+        if ((debugafterload == 1)&&(count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         for(int ii=0;ii< lastwriteindexsequence;ii++)
         if (writesequencecount[ii] != -1) {
             if (reg_eip == writesequencecodeadress[ii]) {
@@ -621,9 +1002,28 @@ void enginestep() {
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2[ii]++;
+                    #ifdef TEST_REGRESSIONS
+                        if (writesequencecount2[ii] > 20)exit(0);
+                    #endif
                 }
             }
         }
+
+        if (debugafter_215540)
+            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+        for (int ii = 0; ii < lastwriteindexseq_D41A0; ii++)
+            if (writeseq_D41A0count[ii] != -1) {
+                if (reg_eip == writeseq_D41A0codeadress[ii]) {
+                    if (writeseq_D41A0count2[ii] < writeseq_D41A0count[ii])
+                    {
+                            saveseq_D41A0(ii);
+                            //DEBUG_EnableDebugger();
+                        //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
+                        //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
+                        writesequencecount2[ii]++;
+                    }
+                }
+            }
         /*
         if ((reg_eip==0x218240) && (SegValue(cs) == 0x160))
         {
