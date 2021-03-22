@@ -126,6 +126,8 @@ Bit32u writeseq_D41A0count2[300];
 //Bit32u writesequencedataadress3 = 0;
 char findnamex[300];
 #define TEST_REGRESSIONS
+int test_regression_level = 1;
+
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
@@ -361,8 +363,11 @@ void enginestep() {
     
     if (count == 0) {
         #ifdef TEST_REGRESSIONS
+            //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
+            //addprocedurestop(0x258354, 0x0, true, true, 0x12345678, 0x12345678);
             writeseqall(0x2285ff);
         #else
+        writeseqall(0x2285ff);
         //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x1b50, 0x2aa51c, 0, 0);//x_BYTE_D951C
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
@@ -412,7 +417,6 @@ void enginestep() {
         writeseqall(0x22A288);
 
         writeseqall(0x228323);*/
-        writeseqall(0x2285ff);
 
         /*writeseqall(0x22A280);
         writeseqall(0x22A288);
@@ -810,6 +814,62 @@ void enginestep() {
             }
             mousetest++;
         }*/
+        #ifdef TEST_REGRESSIONS
+        if (reg_eip == 0x236FE1) {//skip intro
+            mem_writeb(0x2A51AD, 1);
+            // x_BYTE_D41AD_skip_screen = 1
+        }
+        if (reg_eip == 0x25c254) {//skip to new game
+            //Bit32u str_E1BAC= mem_readd(0x2B2BAC);
+            mem_writed(0x2B2BAC + 0, 0x258350);
+            //str_E1BAC[0].dword_0 = 0x258350;
+            mem_writew(0x2B2BAC + 8, 1);
+            //str_E1BAC[0].word_8 = 1;
+        }
+        if (reg_eip == 0x2585b8) {//258350 run level x
+            //unk_17DBA8str==0x34EBA8
+            mem_writeb(0x34EB8E, 1);
+            //x_DWORD_17DB70str.x_BYTE_17DB8E = 1;
+            Bit32u x_D41A0_BYTEARRAY_4_struct= mem_readd(0x2a51a4);
+            mem_writew(x_D41A0_BYTEARRAY_4_struct+43, test_regression_level);
+            //x_D41A0_BYTEARRAY_4_struct.levelnumber_43w = test_regression_level;
+
+            //0x2B2B82== x_WORD_E1964x[0x21E]== unk_E17CC_str_0x194[24].byte_18_act
+                if(mem_readb(0x2B2960+ test_regression_level*22+18)==1)
+                    mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545)|4u);
+            //if (unk_E17CC_str_0x194[test_regression_level].byte_18_act == 1)
+            //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 4u;
+
+                int retval = -1;
+                int ri = 0;
+                //Bit32u x_WORD_E2970x = mem_readd(0x2b3970+0);
+                if (!mem_readb(0x2b3970 + 17 * ri+12))
+                    retval=0;
+                if (retval == -1)
+                {
+                    while (test_regression_level != mem_readw(0x2b3970 + 17 * ri + 4))
+                    {
+                        ri++;
+                        if (!mem_readb(0x2b3970 + 17 * ri + 12))
+                            retval = 0;
+                    }
+                    if (retval == -1)
+                        retval= 0x2b3970 +17*ri;
+                }
+            //type_x_WORD_E2970* v46x = sub_824B0(x_D41A0_BYTEARRAY_4_struct.levelnumber_43w);
+            if((retval)&& mem_readb(retval + 12))
+                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 10u);
+            //if (v46x && v46x->word_12 == 2)
+            //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x10u;
+            if(test_regression_level==24)
+                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 20u);
+            //if (x_D41A0_BYTEARRAY_4_struct.levelnumber_43w == 24)
+            //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x20u;
+            
+            reg_eax = 1;
+            //v1 = 1;
+        }
+        #endif
         if (reg_eip == 0x26508d) {//fix computer speed
                 mem_writeb(0x35522c, 0x5);
         }
