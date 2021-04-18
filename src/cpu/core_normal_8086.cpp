@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -37,17 +37,20 @@
 extern bool ignore_opcode_63;
 
 #if C_DEBUG
-#include "debug.h"
+extern bool mustCompleteInstruction;
+# include "debug.h"
+#else
+# define mustCompleteInstruction (0)
 #endif
 
-static Bit16u last_ea86_offset;
+static uint16_t last_ea86_offset;
 
 /* NTS: we special case writes to seg:ffff to emulate 8086 behavior where word read/write wraps around the 64KB segment */
 #if (!C_CORE_INLINE)
 
 #define LoadMb(off) mem_readb(off)
 
-static inline Bit16u LoadMw(Bitu off) {
+static inline uint16_t LoadMw(Bitu off) {
 	if (last_ea86_offset == 0xffff)
 		return (mem_readb(off) | (mem_readb(off-0xffff) << 8));
 
@@ -76,11 +79,11 @@ static void SaveMw(Bitu off,Bitu val) {
 
 #define LoadMb(off) mem_readb_inline(off)
 
-static inline Bit16u LoadMw(Bitu off) {
+static inline uint16_t LoadMw(Bitu off) {
 	if (last_ea86_offset == 0xffff)
-		return (mem_readb_inline(off) | (mem_readb_inline(off-0xffff) << 8));
+		return (mem_readb_inline((PhysPt)off) | (mem_readb_inline((PhysPt)(off-0xffff)) << 8));
 
-	return mem_readw_inline(off);	
+	return mem_readw_inline((PhysPt)off);
 }
 
 #define LoadMd(off) mem_readd_inline(off)
@@ -89,11 +92,11 @@ static inline Bit16u LoadMw(Bitu off) {
 
 static void SaveMw(Bitu off,Bitu val) {
 	if (last_ea86_offset == 0xffff) {
-		mem_writeb_inline(off,val);
-		mem_writeb_inline(off-0xffff,val>>8);
+		mem_writeb_inline((PhysPt)off,(uint8_t)val);
+		mem_writeb_inline((PhysPt)(off-0xffff),(uint8_t)(val>>8));
 	}
 	else {
-		mem_writew_inline(off,val);
+		mem_writew_inline((PhysPt)off,(uint16_t)val);
 	}
 }
 
@@ -110,6 +113,8 @@ extern Bitu cycle_count;
 #define CPU_PIC_CHECK 1u
 #define CPU_TRAP_CHECK 1u
 
+#define CPU_TRAP_DECODER	CPU_Core_Normal_Trap_Run
+
 #define OPCODE_NONE			0x000u
 #define OPCODE_0F			0x100u
 
@@ -123,6 +128,7 @@ extern Bitu cycle_count;
 #define TEST_PREFIX_REP		(core.prefixes & PREFIX_REP)
 
 #define DO_PREFIX_SEG(_SEG)					\
+    if (GETFLAG(IF) && CPU_Cycles <= 0 && !mustCompleteInstruction) goto prefix_out; \
 	BaseDS=SegBase(_SEG);					\
 	BaseSS=SegBase(_SEG);					\
 	core.base_val_ds=_SEG;					\
@@ -133,13 +139,14 @@ extern Bitu cycle_count;
 	abort();									
 
 #define DO_PREFIX_REP(_ZERO)				\
+    if (GETFLAG(IF) && CPU_Cycles <= 0 && !mustCompleteInstruction) goto prefix_out; \
 	core.prefixes|=PREFIX_REP;				\
 	core.rep_zero=_ZERO;					\
 	goto restart_opcode;
 
 typedef PhysPt (*GetEAHandler)(void);
 
-static const Bit32u AddrMaskTable[2]={0x0000ffffu,0x0000ffffu};
+static const uint32_t AddrMaskTable[2]={0x0000ffffu,0x0000ffffu};
 
 static struct {
 	Bitu opcode_index;
@@ -156,24 +163,35 @@ static struct {
 #define SAVEIP		reg_eip=GETIP;
 #define LOADIP		core.cseip=((PhysPt)(SegBase(cs)+reg_eip));
 
+#define SAVEIP_PREFIX		reg_eip=GETIP-1;
+
 #define SegBase(c)	SegPhys(c)
 #define BaseDS		core.base_ds
 #define BaseSS		core.base_ss
 
-static INLINE Bit8u Fetchb() {
-	Bit8u temp=LoadMb(core.cseip);
+static INLINE void FetchDiscardb() {
+	core.cseip+=1;
+}
+
+static INLINE uint8_t FetchPeekb() {
+	uint8_t temp=LoadMb(core.cseip);
+	return temp;
+}
+
+static INLINE uint8_t Fetchb() {
+	uint8_t temp=LoadMb(core.cseip);
 	core.cseip+=1;
 	return temp;
 }
 
-static INLINE Bit16u Fetchw() {
-	Bit16u temp=LoadMw(core.cseip);
+static INLINE uint16_t Fetchw() {
+	uint16_t temp=LoadMw(core.cseip);
 	core.cseip+=2;
 	return temp;
 }
 
-static INLINE Bit32u Fetchd() {
-	Bit32u temp=LoadMd(core.cseip);
+static INLINE uint32_t Fetchd() {
+	uint32_t temp=LoadMd(core.cseip);
 	core.cseip+=4;
 	return temp;
 }
@@ -206,7 +224,7 @@ Bits CPU_Core8086_Normal_Run(void) {
 		if (DEBUG_HeavyIsBreakpoint()) {
 			FillFlags();
 			return (Bits)debugCallback;
-		};
+		}
 #endif
 #endif
 		cycle_count++;
@@ -240,6 +258,13 @@ restart_opcode:
 	}
 	FillFlags();
 	return CBRET_NONE;
+/* 8086/286 multiple prefix interrupt bug emulation.
+ * If an instruction is interrupted, only the last prefix is restarted.
+ * See also [https://www.pcjs.org/pubs/pc/reference/intel/8086/] and [https://www.youtube.com/watch?v=6FC-tcwMBnU] */ 
+prefix_out:
+	SAVEIP_PREFIX;
+	FillFlags();
+	return CBRET_NONE;
 decode_end:
 	SAVEIP;
 	FillFlags();
@@ -252,7 +277,7 @@ Bits CPU_Core8086_Normal_Trap_Run(void) {
 	cpu.trap_skip = false;
 
 	Bits ret=CPU_Core8086_Normal_Run();
-	if (!cpu.trap_skip) CPU_HW_Interrupt(1);
+	if (!cpu.trap_skip) CPU_DebugException(DBINT_STEP,reg_eip);
 	CPU_Cycles = oldCycles-1;
 	cpudecoder = &CPU_Core8086_Normal_Run;
 

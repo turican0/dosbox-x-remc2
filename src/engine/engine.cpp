@@ -32,14 +32,16 @@
 #include "engine_support.h"
 
 
-
+#define TEST_NETWORK
 
 
 //#include "sub_160_26DB3A.h"
 //#include "sub_main.h"
 //#include "test-engine.h"
 
-
+//#define MOVE_PLAYER
+//#define SET_REFLECTION 1
+//#define SET_SHADOWS 1
 int debugafterload = 1;
 int count_begin = 1;//1
 
@@ -125,8 +127,8 @@ Bit32u writeseq_D41A0count2[300];
 //Bit32u writesequencedataadress2 = 0;
 //Bit32u writesequencedataadress3 = 0;
 char findnamex[300];
-#define TEST_REGRESSIONS
-int test_regression_level = 1;
+//#define TEST_REGRESSIONS
+int test_regression_level = 21;
 
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
@@ -154,12 +156,18 @@ void writeseq_D41A0(Bit32u codeadress, int count) {
 }
 
 void savesequence(int index,long actsize, Bit32u dataadress) {
+
+    Bit32u dataadress2 = dataadress;
+    if (dataadress == 0xffffff01)dataadress2 = reg_esi;
+    if (dataadress == 0xffffff02)dataadress2 = reg_edi;
+    if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
+
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
     for (long i = 0; i < actsize; i++) {
-        buffer[0] = (unsigned char)mem_readb(i+ dataadress);
+        buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
         fwrite(buffer, 1, 1, fseq[index]);
     }
     fclose(fseq[index]);    
@@ -343,13 +351,13 @@ int debugcounter_258350 = 0;
 
 int debugcounter_1fb7a0 = 0;
 
-void writeseqall(Bit32u adress) {
-    writesequence(adress, 0x10000, 0x70000, 0x2dc4e0);
-    writesequence(adress, 0x10000, 0x36e16, 0x356038);
-    writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4);
-    writesequence(adress, 0x10000, 0xab, 0x3514b0);
-    writesequence(adress, 0x10000, 0xc4e, 0x2b3a74);
-    writesequence(adress, 0x10000, 0x2, 0x34c4e0);
+void writeseqall(Bit32u adress, Bit32u skip=0) {
+    writesequence(adress, 0x10000, 0x70000, 0x2dc4e0, skip);
+    writesequence(adress, 0x10000, 0x36e16, 0x356038, skip);
+    writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4, skip);
+    writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
+    writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
+    writesequence(adress, 0x10000, 0x2, 0x34c4e0, skip);
 }
 
 int oneindex=0;
@@ -364,10 +372,151 @@ void enginestep() {
     if (count == 0) {
         #ifdef TEST_REGRESSIONS
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
-            //addprocedurestop(0x258354, 0x0, true, true, 0x12345678, 0x12345678);
-            writeseqall(0x2285ff);
+            //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
+            //addprocedurestop(0x265b80, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+        addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+        //writeseqall(0x228583);
+        //writeseqall(0x2285ff);
+        /*writeseqall(0x233d56);
+        writeseqall(0x237B05);
+        writeseqall(0x237B55);
+        writeseqall(0x237BB0);
+        writeseqall(0x237BB9);
+        writeseqall(0x237BC7);
+        writeseqall(0x237BF0);
+        writeseqall(0x22A280);
+        writeseqall(0x22A288);
+
+        writeseqall(0x22A2E3);
+        writeseqall(0x22A383);
+        writeseqall(0x22A388);
+        writeseqall(0x22A3D7);
+        writeseqall(0x22A422);
+        writeseqall(0x22A427);
+        writeseqall(0x22A4D6);
+        writeseqall(0x22A52C);
+        writeseqall(0x22a545);
+
+        
+        writeseqall(0x228583);
+        writeseqall(0x23d954);
+        writeseqall(0x238734);
+        writeseqall(0x2389f6);*/
+        //writeseqall(0x238a3d);
+        //writeseqall(0x238A8A);//*/
+
+
+        //writeseqall(0x228583);
+        //writeseqall(0x23d954);
+
+        //writeseqall(0x238cf3);
+        //addprocedurestop(0x238cf3, 0x348, true, true, 0x356038 + 0x13de2, 0x12345678);
+
+
+        //addprocedurestop(0x22a543, 0x12, true, true, 0x12345678, 0x12345678);
         #else
-        writeseqall(0x2285ff);
+        addprocedurestop(0x23c8d4, 0x0, true, true, 0x134c38, 0x12345678);//0xd8
+        //addprocedurestop(0x2541e7, 0x0, true, true, 0x3c850, 0x12345678);//0xd8
+        //addprocedurestop(0x23c8d4, 0x0, true, true, 0x2b2276, 0x12345678);//0xd8
+
+        //addprocedurestop(0x253de2, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x237214, 0x0, true, true, 0x2b22aa, 0x12345678);//0xd8
+        //addprocedurestop(0x25555a, 0x0, true, true, 0x2b22aa, 0x12345678);//0xd8
+        //addprocedurestop(0x255ca1, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x255052, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x255fe5, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //writesequence(0x220D6C, 0x10000, 44, 0xffffff04, 0);//esi
+
+        //writesequence(0x21e378, 0x20000, 44*40*21, 0x3f52a4, 0);//esi xxxx
+
+        //addprocedurestop(0x21e378, 0xea73, true, true, 0x3f52a4+0xf9c, 0x12345678);//0xd8
+        //addprocedurestop(0x238A8A, 0x72c9, true, true, 0x12345678, 0x12345678);//0xd8
+
+        //addprocedurestop(0x252b44, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x252b44, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+
+        //addprocedurestop(0x220d7a, 0xa7e, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x25b114, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
+        //addprocedurestop(0x257fa4, 0x0, true, true, 0x506526, 0x12345678);//0xd8
+
+        //writeseqall(0x238A8A,0xa600);
+        //writeseqall(0x238A8A, 0x72c0);
+
+        //writesequence(0x297257, 0x10000, size, 0x34c4e0, 0);
+        //addprocedurestop(0x297272, 0x0, true, true, 0x12345678, 0x12345678);
+        //Bit8u tempx[20];
+        //for (int i = 0; i < 20;i++)tempx[i] = mem_readb(reg_esi+i);
+
+        //addprocedurestop(0x24f154, 0, true, true, 0x3aa0a4 + 0x8c76, 0x12345678);
+        //addprocedurestop(0x297272, 0x14, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x297272, 0x0, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x21f1e4, 0x0, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x21d084, 0x0, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x21de79, 0x0, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x21e671, 0xf, true, true, 0x12345678, 0x12345678);
+        
+        //end at 3e1e4
+
+        //addprocedurestop(0x237214, 0, true, true, 0x2B226D, 0x12345678);
+
+        /*writesequence(0x297272, 0x10000, 20, 0xffffff01, 0);//esi
+        writesequence(0x297272, 0x10000, 20, 0xffffff02, 0);//edi
+        writesequence(0x297272, 0x10000, 20, 0xffffff03, 0);//ecx
+
+        writesequence(0x297272, 0x10000, 1, 0x2B226D, 0);//ecx
+
+        writesequence(0x297272, 0x10000, 21*40*44, 0x3f52a4, 0);//ecx
+
+        writeseqall(0x297272);
+
+        writeseqall(0x002285FF);*/
+        
+        //esi edi ecx
+
+        //addprocedurestop(0x220d64, 0xb1, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x220d70, 0xa59, true, true, 0x12345678, 0x12345678);
+        //writeseqall(0x2285ff);
+        //writeseqall(0x220d70);
+        //writeseqall(0x220d64);
+        /*writeseqall(0x233d56);
+        writeseqall(0x237B05);
+        writeseqall(0x237B55);
+        writeseqall(0x237BB0);
+        writeseqall(0x237BB9);
+        writeseqall(0x237BC7);
+        writeseqall(0x237BF0);
+        writeseqall(0x22A280);
+        writeseqall(0x22A288);
+
+        writeseqall(0x22A2E3);
+        writeseqall(0x22A383);
+        writeseqall(0x22A388);
+        writeseqall(0x22A3D7);
+        writeseqall(0x22A422);
+        writeseqall(0x22A427);
+        writeseqall(0x22A4D6);
+        writeseqall(0x22A52C);
+        writeseqall(0x22a545);*/
+        //writeseqall(0x22860f);
+        //writeseqall(0x297257);
+        //addprocedurestop(0x2285ff, 0x0, true, true, 0x3aa0a4 + 320 * 65 + 23, 0x12345678);//aftreload
+        //writeseqall(0x23d954);
+        //writeseqall(0x233d56);
+        //writeseqall(0x228583);
+        //writeseqall(0x238734);
+        //writeseqall(0x238756);
+        //writeseqall(0x2285ff);
+
+        /*writeseqall(0x237B05);
+        writeseqall(0x237B55);
+        writeseqall(0x237BB0);
+        writeseqall(0x237BB9);
+        writeseqall(0x237BC7);
+        writeseqall(0x237BF0);
+        writeseqall(0x22A280);
+        writeseqall(0x22A288);
+
+        writeseqall(0x228323);*/
         //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
         //writesequence(0x2285ff, 0x50, 0x1b50, 0x2aa51c, 0, 0);//x_BYTE_D951C
         //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
@@ -536,7 +685,7 @@ void enginestep() {
         
         //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
         //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2b98e0);
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x123456789, 0x123456789);
 
         //addprocedurestop(0x1f11c0, 0x0, true, true, 0x2bac3000);
 
@@ -858,11 +1007,11 @@ void enginestep() {
                 }
             //type_x_WORD_E2970* v46x = sub_824B0(x_D41A0_BYTEARRAY_4_struct.levelnumber_43w);
             if((retval)&& mem_readb(retval + 12))
-                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 10u);
+                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 0x10u);
             //if (v46x && v46x->word_12 == 2)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x10u;
             if(test_regression_level==24)
-                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 20u);
+                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 0x20u);
             //if (x_D41A0_BYTEARRAY_4_struct.levelnumber_43w == 24)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x20u;
             
@@ -984,13 +1133,34 @@ void enginestep() {
         if (reg_eip == 0x238682) {//saveload fix
             mem_writed(0x38c684 + 0xa, 0x0);
         }
-        /*if (reg_eip == 0x238b2f) {//move player
+
+#ifdef TEST_NETWORK
+#endif //TEST_NETWORK
+        if (reg_eip == 0x25d36d) {
+            mem_writeb(0x3be31, 0x0);
+        }
+        if (reg_eip == 0x23c8d4) {
+            mem_writeb(0x134c38, 0x1);
+        }
+#ifdef MOVE_PLAYER
+        if (reg_eip == 0x238b2f) {//move player
             if (debugcounter_238b2f == 10) {
                 mem_writew(reg_esi + 0x4c, 0x8c07);
                 mem_writew(reg_esi + 0x4e, 0xb427);
             }
             debugcounter_238b2f++;
-        }*/
+        }
+#endif //MOVE_PLAYER
+#ifdef SET_REFLECTION
+        if (reg_eip == 0x227834) {//set reflection
+                mem_writew(0x356038 + 0x218A, SET_REFLECTION);
+            }
+#endif //SET_REFLECTION
+#ifdef SET_SHADOWS
+        if(reg_eip == 0x227834) {//set shadows
+            mem_writew(0x356038 + 0x218B, SET_SHADOWS);
+        }
+#endif //SET_SHADOWS
         /*
 
 

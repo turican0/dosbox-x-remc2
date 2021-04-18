@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -57,15 +57,15 @@ static void gettimeofday (timeval* ptime, void* pdummy) {
 #endif
 
 static struct {
-    Bit8u regs[0x40];
+    uint8_t regs[0x40];
     bool nmi;
     bool bcd;
     bool ampm;                  // am/pm mode (false = 24h mode)
     bool lock;                  // lock bit set (no updates)
-    Bit8u reg;
+    uint8_t reg;
     struct {
         bool enabled;
-        Bit8u div;
+        uint8_t div;
         float delay;
         bool acknowledged;
     } timer;
@@ -93,7 +93,7 @@ static void cmos_timerevent(Bitu val) {
 }
 
 static void cmos_checktimer(void) {
-    PIC_RemoveEvents(cmos_timerevent);  
+    PIC_RemoveEvents(cmos_timerevent);
     if (cmos.timer.div<=2) cmos.timer.div+=7;
     cmos.timer.delay=(1000.0f/(32768.0f / (1 << (cmos.timer.div - 1))));
     if (!cmos.timer.div || !cmos.timer.enabled) return;
@@ -155,12 +155,12 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
         {
         case 0x00:      /* Seconds */
             if (val > 59) return;       // invalid seconds value
-            loctime->tm_sec = val;
+            loctime->tm_sec = (int)val;
             break;
 
         case 0x02:      /* Minutes */
             if (val > 59) return;       // invalid minutes value
-            loctime->tm_min = val;
+            loctime->tm_min = (int)val;
             break;
 
         case 0x04:      /* Hours */
@@ -174,7 +174,7 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
                 if (val > 23) return;                               // invalid hour value
             }
 
-            loctime->tm_hour = val;         
+            loctime->tm_hour = (int)val;         
             break;
 
         case 0x06:      /* Day of week */
@@ -183,16 +183,16 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
 
         case 0x07:      /* Date of month */
             if (val > 31) return;               // invalid date value (mktime() should catch the rest)
-            loctime->tm_mday = val;
+            loctime->tm_mday = (int)val;
             break;
 
         case 0x08:      /* Month */
             if (val > 12) return;               // invalid month value
-            loctime->tm_mon = val;
+            loctime->tm_mon = (int)val;
             break;
 
         case 0x09:      /* Year */
-            loctime->tm_year = val;
+            loctime->tm_year = (int)val;
             break;
 
         case 0x32:      /* Century */
@@ -204,7 +204,7 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
         case 0x03:      /* Minutes Alarm */
         case 0x05:      /* Hours Alarm */
             LOG(LOG_BIOS,LOG_NORMAL)("CMOS:Trying to set alarm");
-            cmos.regs[cmos.reg] = val;
+            cmos.regs[cmos.reg] = (uint8_t)val;
             return;     // done
         }
 
@@ -242,7 +242,7 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
     case 0x05:      /* Hours Alarm */
         if(!date_host_forced) {
             LOG(LOG_BIOS,LOG_NORMAL)("CMOS:Trying to set alarm");
-            cmos.regs[cmos.reg]=val;
+            cmos.regs[cmos.reg]=(uint8_t)val;
             break;
         }
     case 0x0a:      /* Status reg A */
@@ -276,7 +276,7 @@ static void cmos_writereg(Bitu port,Bitu val,Bitu iolen) {
                 cmos.time_diff = cmos.locktime.tv_sec - time(NULL);
             }
 
-            cmos.regs[cmos.reg] = val;
+            cmos.regs[cmos.reg] = (uint8_t)val;
             cmos_checktimer();
         } else {
             cmos.bcd=!(val & 0x4);
@@ -372,7 +372,7 @@ static Bitu cmos_readreg(Bitu port,Bitu iolen) {
     }
 
     Bitu drive_a, drive_b;
-    Bit8u hdparm;
+    uint8_t hdparm;
     time_t curtime;
     struct tm *loctime;
     /* Get the current time. */
@@ -423,12 +423,12 @@ static Bitu cmos_readreg(Bitu port,Bitu iolen) {
         cmos.timer.acknowledged=true;
         if (cmos.timer.enabled) {
             /* In periodic interrupt mode only care for those flags */
-            Bit8u val=cmos.regs[0xc];
+            uint8_t val=cmos.regs[0xc];
             cmos.regs[0xc]=0;
             return val;
         } else {
             /* Give correct values at certain times */
-            Bit8u val=0;
+            uint8_t val=0;
             double index=PIC_FullIndex();
             if (index>=(cmos.last.timer+cmos.timer.delay)) {
                 cmos.last.timer=index;
@@ -546,13 +546,13 @@ static Bitu cmos_readreg(Bitu port,Bitu iolen) {
     }
 }
 
-void CMOS_SetRegister(Bitu regNr, Bit8u val) {
+void CMOS_SetRegister(Bitu regNr, uint8_t val) {
     cmos.regs[regNr] = val;
 }
 
 
 static IO_ReadHandleObject ReadHandler[2];
-static IO_WriteHandleObject WriteHandler[2];    
+static IO_WriteHandleObject WriteHandler[2];
 
 void CMOS_Destroy(Section* sec) {
     (void)sec;//UNUSED
@@ -580,24 +580,24 @@ void CMOS_Reset(Section* sec) {
     cmos.reg=0xb;
     cmos_writereg(0x71,0x2,1);  //Struct tm *loctime is of 24 hour format,
     if(date_host_forced) {
-        cmos.regs[0x0d]=(Bit8u)0x80;
+        cmos.regs[0x0d]=(uint8_t)0x80;
     } else {
         cmos.reg=0xd;
         cmos_writereg(0x71,0x80,1); /* RTC power on */
     }
     // Equipment is updated from bios.cpp and bios_disk.cpp
     /* Fill in base memory size, it is 640K always */
-    cmos.regs[0x15]=(Bit8u)0x80;
-    cmos.regs[0x16]=(Bit8u)0x02;
+    cmos.regs[0x15]=(uint8_t)0x80;
+    cmos.regs[0x16]=(uint8_t)0x02;
     /* Fill in extended memory size */
     Bitu exsize=MEM_TotalPages()*4;
     if (exsize >= 1024) exsize -= 1024;
     else exsize = 0;
     if (exsize > 65535) exsize = 65535; /* cap at 64MB. this value is returned as-is by INT 15H AH=0x88 in a 16-bit register */
-    cmos.regs[0x17]=(Bit8u)exsize;
-    cmos.regs[0x18]=(Bit8u)(exsize >> 8);
-    cmos.regs[0x30]=(Bit8u)exsize;
-    cmos.regs[0x31]=(Bit8u)(exsize >> 8);
+    cmos.regs[0x17]=(uint8_t)exsize;
+    cmos.regs[0x18]=(uint8_t)(exsize >> 8);
+    cmos.regs[0x30]=(uint8_t)exsize;
+    cmos.regs[0x31]=(uint8_t)(exsize >> 8);
     if (date_host_forced) {
         cmos.time_diff = 0;
         cmos.locktime.tv_sec = 0;
@@ -616,3 +616,27 @@ void CMOS_Init() {
     AddVMEventFunction(VM_EVENT_RESET,AddVMEventFunctionFuncPair(CMOS_Reset));
 }
 
+// save state support
+void *cmos_timerevent_PIC_Event = (void*)((uintptr_t)cmos_timerevent);
+
+namespace
+{
+class SerializeCmos : public SerializeGlobalPOD
+{
+public:
+    SerializeCmos() : SerializeGlobalPOD("CMOS")
+    {
+        registerPOD(cmos.regs);
+        registerPOD(cmos.nmi);
+        registerPOD(cmos.reg);
+        registerPOD(cmos.timer.enabled);
+        registerPOD(cmos.timer.div);
+        registerPOD(cmos.timer.delay);
+        registerPOD(cmos.timer.acknowledged);
+        registerPOD(cmos.last.timer);
+        registerPOD(cmos.last.ended);
+        registerPOD(cmos.last.alarm);
+        registerPOD(cmos.update_ended);
+    }
+} dummy;
+}

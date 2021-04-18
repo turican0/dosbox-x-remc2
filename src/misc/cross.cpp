@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -21,7 +21,10 @@
 #include "cross.h"
 #include "support.h"
 #include <string>
+#include <limits.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if defined(MACOSX)
 std::string MacOSXEXEPath;
@@ -43,6 +46,20 @@ std::string MacOSXResPath;
 #if defined __MINGW32__
 #define _mkdir(x) mkdir(x)
 #endif
+
+void ResolvePath(std::string& in) {
+#if defined(WIN32)
+    char path[300],temp[300],*tempd=temp;
+    strcpy(tempd, in.c_str());
+    if (strchr(tempd, '%')&&ExpandEnvironmentStrings(tempd,path,300))
+        tempd=path;
+    in=std::string(tempd);
+#else
+    struct stat test;
+    if (stat(in.c_str(),&test))
+        Cross::ResolveHomedir(in);
+#endif
+}
 
 #if defined(WIN32) && !defined(HX_DOS)
 static void W32_ConfDir(std::string& in,bool create) {
@@ -66,37 +83,56 @@ static void W32_ConfDir(std::string& in,bool create) {
 void Cross::GetPlatformResDir(std::string& in) {
 #if defined(MACOSX)
 	in = MacOSXResPath;
+#elif defined(RISCOS)
+	in = "/<DosBox-X$Dir>/resources";
+#elif defined(LINUX)
+	const char *xdg_data_home = getenv("XDG_DATA_HOME");
+	const std::string data_home = xdg_data_home && xdg_data_home[0] == '/' ? xdg_data_home: "~/.local/share";
+	in = data_home + "/dosbox-x";
+	ResolveHomedir(in);
+
+	// Let's check if the above exists, otherwise use RESDIR
+	struct stat info;
+	if ((stat(in.c_str(), &info) != 0) || (!(info.st_mode & S_IFDIR))) {
+		//LOG_MSG("XDG_DATA_HOME (%s) does not exist. Using %s", in.c_str(), RESDIR);
+	        in = RESDIR;
+	}
 #elif defined(RESDIR)
 	in = RESDIR;
 #endif
-    if (!in.empty())
-	    in += CROSS_FILESPLIT;
+	if (!in.empty())
+		in += CROSS_FILESPLIT;
 }
 
 void Cross::GetPlatformConfigDir(std::string& in) {
 #if defined(WIN32) && !defined(HX_DOS)
 	W32_ConfDir(in,false);
-	in += "\\DOSBox";
+	in += "\\DOSBox-X";
 #elif defined(MACOSX)
 	in = "~/Library/Preferences";
 	ResolveHomedir(in);
 #elif defined(HAIKU)
-	in = "~/config/settings/dosbox";
+	in = "~/config/settings/dosbox-x";
 	ResolveHomedir(in);
+#elif defined(RISCOS)
+	in = "/<Choices$Write>/DosBox-X";
 #elif !defined(HX_DOS)
-	in = "~/.dosbox";
+	const char *xdg_conf_home = getenv("XDG_CONFIG_HOME");
+	const std::string conf_home = xdg_conf_home && xdg_conf_home[0] == '/' ? xdg_conf_home: "~/.config";
+	in = conf_home + "/dosbox-x";
 	ResolveHomedir(in);
 #endif
+	//LOG_MSG("Config dir: %s", in.c_str());
 	in += CROSS_FILESPLIT;
 }
 
 void Cross::GetPlatformConfigName(std::string& in) {
 #ifdef WIN32
-#define DEFAULT_CONFIG_FILE "dosbox-" VERSION ".conf"
+#define DEFAULT_CONFIG_FILE "dosbox-x-" VERSION ".conf"
 #elif defined(MACOSX)
-#define DEFAULT_CONFIG_FILE "DOSBox " VERSION " Preferences"
+#define DEFAULT_CONFIG_FILE "DOSBox-X " VERSION " Preferences"
 #else /*linux freebsd*/
-#define DEFAULT_CONFIG_FILE "dosbox-" VERSION ".conf"
+#define DEFAULT_CONFIG_FILE "dosbox-x-" VERSION ".conf"
 #endif
 	in = DEFAULT_CONFIG_FILE;
 }
@@ -104,18 +140,23 @@ void Cross::GetPlatformConfigName(std::string& in) {
 void Cross::CreatePlatformConfigDir(std::string& in) {
 #if defined(WIN32) && !defined(HX_DOS)
 	W32_ConfDir(in,true);
-	in += "\\DOSBox";
+	in += "\\DOSBox-X";
 	_mkdir(in.c_str());
 #elif defined(MACOSX)
-	in = "~/Library/Preferences/";
+	in = "~/Library/Preferences";
 	ResolveHomedir(in);
 	//Don't create it. Assume it exists
 #elif defined(HAIKU)
-	in = "~/config/settings/dosbox";
+	in = "~/config/settings/dosbox-x";
 	ResolveHomedir(in);
 	mkdir(in.c_str(),0700);
+#elif defined(RISCOS)
+	in = "/<Choices$Write>/DosBox-X";
+	mkdir(in.c_str(),0700);
 #elif !defined(HX_DOS)
-	in = "~/.dosbox";
+	const char *xdg_conf_home = getenv("XDG_CONFIG_HOME");
+	const std::string conf_home = xdg_conf_home && xdg_conf_home[0] == '/' ? xdg_conf_home: "~/.config";
+	in = conf_home + "/dosbox-x";
 	ResolveHomedir(in);
 	mkdir(in.c_str(),0700);
 #endif
@@ -161,6 +202,39 @@ bool Cross::IsPathAbsolute(std::string const& in) {
 }
 
 #if defined (WIN32)
+typedef wchar_t host_cnv_char_t;
+extern char *CodePageHostToGuest(const host_cnv_char_t *s);
+
+/* does the filename fit the 8.3 format? */
+static bool is_filename_8by3w(const wchar_t* fname) {
+	if (CodePageHostToGuest(fname)==NULL) return false;
+    int i;
+
+    /* Is the first part 8 chars or less? */
+    i=0;
+    while (*fname != 0 && *fname != L'.') {
+		if (*fname<=32||*fname==127||*fname==L'"'||*fname==L'+'||*fname==L'='||*fname==L','||*fname==L';'||*fname==L':'||*fname==L'<'||*fname==L'>'||*fname==L'|'||*fname==L'?'||*fname==L'*') return false;
+		if (IS_PC98_ARCH && (*fname & 0xFF00u) != 0u && (*fname & 0xFCu) != 0x08u) i++;
+		fname++; i++; 
+	}
+    if (i > 8) return false;
+
+    if (*fname == L'.') fname++;
+
+    /* Is the second part 3 chars or less? A second '.' also makes it a LFN */
+    i=0;
+    while (*fname != 0 && *fname != L'.') {
+		if (*fname<=32||*fname==127||*fname==L'"'||*fname==L'+'||*fname==L'='||*fname==L','||*fname==L';'||*fname==L':'||*fname==L'<'||*fname==L'>'||*fname==L'|'||*fname==L'?'||*fname==L'*') return false;
+		if (IS_PC98_ARCH && (*fname & 0xFF00u) != 0u && (*fname & 0xFCu) != 0x08u) i++;
+		fname++; i++;
+	}
+    if (i > 3) return false;
+
+    /* if there is anything beyond this point, it's an LFN */
+    if (*fname != 0) return false;
+
+    return true;
+}
 
 dir_information* open_directoryw(const wchar_t* dirname) {
 	if (dirname == NULL) return NULL;
@@ -200,7 +274,7 @@ dir_information* open_directory(const char* dirname) {
 	return (_access(dirname,0) ? NULL : &dir);
 }
 
-bool read_directory_firstw(dir_information* dirp, wchar_t* entry_name, bool& is_directory) {
+bool read_directory_firstw(dir_information* dirp, wchar_t* entry_name, wchar_t* entry_sname, bool& is_directory) {
     if (!dirp->wide) return false;
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
@@ -209,8 +283,12 @@ bool read_directory_firstw(dir_information* dirp, wchar_t* entry_name, bool& is_
 		return false;
 	}
 
-    // TODO: offer a config.h option to opt out of Windows widechar functions
+	// TODO: offer a config.h option to opt out of Windows widechar functions
 	wcsncpy(entry_name,dirp->search_data.w.cFileName,(MAX_PATH<CROSS_LEN)?MAX_PATH:CROSS_LEN);
+	if (dirp->search_data.w.cAlternateFileName[0] != 0 && is_filename_8by3w(dirp->search_data.w.cFileName))
+		wcsncpy(entry_sname,dirp->search_data.w.cFileName,13);
+	else
+		wcsncpy(entry_sname,dirp->search_data.w.cAlternateFileName,13);
 
 	if (dirp->search_data.w.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) is_directory = true;
 	else is_directory = false;
@@ -218,7 +296,7 @@ bool read_directory_firstw(dir_information* dirp, wchar_t* entry_name, bool& is_
 	return true;
 }
 
-bool read_directory_nextw(dir_information* dirp, wchar_t* entry_name, bool& is_directory) {
+bool read_directory_nextw(dir_information* dirp, wchar_t* entry_name, wchar_t* entry_sname, bool& is_directory) {
     if (!dirp->wide) return false;
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
@@ -227,6 +305,10 @@ bool read_directory_nextw(dir_information* dirp, wchar_t* entry_name, bool& is_d
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
 	wcsncpy(entry_name,dirp->search_data.w.cFileName,(MAX_PATH<CROSS_LEN)?MAX_PATH:CROSS_LEN);
+	if (dirp->search_data.w.cAlternateFileName[0] != 0 && is_filename_8by3w(dirp->search_data.w.cFileName))
+		wcsncpy(entry_sname,dirp->search_data.w.cFileName,13);
+	else
+		wcsncpy(entry_sname,dirp->search_data.w.cAlternateFileName,13);
 
 	if (dirp->search_data.w.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) is_directory = true;
 	else is_directory = false;
@@ -234,7 +316,8 @@ bool read_directory_nextw(dir_information* dirp, wchar_t* entry_name, bool& is_d
 	return true;
 }
 
-bool read_directory_first(dir_information* dirp, char* entry_name, bool& is_directory) {
+bool read_directory_first(dir_information* dirp, char* entry_name, char* entry_sname, bool& is_directory) {
+    if (!dirp) return false;
     if (dirp->wide) return false;
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
@@ -245,14 +328,16 @@ bool read_directory_first(dir_information* dirp, char* entry_name, bool& is_dire
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
 	safe_strncpy(entry_name,dirp->search_data.a.cFileName,(MAX_PATH<CROSS_LEN)?MAX_PATH:CROSS_LEN);
-
+    safe_strncpy(entry_sname,dirp->search_data.a.cAlternateFileName,13);
+ 
 	if (dirp->search_data.a.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) is_directory = true;
 	else is_directory = false;
 
 	return true;
 }
 
-bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_directory) {
+bool read_directory_next(dir_information* dirp, char* entry_name, char* entry_sname, bool& is_directory) {
+    if (!dirp) return false;
     if (dirp->wide) return false;
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
@@ -261,6 +346,7 @@ bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_direc
 
     // TODO: offer a config.h option to opt out of Windows widechar functions
 	safe_strncpy(entry_name,dirp->search_data.a.cFileName,(MAX_PATH<CROSS_LEN)?MAX_PATH:CROSS_LEN);
+	safe_strncpy(entry_sname,dirp->search_data.a.cAlternateFileName,13);
 
 	if (dirp->search_data.a.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) is_directory = true;
 	else is_directory = false;
@@ -269,7 +355,7 @@ bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_direc
 }
 
 void close_directory(dir_information* dirp) {
-	if (dirp->handle != INVALID_HANDLE_VALUE) {
+	if (dirp && dirp->handle != INVALID_HANDLE_VALUE) {
 		FindClose(dirp->handle);
 		dirp->handle = INVALID_HANDLE_VALUE;
 	}
@@ -284,7 +370,8 @@ dir_information* open_directory(const char* dirname) {
 	return dir.dir?&dir:NULL;
 }
 
-bool read_directory_first(dir_information* dirp, char* entry_name, bool& is_directory) {
+bool read_directory_first(dir_information* dirp, char* entry_name, char* entry_sname, bool& is_directory) {	
+	if (!dirp) return false;
 	struct dirent* dentry = readdir(dirp->dir);
 	if (dentry==NULL) {
 		return false;
@@ -292,6 +379,7 @@ bool read_directory_first(dir_information* dirp, char* entry_name, bool& is_dire
 
 //	safe_strncpy(entry_name,dentry->d_name,(FILENAME_MAX<MAX_PATH)?FILENAME_MAX:MAX_PATH);	// [include stdio.h], maybe pathconf()
 	safe_strncpy(entry_name,dentry->d_name,CROSS_LEN);
+	entry_sname[0]=0;
 
 #ifdef DIRENT_HAS_D_TYPE
 	if(dentry->d_type == DT_DIR) {
@@ -315,7 +403,8 @@ bool read_directory_first(dir_information* dirp, char* entry_name, bool& is_dire
 	return true;
 }
 
-bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_directory) {
+bool read_directory_next(dir_information* dirp, char* entry_name, char* entry_sname, bool& is_directory) {
+	if (!dirp) return false;
 	struct dirent* dentry = readdir(dirp->dir);
 	if (dentry==NULL) {
 		return false;
@@ -323,6 +412,8 @@ bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_direc
 
 //	safe_strncpy(entry_name,dentry->d_name,(FILENAME_MAX<MAX_PATH)?FILENAME_MAX:MAX_PATH);	// [include stdio.h], maybe pathconf()
 	safe_strncpy(entry_name,dentry->d_name,CROSS_LEN);
+	entry_sname[0]=0;
+
 
 #ifdef DIRENT_HAS_D_TYPE
 	if(dentry->d_type == DT_DIR) {
@@ -348,7 +439,55 @@ bool read_directory_next(dir_information* dirp, char* entry_name, bool& is_direc
 }
 
 void close_directory(dir_information* dirp) {
-	closedir(dirp->dir);
+	if (dirp) closedir(dirp->dir);
 }
 
 #endif
+
+FILE *fopen_wrap(const char *path, const char *mode) {
+#if !defined(WIN32) && !defined(OS2) && !defined(MACOSX) && defined(HAVE_REALPATH)
+	char work[CROSS_LEN] = {0};
+	strncpy(work,path,CROSS_LEN-1);
+	char* last = strrchr(work,'/');
+	
+	if (last) {
+		if (last != work) {
+			*last = 0;
+			//If this compare fails, then we are dealing with files in / 
+			//Which is outside the scope, but test anyway. 
+			//However as realpath only works for exising files. The testing is 
+			//in that case not done against new files.
+		}
+		char* check = realpath(work,NULL);
+		if (check) {
+			if ( ( strlen(check) == 5 && strcmp(check,"/proc") == 0) || strncmp(check,"/proc/",6) == 0) {
+//				LOG_MSG("lst hit %s blocking!",path);
+				free(check);
+				return NULL;
+			}
+			free(check);
+		}
+	}
+
+#if 0
+//Lightweight version, but then existing files can still be read, which is not ideal	
+	if (strpbrk(mode,"aw+") != NULL) {
+		LOG_MSG("pbrk ok");
+		char* check = realpath(path,NULL);
+		//Will be null if file doesn't exist.... ENOENT
+		//TODO What about unlink /proc/self/mem and then create it ?
+		//Should be safe for what we want..
+		if (check) {
+			if (strncmp(check,"/proc/",6) == 0) {
+				free(check);
+				return NULL;
+			}
+			free(check);
+		}
+	}
+*/
+#endif //0 
+#endif
+
+	return fopen(path,mode);
+}

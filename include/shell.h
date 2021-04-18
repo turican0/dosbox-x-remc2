@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -30,26 +30,35 @@
 
 #include <string>
 #include <list>
+#include <map>
+
+#include <SDL.h>
+#if SDL_VERSION_ATLEAST(2, 0, 0)
+#define SDL_STRING "SDL2"
+#else
+#define SDL_STRING "SDL1"
+#endif
 
 #define CMD_MAXLINE 4096
 #define CMD_MAXCMDS 20
 #define CMD_OLDSIZE 4096
 extern Bitu call_shellstop;
+class DOS_Shell;
+
 /* first_shell is used to add and delete stuff from the shell env 
  * by "external" programs. (config) */
-extern Program * first_shell;
+extern DOS_Shell * first_shell;
 
-class DOS_Shell;
 
 class BatchFile {
 public:
 	BatchFile(DOS_Shell * host,char const* const resolved_name,char const* const entered_name, char const * const cmd_line);
 	virtual ~BatchFile();
 	virtual bool ReadLine(char * line);
-	bool Goto(char * where);
+	bool Goto(const char * where);
 	void Shift(void);
-	Bit16u file_handle;
-	Bit32u location;
+	uint16_t file_handle;
+	uint32_t location;
 	bool echo;
 	DOS_Shell * shell;
 	BatchFile * prev;
@@ -67,8 +76,20 @@ class DOS_Shell : public Program {
 private:
 	friend class AutoexecEditor;
 	std::list<std::string> l_history, l_completion;
+    template<class _Type>
+    struct less_ignore_case {
+        typedef _Type first_argument_type;
+        typedef _Type second_argument_type;
+        typedef bool result_type;
 
-	Bit16u completion_index;
+        constexpr bool operator()(const _Type& _Left, const _Type& _Right) const {
+            return strcasecmp(_Left.c_str(), _Right.c_str()) < 0;
+        }
+    };
+    typedef std::map<std::string, std::string, less_ignore_case<std::string> > cmd_alias_map_t;
+    cmd_alias_map_t cmd_alias;
+
+	uint16_t completion_index;
 	
 private:
 	void ProcessCmdLineEnvVarStitution(char * line);
@@ -94,7 +115,11 @@ public:
 
     /*! \brief      Redirection handling
      */
-	Bitu GetRedirection(char *s, char **ifn, char **ofn,bool * append);
+	Bitu GetRedirection(char *s, char **ifn, char **ofn, char **toc,bool * append);
+
+    /*! \brief      Build Tab completion
+     */
+	bool BuildCompletions(char * line, uint16_t str_len);
 
     /*! \brief      Command line input and keyboard handling
      */
@@ -106,11 +131,11 @@ public:
 
     /*! \brief      Process and execute command (internal or external)
      */
-	void DoCommand(char * cmd);
+	void DoCommand(char * line);
 
     /*! \brief      Execute a command
      */
-	bool Execute(char * name,char * args);
+    bool Execute(char* name, const char* args);
 
 	/*! \brief      Checks if it matches a hardware-property */
 	bool CheckConfig(char* cmd_in,char*line);
@@ -119,13 +144,13 @@ public:
      */
 	char * Which(char * name);
 
-    /*! \brief      INT 2Fh debugging tool
-     */
-	void CMD_INT2FDBG(char * args);
-
     /*! \brief      Online HELP for the shell
      */
 	void CMD_HELP(char * args);
+
+    /*! \brief      Exteneded Ctrl+C switch
+     */
+	void CMD_BREAK(char * args);
 
     /*! \brief      Clear screen (CLS)
      */
@@ -150,6 +175,10 @@ public:
     /*! \brief      Deletion command (DEL)
      */
 	void CMD_DELETE(char * args);
+
+    /*! \brief      Delete directory tree (DELTREE)
+     */
+	void CMD_DELTREE(char * args);
 
     /*! \brief      Echo command (ECHO)
      */
@@ -231,6 +260,14 @@ public:
      */
 	void CMD_SHIFT(char * args);
 
+    /*! \brief      List directory tree (TREE)
+     */
+	void CMD_TREE(char * args);
+
+    /*! \brief      File verification switch
+     */
+	void CMD_VERIFY(char * args);
+
     /*! \brief      Print DOS version (VER)
      */
 	void CMD_VER(char * args);
@@ -247,10 +284,6 @@ public:
      */
 	void CMD_PROMPT(char * args);
 
-    /*! \brief      Change volume label (LABEL)
-     */
-	void CMD_LABEL(char * args);
-
     /*! \brief      Text pager (MORE)
      */
 	void CMD_MORE(char * args);
@@ -258,30 +291,58 @@ public:
     /*! \brief      Change TTY (console) device (CTTY)
      */
 	void CMD_CTTY(char * args);
+
+    /*! \brief      Change country code
+     */
+	void CMD_CHCP(char * args);
+	void CMD_COUNTRY(char * args);
+	void CMD_PUSHD(char * args);
+	void CMD_POPD(char * args);
+    void CMD_TRUENAME(char * args);
     void CMD_DXCAPTURE(char * args);
 
     /*! \brief      Looping execution (FOR)
      */
 	void CMD_FOR(char * args);
 
+    /*! \brief      LFN switch for FOR
+     */
+	void CMD_LFNFOR(char * args);
+
+    /*! \brief      ALIAS
+    */
+	void CMD_ALIAS(char* args);
+
+    /*! \brief      LS
+    */
+	void CMD_LS(char *args);
+
 #if C_DEBUG
     /*! \brief      Execute command within debugger (break at entry point)
      */
 	void CMD_DEBUGBOX(char * args);
+
+    /*! \brief      INT 2Fh debugging tool
+     */
+	void CMD_INT2FDBG(char * args);
 #endif
+
 	/* The shell's variables */
-	Bit16u input_handle;
+	uint16_t input_handle;
 	BatchFile * bf;                     //! Batch file to execute
 	bool echo;
 	bool exit;
 	bool call;
+    bool exec;
+    bool perm;
+	bool lfnfor;
     /* Status */
     bool input_eof;                     //! STDIN has hit EOF
 };
 
 struct SHELL_Cmd {
 	const char * name;								/* Command name*/
-	Bit32u flags;									/* Flags about the command */
+	uint32_t flags;									/* Flags about the command */
 	void (DOS_Shell::*handler)(char * args);		/* Handler for this command */
 	const char * help;								/* String with command help */
 };

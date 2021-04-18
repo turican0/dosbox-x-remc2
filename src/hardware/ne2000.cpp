@@ -1,11 +1,5 @@
 #include "config.h"
 
-#if C_NE2000
-
-#if defined(WIN32)
-  #define HAVE_REMOTE
-#endif
-
 #include "dosbox.h"
 #include <string.h>
 #include <stdio.h>
@@ -44,37 +38,19 @@
 //  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 //  Lesser General Public License for more details.
 //
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with this library; if not, write to the Free Software
-//  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
+//  You should have received a copy of the GNU General Public License along
+//  with this program; if not, write to the Free Software Foundation, Inc.,
+//  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 
 // Peter Grehan (grehan@iprg.nokia.com) coded all of this
 // NE2000/ether stuff.
 
 #include "ne2000.h"
 
-#include "pcap.h"
-// Handle to WinPCap device
-pcap_t *adhandle = 0;
+#include "ethernet.h"
+EthernetConnection* ethernet = nullptr;
+
 static void NE2000_TX_Event(Bitu val);
-
-#ifdef WIN32
-// DLL loading
-#define pcap_sendpacket(A,B,C)			PacketSendPacket(A,B,C)
-#define pcap_close(A)					PacketClose(A)
-#define pcap_freealldevs(A)				PacketFreealldevs(A)
-#define pcap_open(A,B,C,D,E,F)			PacketOpen(A,B,C,D,E,F)
-#define pcap_next_ex(A,B,C)				PacketNextEx(A,B,C)
-#define pcap_findalldevs_ex(A,B,C,D)	PacketFindALlDevsEx(A,B,C,D)
-
-int (*PacketSendPacket)(pcap_t *, const u_char *, int) = 0;
-void (*PacketClose)(pcap_t *) = 0;
-void (*PacketFreealldevs)(pcap_if_t *) = 0;
-pcap_t* (*PacketOpen)(char const *,int,int,int,struct pcap_rmtauth *,char *) = 0;
-int (*PacketNextEx)(pcap_t *, struct pcap_pkthdr **, const u_char **) = 0;
-int (*PacketFindALlDevsEx)(char *, struct pcap_rmtauth *, pcap_if_t **, char *) = 0;
-
-#endif
 
 //Never completely fill the ne2k ring so that we never
 // hit the unclear completely full buffer condition.
@@ -204,10 +180,10 @@ bx_ne2k_c::reset(unsigned type)
 // read_cr/write_cr - utility routines for handling reads/writes to
 // the Command Register
 //
-Bit32u
+uint32_t
 bx_ne2k_c::read_cr(void)
 {
-  Bit32u val = 
+  uint32_t val = 
     (((unsigned int)(BX_NE2K_THIS s.CR.pgsel    & 0x03u) << 6u) |
 	 ((unsigned int)(BX_NE2K_THIS s.CR.rdma_cmd & 0x07u) << 3u) |
 	  (unsigned int)(BX_NE2K_THIS s.CR.tx_packet << 2u) |
@@ -218,7 +194,7 @@ bx_ne2k_c::read_cr(void)
 }
 
 void
-bx_ne2k_c::write_cr(Bit32u value)
+bx_ne2k_c::write_cr(uint32_t value)
 {
   BX_DEBUG ("wrote 0x%02x to CR", value);
 
@@ -253,7 +229,7 @@ bx_ne2k_c::write_cr(Bit32u value)
 	// Set up DMA read from receive ring
 		BX_NE2K_THIS s.remote_start = BX_NE2K_THIS s.remote_dma =
 			BX_NE2K_THIS s.bound_ptr * 256;
-		BX_NE2K_THIS s.remote_bytes = *((Bit16u*) &
+		BX_NE2K_THIS s.remote_bytes = *((uint16_t*) &
 			BX_NE2K_THIS s.mem[BX_NE2K_THIS s.bound_ptr * 256 + 2 - BX_NE2K_MEMSTART]);
 		BX_INFO("Sending buffer #x%x length %d",
 			BX_NE2K_THIS s.remote_start,
@@ -301,7 +277,7 @@ bx_ne2k_c::write_cr(Bit32u value)
     // Send the packet to the system driver
 	/* TODO: Transmit packet */
     //BX_NE2K_THIS ethdev->sendpkt(& BX_NE2K_THIS s.mem[BX_NE2K_THIS s.tx_page_start*256 - BX_NE2K_MEMSTART], BX_NE2K_THIS s.tx_bytes);
-	pcap_sendpacket(adhandle,&s.mem[s.tx_page_start*256 - BX_NE2K_MEMSTART], s.tx_bytes);
+    	ethernet->SendPacket(&s.mem[s.tx_page_start*256 - BX_NE2K_MEMSTART], s.tx_bytes);
 	// some more debug
 	if (BX_NE2K_THIS s.tx_timer_active) {
       BX_PANIC(("CR write, tx timer still active"));
@@ -348,15 +324,15 @@ bx_ne2k_c::write_cr(Bit32u value)
 // The first 16 bytes contains the MAC address at even locations,
 // and there is 16K of buffer memory starting at 16K
 //
-Bit32u bx_ne2k_c::chipmem_read(Bit32u address, unsigned int io_len)
+uint32_t bx_ne2k_c::chipmem_read(uint32_t address, unsigned int io_len)
 {
-  Bit32u retval = 0;
+  uint32_t retval = 0;
 
   if ((io_len == 2) && (address & 0x1)) 
     BX_PANIC(("unaligned chipmem word read"));
 
   // ROM'd MAC address
-  if (/*(address >=0) && */(address <= 31)) {
+  if (/*(address >=0) && */address <= 31) {
     retval = BX_NE2K_THIS s.macaddr[address];
     if ((io_len == 2u) || (io_len == 4u)) {
       retval |= (unsigned int)(BX_NE2K_THIS s.macaddr[address + 1u] << 8u);
@@ -386,7 +362,7 @@ Bit32u bx_ne2k_c::chipmem_read(Bit32u address, unsigned int io_len)
 }
 
 void 
-bx_ne2k_c::chipmem_write(Bit32u address, Bit32u value, unsigned io_len)
+bx_ne2k_c::chipmem_write(uint32_t address, uint32_t value, unsigned io_len)
 {
   if ((io_len == 2) && (address & 0x1)) 
     BX_PANIC(("unaligned chipmem word write"));
@@ -409,10 +385,10 @@ bx_ne2k_c::chipmem_write(Bit32u address, Bit32u value, unsigned io_len)
 // after that, insw/outsw instructions can be used to move
 // the appropriate number of bytes to/from the device.
 //
-Bit32u 
-bx_ne2k_c::asic_read(Bit32u offset, unsigned int io_len)
+uint32_t 
+bx_ne2k_c::asic_read(uint32_t offset, unsigned int io_len)
 {
-  Bit32u retval = 0;
+  uint32_t retval = 0;
 
   switch (offset) {
   case 0x0:  // Data register
@@ -468,7 +444,7 @@ bx_ne2k_c::asic_read(Bit32u offset, unsigned int io_len)
 }
 
 void
-bx_ne2k_c::asic_write(Bit32u offset, Bit32u value, unsigned io_len)
+bx_ne2k_c::asic_write(uint32_t offset, uint32_t value, unsigned io_len)
 {
   BX_DEBUG("asic write addr=0x%02x, value=0x%04x", (unsigned) offset, (unsigned) value);
   switch (offset) {
@@ -517,8 +493,8 @@ bx_ne2k_c::asic_write(Bit32u offset, Bit32u value, unsigned io_len)
 // page0_read/page0_write - These routines handle reads/writes to
 // the 'zeroth' page of the DS8390 register file
 //
-Bit32u
-bx_ne2k_c::page0_read(Bit32u offset, unsigned int io_len)
+uint32_t
+bx_ne2k_c::page0_read(uint32_t offset, unsigned int io_len)
 {
   BX_DEBUG("page 0 read from port %04x, len=%u", (unsigned) offset,
 	   (unsigned) io_len);
@@ -625,7 +601,7 @@ bx_ne2k_c::page0_read(Bit32u offset, unsigned int io_len)
 }
 
 void
-bx_ne2k_c::page0_write(Bit32u offset, Bit32u value, unsigned io_len)
+bx_ne2k_c::page0_write(uint32_t offset, uint32_t value, unsigned io_len)
 {
   BX_DEBUG("page 0 write to port %04x, len=%u", (unsigned) offset,
 	   (unsigned) io_len);
@@ -816,8 +792,8 @@ bx_ne2k_c::page0_write(Bit32u offset, Bit32u value, unsigned io_len)
 // page1_read/page1_write - These routines handle reads/writes to
 // the first page of the DS8390 register file
 //
-Bit32u
-bx_ne2k_c::page1_read(Bit32u offset, unsigned int io_len)
+uint32_t
+bx_ne2k_c::page1_read(uint32_t offset, unsigned int io_len)
 {
   BX_DEBUG("page 1 read from port %04x, len=%u", (unsigned) offset,
 	   (unsigned) io_len);
@@ -858,7 +834,7 @@ bx_ne2k_c::page1_read(Bit32u offset, unsigned int io_len)
 }
 
 void
-bx_ne2k_c::page1_write(Bit32u offset, Bit32u value, unsigned io_len)
+bx_ne2k_c::page1_write(uint32_t offset, uint32_t value, unsigned io_len)
 {
     (void)io_len;//UNUSED
   BX_DEBUG("page 1 w offset %04x", (unsigned) offset);
@@ -897,8 +873,8 @@ bx_ne2k_c::page1_write(Bit32u offset, Bit32u value, unsigned io_len)
 // page2_read/page2_write - These routines handle reads/writes to
 // the second page of the DS8390 register file
 //
-Bit32u
-bx_ne2k_c::page2_read(Bit32u offset, unsigned int io_len)
+uint32_t
+bx_ne2k_c::page2_read(uint32_t offset, unsigned int io_len)
 {
   BX_DEBUG("page 2 read from port %04x, len=%u", (unsigned) offset, (unsigned) io_len);
 
@@ -989,7 +965,7 @@ bx_ne2k_c::page2_read(Bit32u offset, unsigned int io_len)
 }
 
 void
-bx_ne2k_c::page2_write(Bit32u offset, Bit32u value, unsigned io_len)
+bx_ne2k_c::page2_write(uint32_t offset, uint32_t value, unsigned io_len)
 {
     (void)io_len;//UNUSED
   // Maybe all writes here should be BX_PANIC()'d, since they
@@ -1055,8 +1031,8 @@ bx_ne2k_c::page2_write(Bit32u offset, Bit32u value, unsigned io_len)
 //
 // page3_read/page3_write - writes to this page are illegal
 //
-Bit32u
-bx_ne2k_c::page3_read(Bit32u offset, unsigned int io_len)
+uint32_t
+bx_ne2k_c::page3_read(uint32_t offset, unsigned int io_len)
 {
     (void)offset;//UNUSED
     (void)io_len;//UNUSED
@@ -1065,7 +1041,7 @@ bx_ne2k_c::page3_read(Bit32u offset, unsigned int io_len)
 }
 
 void
-bx_ne2k_c::page3_write(Bit32u offset, Bit32u value, unsigned io_len)
+bx_ne2k_c::page3_write(uint32_t offset, uint32_t value, unsigned io_len)
 {
     (void)value;//UNUSED
     (void)offset;//UNUSED
@@ -1105,7 +1081,7 @@ bx_ne2k_c::tx_timer(void)
 // mainline when the CPU attempts a read in the i/o space registered
 // by this ne2000 instance
 //
-Bit32u bx_ne2k_c::read_handler(void *this_ptr, Bit32u address, unsigned io_len)
+uint32_t bx_ne2k_c::read_handler(void *this_ptr, uint32_t address, unsigned io_len)
 {
 #if !BX_USE_NE2K_SMF
   bx_ne2k_c *class_ptr = (bx_ne2k_c *) this_ptr;
@@ -1113,13 +1089,13 @@ Bit32u bx_ne2k_c::read_handler(void *this_ptr, Bit32u address, unsigned io_len)
   return( class_ptr->read(address, io_len) );
 }
 
-Bit32u bx_ne2k_c::read(Bit32u address, unsigned io_len)
+uint32_t bx_ne2k_c::read(uint32_t address, unsigned io_len)
 {
 #else
   UNUSED(this_ptr);
 #endif  // !BX_USE_NE2K_SMF
   BX_DEBUG("read addr %x, len %d", address, io_len);
-  Bit32u retval = 0;
+  uint32_t retval = 0;
   unsigned int offset = (unsigned int)address - (unsigned int)(BX_NE2K_THIS s.base_address);
 
   if (offset >= 0x10) {
@@ -1159,7 +1135,7 @@ Bit32u bx_ne2k_c::read(Bit32u address, unsigned io_len)
 // by this ne2000 instance
 //
 void
-bx_ne2k_c::write_handler(void *this_ptr, Bit32u address, Bit32u value, 
+bx_ne2k_c::write_handler(void *this_ptr, uint32_t address, uint32_t value, 
 			 unsigned io_len)
 {
 #if !BX_USE_NE2K_SMF
@@ -1169,7 +1145,7 @@ bx_ne2k_c::write_handler(void *this_ptr, Bit32u address, Bit32u value,
 }
 
 void
-bx_ne2k_c::write(Bit32u address, Bit32u value, unsigned io_len)
+bx_ne2k_c::write(uint32_t address, uint32_t value, unsigned io_len)
 {
 #else
   UNUSED(this_ptr);
@@ -1396,10 +1372,10 @@ bx_ne2k_c::rx_frame(const void *buf, unsigned io_len)
 
 }
 
-//Bit8u macaddr[6] = { 0xAC, 0xDE, 0x48, 0x8E, 0x89, 0x19 };
+//uint8_t macaddr[6] = { 0xAC, 0xDE, 0x48, 0x8E, 0x89, 0x19 };
 
 Bitu dosbox_read(Bitu port, Bitu len) {
-	Bitu retval = theNE2kDevice->read(port,len);
+	Bitu retval = theNE2kDevice->read((uint32_t)port,(unsigned int)len);
 	//LOG_MSG("ne2k rd port %x val %4x len %d page %d, CS:IP %8x:%8x",
 	//	port, retval, len, theNE2kDevice->s.CR.pgsel,SegValue(cs),reg_eip);
 	return retval;
@@ -1407,7 +1383,7 @@ Bitu dosbox_read(Bitu port, Bitu len) {
 void dosbox_write(Bitu port, Bitu val, Bitu len) {
 	//LOG_MSG("ne2k wr port %x val %4x len %d page %d, CS:IP %8x:%8x",
 	//	port, val, len,theNE2kDevice->s.CR.pgsel,SegValue(cs),reg_eip);
-	theNE2kDevice->write(port, val, len);
+	theNE2kDevice->write((uint32_t)port, (uint32_t)val, (unsigned int)len);
 }
 
 void bx_ne2k_c::init()
@@ -1468,23 +1444,17 @@ static void NE2000_TX_Event(Bitu val) {
 }
 
 static void NE2000_Poller(void) {
-	int res;
-	struct pcap_pkthdr *header;
-	u_char *pkt_data;
-//#if 0
-	while((res = pcap_next_ex( adhandle, &header, (const u_char **)&pkt_data)) > 0) {
+	ethernet->GetPackets([](const uint8_t* packet, int len) {
 		//LOG_MSG("NE2000: Received %d bytes", header->len);
-		
+
 		// don't receive in loopback modes
 		if((theNE2kDevice->s.DCR.loop == 0) || (theNE2kDevice->s.TCR.loop_cntl != 0))
 			return;
-		theNE2kDevice->rx_frame(pkt_data, header->len);
-	}
-//#endif
+		theNE2kDevice->rx_frame(packet, len);
+	});
 }
-#ifdef WIN32
-#include <windows.h>
-#endif
+
+extern std::string niclist;
 
 class NE2K: public Module_base {
 private:
@@ -1507,57 +1477,14 @@ public:
 			return;
 		}
 
-#ifdef WIN32
-/*		
-		int (*PacketSendPacket)(pcap_t *, const u_char *, int);
-		void (*PacketClose)(pcap_t *);
-		void (*PacketFreealldevs)(pcap_if_t *);
-		pcap_t* (*PacketOpen)(char const *,int,int,int,struct pcap_rmtauth *,char *);
-		int (*PacketNextEx)(pcap_t *, struct pcap_pkthdr **, const u_char **);
-		int (*PacketFindALlDevsEx)(char *, struct pcap_rmtauth *, pcap_if_t **, char *);
-*/
-		// init the library
-		HINSTANCE pcapinst;
-		pcapinst = LoadLibrary("WPCAP.DLL");
-		if(pcapinst==NULL) {
-			LOG_MSG("WinPcap has to be installed for the NE2000 to work.");
+		const char* backendstring = section->Get_string("backend");
+		ethernet = OpenEthernetConnection(backendstring);
+		if(!ethernet)
+		{
+			LOG_MSG("NE2000: Failed to open Ethernet backend %s", backendstring);
 			load_success = false;
 			return;
 		}
-		FARPROC psp;
-		
-		psp = GetProcAddress(pcapinst,"pcap_sendpacket");
-		if(!PacketSendPacket) PacketSendPacket =
-			(int (__cdecl *)(pcap_t *,const u_char *,int))psp;
-		
-		psp = GetProcAddress(pcapinst,"pcap_close");
-		if(!PacketClose) PacketClose =
-			(void (__cdecl *)(pcap_t *)) psp;
-		
-		psp = GetProcAddress(pcapinst,"pcap_freealldevs");
-		if(!PacketFreealldevs) PacketFreealldevs =
-			(void (__cdecl *)(pcap_if_t *)) psp;
-
-		psp = GetProcAddress(pcapinst,"pcap_open");
-		if(!PacketOpen) PacketOpen =
-			(pcap_t* (__cdecl *)(char const *,int,int,int,struct pcap_rmtauth *,char *)) psp;
-
-		psp = GetProcAddress(pcapinst,"pcap_next_ex");
-		if(!PacketNextEx) PacketNextEx = 
-			(int (__cdecl *)(pcap_t *, struct pcap_pkthdr **, const u_char **)) psp;
-
-		psp = GetProcAddress(pcapinst,"pcap_findalldevs_ex");
-		if(!PacketFindALlDevsEx) PacketFindALlDevsEx =
-			(int (__cdecl *)(char *, struct pcap_rmtauth *, pcap_if_t **, char *)) psp;
-
-		if(PacketFindALlDevsEx==0 || PacketNextEx==0 || PacketOpen==0 || 
-			PacketFreealldevs==0 || PacketClose==0 || PacketSendPacket==0) {
-			LOG_MSG("Wrong WinPcap version or something");
-			load_success = false;
-			return;
-		}
-
-#endif
 
 		// get irq and base
 		Bitu irq = (Bitu)section->Get_int("nicirq");
@@ -1575,7 +1502,7 @@ public:
 		// mac address
 		const char* macstring=section->Get_string("macaddr");
 		unsigned int macint[6];
-		Bit8u mac[6];
+		uint8_t mac[6];
 		if(sscanf(macstring,"%02x:%02x:%02x:%02x:%02x:%02x",
 			&macint[0],&macint[1],&macint[2],&macint[3],&macint[4],&macint[5]) != 6) {
 			mac[0]=0xac;mac[1]=0xde;mac[2]=0x48;
@@ -1586,107 +1513,12 @@ public:
 			mac[4]=macint[4]; mac[5]=macint[5];
 		}
 
-		// find out which pcap device to use
-		const char* realnicstring=section->Get_string("realnic");
-		pcap_if_t *alldevs;
-		pcap_if_t *currentdev = NULL;
-		char errbuf[PCAP_ERRBUF_SIZE];
-		unsigned int userdev;
-#ifdef WIN32
-		if (pcap_findalldevs_ex(PCAP_SRC_IF_STRING, NULL, &alldevs, errbuf) == -1)
-#else
-		if (pcap_findalldevs(&alldevs, errbuf) == -1)
-#endif
- 		{
-			LOG_MSG("Cannot enumerate network interfaces: %s\n", errbuf);
-			load_success = false;
-			return;
-		}
-		if (!strcasecmp(realnicstring,"list")) {
-			// print list and quit
-			Bitu i = 0;
-			LOG_MSG("\nNetwork Interface List \n-----------------------------------");
-			for(currentdev=alldevs; currentdev!=NULL; currentdev=currentdev->next) {
-				const char* desc = "no description"; 
-				if(currentdev->description) desc=currentdev->description;
-				i++;
-				LOG_MSG("%2d. %s\n    (%s)\n",(int)i,currentdev->name,desc);
-			}
-			pcap_freealldevs(alldevs);
-			load_success = false;
-			return;
-		} else if(1==sscanf(realnicstring,"%u",&userdev)) {
-			// user passed us a number
-			Bitu i = 0;
-			currentdev=alldevs;
-			while(currentdev!=NULL) {
-				i++;
-				if(i==userdev) break;
-				else currentdev=currentdev->next;
-			}
-		} else {
-			// user might have passed a piece of name
-			for(currentdev=alldevs; currentdev!=NULL; currentdev=currentdev->next) {
-				if(strstr(currentdev->name,realnicstring)) {
-					break;
-				}else if(currentdev->description!=NULL &&
-					strstr(currentdev->description,realnicstring)) {
-					break;
-				}
-			}
-		}
-
-		if(currentdev==NULL) {
-			LOG_MSG("Unable to find network interface - check realnic parameter\n");
-			load_success = false;
-			pcap_freealldevs(alldevs);
-			return;
-		}
-		// print out which interface we are going to use
-        const char* desc = "no description"; 
-		if(currentdev->description) desc=currentdev->description;
-		LOG_MSG("Using Network interface:\n%s\n(%s)\n",currentdev->name,desc);
-		
-		// attempt to open it
-#ifdef WIN32
-		if ( (adhandle= pcap_open(
-			currentdev->name, // name of the device
-            65536,            // portion of the packet to capture
-                              // 65536 = whole packet 
-            PCAP_OPENFLAG_PROMISCUOUS,    // promiscuous mode
-            -1,             // read timeout
-            NULL,             // authentication on the remote machine
-            errbuf            // error buffer
-            ) ) == NULL)
-#else
-		/*pcap_t *pcap_open_live(const char *device, int snaplen,
-               int promisc, int to_ms, char *errbuf)*/
-		if ( (adhandle= pcap_open_live(
-			currentdev->name, // name of the device
-            65536,            // portion of the packet to capture
-                              // 65536 = whole packet 
-            true,    // promiscuous mode
-            -1,             // read timeout
-            errbuf            // error buffer
-            ) ) == NULL)
-
-#endif        
-        {
-				LOG_MSG("\nUnable to open the interface: %s.", errbuf);
-        	pcap_freealldevs(alldevs);
-			load_success = false;
-			return;
-		}
-		pcap_freealldevs(alldevs);
-#ifndef WIN32
-		pcap_setnonblock(adhandle,1,errbuf);
-#endif
 		// create the bochs NIC class
 		theNE2kDevice = new bx_ne2k_c ();
 		memcpy(theNE2kDevice->s.physaddr, mac, 6);
 
-		theNE2kDevice->s.base_address=base;
-		theNE2kDevice->s.base_irq=irq;
+		theNE2kDevice->s.base_address=(uint32_t)base;
+		theNE2kDevice->s.base_irq=(int)irq;
 
 		theNE2kDevice->init();
 
@@ -1701,8 +1533,8 @@ public:
 	}	
 	
 	~NE2K() {
-		if(adhandle) pcap_close(adhandle);
-		adhandle=0;
+		if(ethernet != 0) delete ethernet;
+		ethernet=0;
 		if(theNE2kDevice != 0) delete theNE2kDevice;
 		theNE2kDevice=0;
 		TIMER_DelTickHandler(NE2000_Poller);
@@ -1740,5 +1572,3 @@ void NE2K_Init() {
 	AddExitFunction(AddExitFunctionFuncPair(NE2K_ShutDown),true);
 	AddVMEventFunction(VM_EVENT_RESET,AddVMEventFunctionFuncPair(NE2K_OnReset));
 }
-
-#endif // C_NE2000

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -69,12 +69,14 @@ void write_p3c4(Bitu /*port*/,Bitu val,Bitu /*iolen*/) {
 			val &= 0x07;	// FIXME: reasonable guess, since the ET4000 does it too
 		else
 			val &= 0x0F;	// FIXME: reasonable guess
+
+        /* Paradise/Western Digital sequencer registers appear to repeat every 0x40 aka decoding bits [5:0] */
 	}
 	else if (machine == MCH_EGA) {
 		val &= 0x0F; // FIXME: reasonable guess
 	}
 
-	seq(index)=val;
+	seq(index)=(uint8_t)val;
 }
 
 void VGA_SequReset(bool reset);
@@ -85,17 +87,17 @@ void write_p3c5(Bitu /*port*/,Bitu val,Bitu iolen) {
 	switch(seq(index)) {
 	case 0:		/* Reset */
 		if((seq(reset)^val)&0x3) VGA_SequReset((val&0x3)!=0x3);
-		seq(reset)=val;
+		seq(reset)=(uint8_t)val;
 		break;
 	case 1:		/* Clocking Mode */
 		if (val!=seq(clocking_mode)) {
 			if((seq(clocking_mode)^val)&0x20) VGA_Screenstate((val&0x20)==0);
 			// don't resize if only the screen off bit was changed
 			if ((val&(~0x20u))!=(seq(clocking_mode)&(~0x20u))) {
-				seq(clocking_mode)=val;
+				seq(clocking_mode)=(uint8_t)val;
 				VGA_StartResize();
 			} else {
-				seq(clocking_mode)=val;
+				seq(clocking_mode)=(uint8_t)val;
 			}
 			if (val & 0x20) vga.attr.disabled |= 0x2u;
 			else vga.attr.disabled &= ~0x2u;
@@ -126,11 +128,11 @@ void write_p3c5(Bitu /*port*/,Bitu val,Bitu iolen) {
 		break;
 	case 3:		/* Character Map Select */
 		{
-			seq(character_map_select)=val;
-			Bit8u font1=(val & 0x3) << 1;
+			seq(character_map_select)=(uint8_t)val;
+			uint8_t font1=(val & 0x3) << 1;
 			if (IS_VGA_ARCH) font1|=(val & 0x10) >> 4;
 			vga.draw.font_tables[0]=&vga.draw.font[font1*8*1024];
-			Bit8u font2=((val & 0xc) >> 1);
+			uint8_t font2=((val & 0xc) >> 1);
 			if (IS_VGA_ARCH) font2|=(val & 0x20) >> 5;
 			vga.draw.font_tables[1]=&vga.draw.font[font2*8*1024];
 		}
@@ -152,7 +154,7 @@ void write_p3c5(Bitu /*port*/,Bitu val,Bitu iolen) {
 			3  If set address bit 0-1 selects video memory planes (256 color mode),
 				rather than the Map Mask and Read Map Select Registers.
 		*/
-		seq(memory_mode)=val;
+		seq(memory_mode)=(uint8_t)val;
 		if (IS_VGA_ARCH) {
 			/* Changing this means changing the VGA Memory Read/Write Handler */
 			if (val&0x08) vga.config.chained=true;
@@ -216,3 +218,22 @@ void VGA_UnsetupSEQ(void) {
     IO_FreeReadHandler(0x3c5,IO_MB);
 }
 
+// save state support
+void POD_Save_VGA_Seq( std::ostream& stream )
+{
+	// - pure struct data
+	WRITE_POD( &vga.seq, vga.seq );
+
+
+	// no static globals found
+}
+
+
+void POD_Load_VGA_Seq( std::istream& stream )
+{
+	// - pure struct data
+	READ_POD( &vga.seq, vga.seq );
+
+
+	// no static globals found
+}

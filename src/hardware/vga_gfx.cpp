@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -62,7 +62,6 @@ static void write_p3cf(Bitu port,Bitu val,Bitu iolen) {
 		vga.config.full_not_enable_set_reset=~vga.config.full_enable_set_reset;
 		vga.config.full_enable_and_set_reset=vga.config.full_set_reset &
 			vga.config.full_enable_set_reset;
-//		if (gfx(enable_set_reset)) vga.config.mh_mask|=MH_SETRESET else vga.config.mh_mask&=~MH_SETRESET;
 		break;
 	case 2: /* Color Compare Register */
 		gfx(color_compare)=val & 0x0f;
@@ -76,10 +75,9 @@ static void write_p3cf(Bitu port,Bitu val,Bitu iolen) {
 //		LOG_DEBUG("Color Compare = %2X",val);
 		break;
 	case 3: /* Data Rotate */
-		gfx(data_rotate)=val;
-		vga.config.data_rotate=val & 7;
-//		if (val) vga.config.mh_mask|=MH_ROTATEOP else vga.config.mh_mask&=~MH_ROTATEOP;
-		vga.config.raster_op=(val>>3) & 3;
+		gfx(data_rotate)=(uint8_t)val;
+		vga.config.data_rotate=(uint8_t)val & 7;
+		vga.config.raster_op=((uint8_t)val>>3) & 3;
 		/* 
 			0-2	Number of positions to rotate data right before it is written to
 				display memory. Only active in Write Mode 0.
@@ -100,11 +98,11 @@ static void write_p3cf(Bitu port,Bitu val,Bitu iolen) {
 		break;
 	case 5: /* Mode Register */
 		if ((gfx(mode) ^ val) & 0xf0) {
-		gfx(mode)=val;
+		gfx(mode)=(uint8_t)val;
 			VGA_DetermineMode();
-		} else gfx(mode)=val;
-		vga.config.write_mode=val & 3;
-		vga.config.read_mode=(val >> 3) & 1;
+		} else gfx(mode)=(uint8_t)val;
+		vga.config.write_mode=(uint8_t)val & 3;
+		vga.config.read_mode=((uint8_t)val >> 3) & 1;
 //		LOG_DEBUG("Write Mode %d Read Mode %d val %d",vga.config.write_mode,vga.config.read_mode,val);
 		/*
 			0-1	Write Mode: Controls how data from the CPU is transformed before
@@ -147,9 +145,9 @@ static void write_p3cf(Bitu port,Bitu val,Bitu iolen) {
 		break;
 	case 6: /* Miscellaneous Register */
 		if ((gfx(miscellaneous) ^ val) & 0x0c) {
-			gfx(miscellaneous)=val;
+			gfx(miscellaneous)=(uint8_t)val;
 			VGA_DetermineMode();
-		} else gfx(miscellaneous)=val;
+		} else gfx(miscellaneous)=(uint8_t)val;
 		VGA_SetupHandlers();
 		/*
 			0	Indicates Graphics Mode if set, Alphanumeric mode else.
@@ -173,7 +171,7 @@ static void write_p3cf(Bitu port,Bitu val,Bitu iolen) {
 //		LOG_DEBUG("Color don't care = %2X",val);
 		break;
 	case 8: /* Bit Mask Register */
-		gfx(bit_mask)=val;
+		gfx(bit_mask)=(uint8_t)val;
 		vga.config.full_bit_mask=ExpandTable[val];
 
 		/* check for unusual use of the bit mask register in chained 320x200x256 mode and switch to the slow & accurate emulation */
@@ -226,7 +224,7 @@ static Bitu read_p3cf(Bitu port,Bitu iolen) {
 	default:
 		if (svga.read_p3cf)
 			return svga.read_p3cf(gfx(index), iolen);
-		LOG(LOG_VGAMISC,LOG_NORMAL)("Reading from illegal index %2X in port %4X",(int)static_cast<Bit32u>(gfx(index)),(int)port);
+		LOG(LOG_VGAMISC,LOG_NORMAL)("Reading from illegal index %2X in port %4X",(int)static_cast<uint32_t>(gfx(index)),(int)port);
 		break;
 	}
 	return 0;	/* Compiler happy */
@@ -252,3 +250,29 @@ void VGA_UnsetupGFX(void) {
     IO_FreeReadHandler(0x3cf,IO_MB);
 }
 
+// save state support
+ 
+void POD_Save_VGA_Gfx( std::ostream& stream )
+{
+	// - pure struct data
+	WRITE_POD( &vga.gfx, vga.gfx );
+
+	//*******************************************
+	//*******************************************
+
+	// - system data
+	//WRITE_POD( &index9warned, index9warned );
+}
+
+
+void POD_Load_VGA_Gfx( std::istream& stream )
+{
+	// - pure struct data
+	READ_POD( &vga.gfx, vga.gfx );
+
+	//*******************************************
+	//*******************************************
+
+	// - system data
+	//READ_POD( &index9warned, index9warned );
+}

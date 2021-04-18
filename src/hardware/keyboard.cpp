@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -23,6 +23,7 @@
 #include "setup.h"
 #include "inout.h"
 #include "mouse.h"
+#include "menu.h"
 #include "pic.h"
 #include "mem.h"
 #include "cpu.h"
@@ -43,10 +44,10 @@
 
 void AUX_Reset();
 void KEYBOARD_Reset();
-static void KEYBOARD_SetPort60(Bit16u val);
-void KEYBOARD_AddBuffer(Bit16u data);
-static void KEYBOARD_Add8042Response(Bit8u data);
-void KEYBOARD_SetLEDs(Bit8u bits);
+static void KEYBOARD_SetPort60(uint16_t val);
+void KEYBOARD_AddBuffer(uint16_t data);
+static void KEYBOARD_Add8042Response(uint8_t data);
+void KEYBOARD_SetLEDs(uint8_t bits);
 
 bool enable_pc98_bus_mouse = true;
 
@@ -88,9 +89,9 @@ struct ps2mouse {
     MouseType   type;           /* what kind of mouse we are emulating */
     MouseMode   mode;           /* current mode */
     MouseMode   reset_mode;     /* mode to change to on reset */
-    Bit8u       samplerate;     /* current sample rate */
-    Bit8u       resolution;     /* current resolution */
-    Bit8u       last_srate[3];      /* last 3 "set sample rate" values */
+    uint8_t       samplerate;     /* current sample rate */
+    uint8_t       resolution;     /* current resolution */
+    uint8_t       last_srate[3];      /* last 3 "set sample rate" values */
     float       acx,acy;        /* accumulator */
     bool        reporting;      /* reporting */
     bool        scale21;        /* 2:1 scaling */
@@ -101,12 +102,12 @@ struct ps2mouse {
 };
 
 static struct {
-    Bit8u buf8042[8];       /* for 8042 responses, taking priority over keyboard responses */
+    uint8_t buf8042[8];       /* for 8042 responses, taking priority over keyboard responses */
     Bitu buf8042_len;
     Bitu buf8042_pos;
     int pending_key;
 
-    Bit16u buffer[KEYBUFSIZE];
+    uint16_t buffer[KEYBUFSIZE];
     Bitu used;
     Bitu pos;
 
@@ -119,8 +120,8 @@ static struct {
     KeyCommands command;
     AuxCommands aux_command;
     Bitu led_state;
-    Bit8u p60data;
-    Bit8u scanset;
+    uint8_t p60data;
+    uint8_t scanset;
     bool enable_aux;
     bool reset;
     bool active;
@@ -193,29 +194,29 @@ void KEYBOARD_AUX_Event(float x,float y,Bitu buttons,int scrollwheel) {
 
     if (keyb.ps2mouse.reporting && keyb.ps2mouse.mode == MM_STREAM) {
         if ((keyb.used+4) < KEYBUFSIZE) {
-            int x,y;
+            int x2,y2;
 
-            x = (int)(keyb.ps2mouse.acx * (1 << keyb.ps2mouse.resolution));
-            x /= 16; /* FIXME: Or else the cursor is WAY too sensitive in Windows 3.1 */
-            if (x < -256) x = -256;
-            else if (x > 255) x = 255;
+            x2 = (int)(keyb.ps2mouse.acx * (1 << keyb.ps2mouse.resolution));
+            x2 /= 16; /* FIXME: Or else the cursor is WAY too sensitive in Windows 3.1 */
+            if (x2 < -256) x2 = -256;
+            else if (x2 > 255) x2 = 255;
 
-            y = -((int)(keyb.ps2mouse.acy * (1 << keyb.ps2mouse.resolution)));
-            y /= 16; /* FIXME: Or else the cursor is WAY too sensitive in Windows 3.1 */
-            if (y < -256) y = -256;
-            else if (y > 255) y = 255;
+            y2 = -((int)(keyb.ps2mouse.acy * (1 << keyb.ps2mouse.resolution)));
+            y2 /= 16; /* FIXME: Or else the cursor is WAY too sensitive in Windows 3.1 */
+            if (y2 < -256) y2 = -256;
+            else if (y2 > 255) y2 = 255;
 
             KEYBOARD_AddBuffer(AUX|
-                ((y == -256 || y == 255) ? 0x80 : 0x00) |   /* Y overflow */
-                ((x == -256 || x == 255) ? 0x40 : 0x00) |   /* X overflow */
-                (y & 0x100 ? 0x20 : 0x00) |         /* Y sign bit */
-                (x & 0x100 ? 0x10 : 0x00) |         /* X sign bit */
+                ((y2 == -256 || y2 == 255) ? 0x80 : 0x00) |   /* Y overflow */
+                ((x2 == -256 || x2 == 255) ? 0x40 : 0x00) |   /* X overflow */
+                ((y2 & 0x100) ? 0x20 : 0x00) |         /* Y sign bit */
+                ((x2 & 0x100) ? 0x10 : 0x00) |         /* X sign bit */
                 0x08 |                      /* always 1? */
                 (keyb.ps2mouse.m ? 4 : 0) |         /* M */
                 (keyb.ps2mouse.r ? 2 : 0) |         /* R */
                 (keyb.ps2mouse.l ? 1 : 0));         /* L */
-            KEYBOARD_AddBuffer(AUX|(x&0xFF));
-            KEYBOARD_AddBuffer(AUX|(y&0xFF));
+            KEYBOARD_AddBuffer(AUX|(x2&0xFF));
+            KEYBOARD_AddBuffer(AUX|(y2&0xFF));
             if (keyb.ps2mouse.intellimouse_btn45) {
                 KEYBOARD_AddBuffer(AUX|(scrollwheel&0xFF)); /* TODO: 4th & 5th buttons */
             }
@@ -236,10 +237,10 @@ int KEYBOARD_AUX_Active() {
     return keyb.auxactive && !keyb.ps2mouse.int33_taken;
 }
 
-static void KEYBOARD_SetPort60(Bit16u val) {
+static void KEYBOARD_SetPort60(uint16_t val) {
     keyb.auxchanged=(val&AUX)>0;
     keyb.p60changed=true;
-    keyb.p60data=(Bit8u)val;
+    keyb.p60data=(uint8_t)val;
     if (keyb.auxchanged) {
         if (keyb.cb_irq12) {
             PIC_ActivateIRQ(12);
@@ -294,8 +295,7 @@ size_t KEYBOARD_BufferSpaceAvail()   // emendelson from dbDOS
     return (KEYBUFSIZE - keyb.used);
 }                                   // end emendelson from dbDOS
 
-static void KEYBOARD_Add8042Response(Bit8u data) {
-    if(!keyb.enable_aux) return;
+static void KEYBOARD_Add8042Response(uint8_t data) {
     if (keyb.buf8042_pos >= keyb.buf8042_len)
         keyb.buf8042_pos = keyb.buf8042_len = 0;
     else if (keyb.buf8042_len == 0)
@@ -310,7 +310,7 @@ static void KEYBOARD_Add8042Response(Bit8u data) {
     PIC_AddEvent(KEYBOARD_TransferBuffer,KEYDELAY);
 }
 
-void KEYBOARD_AddBuffer(Bit16u data) {
+void KEYBOARD_AddBuffer(uint16_t data) {
     if (keyb.used>=KEYBUFSIZE) {
         LOG(LOG_KEYBOARD,LOG_NORMAL)("Buffer full, dropping code");
         KEYBOARD_ClrBuffer(); return;
@@ -332,7 +332,7 @@ Bitu Keyboard_Guest_LED_State() {
 
 void UpdateKeyboardLEDState(Bitu led_state/* in the same bitfield arrangement as using command 0xED on PS/2 keyboards */);
 
-void KEYBOARD_SetLEDs(Bit8u bits) {
+void KEYBOARD_SetLEDs(uint8_t bits) {
     /* Some OSes we have control of the LEDs if keyboard+mouse capture */
     keyb.led_state = bits;
     UpdateKeyboardLEDState(bits);
@@ -508,7 +508,7 @@ void KEYBOARD_AUX_Write(Bitu val) {
             keyb.ps2mouse.resolution = val & 3;
             LOG(LOG_KEYBOARD,LOG_NORMAL)("PS/2 mouse resolution set to %u",(int)(1 << (val&3)));
             break;
-    };
+    }
 }
 
 #include "control.h"
@@ -516,7 +516,6 @@ void KEYBOARD_AUX_Write(Bitu val) {
 bool allow_keyb_reset = true;
 
 void On_Software_CPU_Reset();
-void restart_program(std::vector<std::string> & parameters);
 
 static void write_p60(Bitu port,Bitu val,Bitu iolen) {
     (void)port;//UNUSED
@@ -534,7 +533,7 @@ static void write_p60(Bitu port,Bitu val,Bitu iolen) {
             KEYBOARD_AddBuffer(0xfa);   /* Acknowledge */
             break;
         case 0xee:  /* Echo */
-            KEYBOARD_AddBuffer(0xee);   /* JC: The correct response is 0xEE, not 0xFA */
+            KEYBOARD_AddBuffer(0xee);   /* Echo */
             break;
         case 0xf0:  /* set scancode set */
             keyb.command=CMD_SETSCANSET;
@@ -555,7 +554,7 @@ static void write_p60(Bitu port,Bitu val,Bitu iolen) {
             keyb.scanning=true;
             break;
         case 0xf5:   /* Reset keyboard and disable scanning */
-            LOG(LOG_KEYBOARD,LOG_NORMAL)("Reset, disable scanning");            
+            LOG(LOG_KEYBOARD,LOG_NORMAL)("Reset, disable scanning");
             keyb.scanning=false;
             KEYBOARD_AddBuffer(0xfa);   /* Acknowledge */
             break;
@@ -666,7 +665,7 @@ static void write_p60(Bitu port,Bitu val,Bitu iolen) {
     }
 }
 
-static Bit8u port_61_data = 0;
+static uint8_t port_61_data = 0;
 
 static Bitu read_p61(Bitu, Bitu) {
     unsigned char dbg;
@@ -677,14 +676,20 @@ static Bitu read_p61(Bitu, Bitu) {
 }
 
 static void write_p61(Bitu, Bitu val, Bitu) {
-    Bit8u diff = port_61_data ^ (Bit8u)val;
+    uint8_t diff = port_61_data ^ (uint8_t)val;
     if (diff & 0x1) TIMER_SetGate2(val & 0x1);
     if ((diff & 0x3) && !IS_PC98_ARCH) {
-        bool pit_clock_gate_enabled = val & 0x1;
+        bool pit_clock_gate_enabled = !!(val & 0x1);
         bool pit_output_enabled = !!(val & 0x2);
         PCSPEAKER_SetType(pit_clock_gate_enabled, pit_output_enabled);
     }
     port_61_data = val;
+}
+
+static Bitu read_p62(Bitu /*port*/,Bitu /*iolen*/) {
+    uint8_t ret = uint8_t(~0x20u);
+    if (TIMER_GetOutput2()) ret|=0x20u;
+    return ret;
 }
 
 static void write_p64(Bitu port,Bitu val,Bitu iolen) {
@@ -799,12 +804,12 @@ static void write_p64(Bitu port,Bitu val,Bitu iolen) {
 static Bitu read_p64(Bitu port,Bitu iolen) {
     (void)port;//UNUSED
     (void)iolen;//UNUSED
-    Bit8u status= 0x1c | (keyb.p60changed?0x1:0x0) | (keyb.auxchanged?0x20:0x00);
+    uint8_t status= 0x1c | (keyb.p60changed?0x1:0x0) | (keyb.auxchanged?0x20:0x00);
     return status;
 }
 
 void KEYBOARD_AddKey3(KBD_KEYS keytype,bool pressed) {
-    Bit8u ret=0,ret2=0;
+    uint8_t ret=0,ret2=0;
 
     if (keyb.reset)
         return;
@@ -998,7 +1003,7 @@ void KEYBOARD_AddKey3(KBD_KEYS keytype,bool pressed) {
 }
 
 void KEYBOARD_AddKey2(KBD_KEYS keytype,bool pressed) {
-    Bit8u ret=0,ret2=0;bool extend=false;
+    uint8_t ret=0,ret2=0;bool extend=false;
 
     if (keyb.reset)
         return;
@@ -1213,7 +1218,7 @@ bool pc98_force_ibm_layout = false;
 
 /* this version sends to the PC-98 8251 emulation NOT the AT 8042 emulation */
 void KEYBOARD_PC98_AddKey(KBD_KEYS keytype,bool pressed) {
-    Bit8u ret=0;
+    uint8_t ret=0;
 
     switch (keytype) {                          // NAME or
                                                 // NM SH KA KA+SH       NM=no-mod SH=shift KA=kana KA+SH=kana+shift
@@ -1330,7 +1335,11 @@ void KEYBOARD_PC98_AddKey(KBD_KEYS keytype,bool pressed) {
         if(pc98_force_ibm_layout)
             ret=0x1A; //HACK, reuse @ key
         break;
-    
+
+    case KBD_pause:                             // PAUSE: Map to STOP key since CTRL+BREAK on IBM PC has a similar function
+        ret=0x60;
+        break;
+
     case KBD_capslock:                          // CAPS
         if (pressed) {                          // sends only on keypress, does not resend if held down
             pc98_caps_toggle();
@@ -1339,18 +1348,18 @@ void KEYBOARD_PC98_AddKey(KBD_KEYS keytype,bool pressed) {
         return;
 
     case KBD_numlock:                           // NUM
-        pc98_numlock_toggle();
+        pc98_numlock_toggle();                  // TODO: Scan code? NUM LOCK didn't exist until later PC-9821 systems.
         return;
 
     case KBD_kana:                              // KANA
         if (pressed) {                          // sends only on keypress, does not resend if held down
             pc98_kana_toggle();
-            pc98_keyboard_send(0x72 | (!pc98_kana() ? 0x80 : 0x00)); // make code if caps switched on, break if caps switched off
+            pc98_keyboard_send(0x72 | (!pc98_kana() ? 0x80 : 0x00)); // make code if kana switched on, break if caps switched off
         }
         return;
 
     default: return;
-    };
+    }
 
     /* PC-98 keyboards appear to repeat make/break codes when the key is held down */
     if (pressed && keyb.repeat.key == keytype)
@@ -1375,7 +1384,7 @@ void KEYBOARD_PC98_AddKey(KBD_KEYS keytype,bool pressed) {
 }
 
 void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
-    Bit8u ret=0,ret2=0;bool extend=false;
+    uint8_t ret=0,ret2=0;bool extend=false;
 
     if (keyb.reset)
         return;
@@ -1403,13 +1412,13 @@ void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
     case KBD_esc:ret=1;break;
     case KBD_1:ret=2;break;
     case KBD_2:ret=3;break;
-    case KBD_3:ret=4;break;     
+    case KBD_3:ret=4;break;
     case KBD_4:ret=5;break;
     case KBD_5:ret=6;break;
-    case KBD_6:ret=7;break;     
+    case KBD_6:ret=7;break;
     case KBD_7:ret=8;break;
     case KBD_8:ret=9;break;
-    case KBD_9:ret=10;break;        
+    case KBD_9:ret=10;break;
     case KBD_0:ret=11;break;
 
     case KBD_minus:ret=12;break;
@@ -1418,15 +1427,15 @@ void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
     case KBD_backspace:ret=14;break;
     case KBD_tab:ret=15;break;
 
-    case KBD_q:ret=16;break;        
+    case KBD_q:ret=16;break;
     case KBD_w:ret=17;break;
-    case KBD_e:ret=18;break;        
+    case KBD_e:ret=18;break;
     case KBD_r:ret=19;break;
-    case KBD_t:ret=20;break;        
+    case KBD_t:ret=20;break;
     case KBD_y:ret=21;break;
-    case KBD_u:ret=22;break;        
+    case KBD_u:ret=22;break;
     case KBD_i:ret=23;break;
-    case KBD_o:ret=24;break;        
+    case KBD_o:ret=24;break;
     case KBD_p:ret=25;break;
 
     case KBD_leftbracket:ret=26;break;
@@ -1441,10 +1450,10 @@ void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
     case KBD_s:ret=31;break;
     case KBD_d:ret=32;break;
     case KBD_f:ret=33;break;
-    case KBD_g:ret=34;break;        
-    case KBD_h:ret=35;break;        
+    case KBD_g:ret=34;break;
+    case KBD_h:ret=35;break;
     case KBD_j:ret=36;break;
-    case KBD_k:ret=37;break;        
+    case KBD_k:ret=37;break;
     case KBD_l:ret=38;break;
 
     case KBD_semicolon:ret=39;break;
@@ -1561,9 +1570,16 @@ void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
         keyb.repeat.wait=0;
         return;
     case KBD_printscreen:
-        extend=true;
-        if (pressed) { ret=0x2a; ret2=0x37; }
-        else         { ret=0xb7; ret2=0xaa; }
+        /* NTS: Check previous assertion that the Print Screen sent these bytes in
+         *      one order when pressed and reverse order when released. Or perhaps
+         *      that's only what some keyboards do. --J.C. */
+        KEYBOARD_AddBuffer(0xe0);
+        KEYBOARD_AddBuffer(0x2a | (pressed ? 0 : 0x80)); /* 0x2a == 42 */
+        KEYBOARD_AddBuffer(0xe0);
+        KEYBOARD_AddBuffer(0x37 | (pressed ? 0 : 0x80)); /* 0x37 == 55 */
+        /* pressing this key also disables any previous key repeat */
+        keyb.repeat.key = KBD_NONE;
+        keyb.repeat.wait = 0;
         return;
     case KBD_lwindows:extend=true;ret=0x5B;break;
     case KBD_rwindows:extend=true;ret=0x5C;break;
@@ -1580,7 +1596,7 @@ void KEYBOARD_AddKey1(KBD_KEYS keytype,bool pressed) {
 
     /* Add the actual key in the keyboard queue */
     if (pressed) {
-        if (keyb.repeat.key == keytype) keyb.repeat.wait = keyb.repeat.rate;        
+        if (keyb.repeat.key == keytype) keyb.repeat.wait = keyb.repeat.rate;
         else keyb.repeat.wait = keyb.repeat.pause;
         keyb.repeat.key = keytype;
     } else {
@@ -1638,7 +1654,7 @@ void KEYBOARD_AddKey(KBD_KEYS keytype,bool pressed) {
             case 2: KEYBOARD_AddKey2(keytype,pressed); break;
             case 3: KEYBOARD_AddKey3(keytype,pressed); break;
         }
-    };
+    }
 }
     
 static void KEYBOARD_ShutDown(Section * sec) {
@@ -1659,6 +1675,7 @@ static IO_WriteHandleObject WriteHandler_8255prn_PC98[4];
 static IO_WriteHandleObject Reset_PC98;
 
 extern bool gdc_5mhz_mode;
+extern bool gdc_5mhz_mode_initial;
 
 //! \brief PC-98 Printer 8255 PPI emulation (Intel 8255A device)
 //!
@@ -1815,7 +1832,10 @@ public:
          *       It might help to look at the BIOS setup menus of 1990s PC-98 systems
          *       that offer toggling virtual versions of these DIP switches to see
          *       what the BIOS menu text says. */
-        return 0x63 | (gdc_5mhz_mode ? 0x00 : 0x80); // taken from a PC-9821 Lt2
+        /* NTS: Return the INITIAL setting of the GDC. Guest applications (like Windows 3.1)
+         *      can and will change it later. This must reflect the initial setting as if
+         *      what the BIOS had initially intended. */
+        return 0x63 | (gdc_5mhz_mode_initial ? 0x00 : 0x80); // taken from a PC-9821 Lt2
     }
     /* port B is input */
     virtual uint8_t inPortB(void) const {
@@ -1926,7 +1946,7 @@ static struct pc98_8251_keyboard_uart {
     double                      tx_load_ms;
 
     /* recv data from keyboard */
-    unsigned char               recv_buffer[32];
+    unsigned char               recv_buffer[32] = {};
     unsigned char               recv_in,recv_out;
 
     pc98_8251_keyboard_uart() : data(0xFF), txdata(0xFF), state(MODE_STATE), mode_byte(0), keyboard_reset(false), rx_enable(false), tx_enable(false), valid_state(false), rx_busy(false), rx_ready(false), tx_busy(false), tx_empty(true), recv_in(0), recv_out(0) {
@@ -1955,11 +1975,11 @@ static struct pc98_8251_keyboard_uart {
         nidx = (recv_in + 1) % 32;
         if (nidx == recv_out) {
             LOG_MSG("8251 device send recv overrun");
-            return;
         }
-
-        recv_buffer[recv_in] = b;
-        recv_in = nidx;
+        else {
+            recv_buffer[recv_in] = b;
+            recv_in = nidx;
+        }
 
         if (!rx_busy) {
             rx_busy = true;
@@ -1969,6 +1989,10 @@ static struct pc98_8251_keyboard_uart {
 
     unsigned char read_data(void) {
         rx_ready = false;
+        if (recv_in != recv_out && !rx_busy) {
+            rx_busy = true;
+            PIC_AddEvent(uart_rx_load,io_delay_ms,0);
+        }
         return data;
     }
 
@@ -2165,19 +2189,9 @@ static double pc98_mouse_tick_interval_ms(void) {
     return 1000.0/*ms*/ / pc98_mouse_rate_hz;
 }
 
-static double pc98_mouse_tick_time_ms(void) {
-    return fmod(PIC_FullIndex(),pc98_mouse_tick_interval_ms());
-}
-
 static double pc98_mouse_time_to_next_tick_ms(void) {
     const double x = pc98_mouse_tick_interval_ms();
     return x - fmod(PIC_FullIndex(),x);
-}
-
-static bool pc98_mouse_tick_signal(void) {
-    /* TODO: How is the 120Hz signal generated? If it's a square wave, what is the duty cycle? */
-    /*       At what point in the cycle is the interrupt generated? Beginning, or end? */
-    return pc98_mouse_tick_time_ms() < 0.1; /* GUESS: 100us = 0.1ms */
 }
 
 extern uint8_t MOUSE_IRQ;
@@ -2187,22 +2201,14 @@ static bool pc98_mouse_tick_scheduled = false;
 static void pc98_mouse_tick_event(Bitu val) {
     (void)val;
 
-    /* Generate interrupt */
-    if (p7fd8_8255_mouse_int_enable)
+    if (p7fd8_8255_mouse_int_enable) {
+        /* Generate interrupt */
         PIC_ActivateIRQ(MOUSE_IRQ);
-
-    /* keep the periodic interrupt going */
-    if (p7fd8_8255_mouse_int_enable)
+        /* keep the periodic interrupt going */
         PIC_AddEvent(pc98_mouse_tick_event,pc98_mouse_tick_interval_ms());
+    }
     else
         pc98_mouse_tick_scheduled = false;
-}
-
-static void pc98_mouse_tick_unschedule(void) {
-    if (pc98_mouse_tick_scheduled) {
-        pc98_mouse_tick_scheduled = false;
-        PIC_RemoveEvents(pc98_mouse_tick_event);
-    }
 }
 
 static void pc98_mouse_tick_schedule(void) {
@@ -2316,7 +2322,7 @@ public:
             case 3:
                 r |= (uint8_t)(p7fd9_8255_mouse_y_latch >> ((p7fd9_8255_mouse_sel & 1U) * 4U)) & 0xF; // sign extend is intentional
                 break;
-        };
+        }
 
         return r;
     }
@@ -2391,6 +2397,9 @@ static Bitu read_p7fd9_mouse(Bitu port,Bitu /*iolen*/) {
 
 static void write_pbfdb_mouse(Bitu port,Bitu val,Bitu /*iolen*/) {
     (void)port;
+
+    unsigned int p_pc98_mouse_rate_hz = pc98_mouse_rate_hz;
+
     /* bits [7:2] = ??
      * bits [1:0] = 120hz clock divider
      *              00 = 120hz (at reset)
@@ -2398,18 +2407,18 @@ static void write_pbfdb_mouse(Bitu port,Bitu val,Bitu /*iolen*/) {
      *              10 = 30hz
      *              11 = 15hz */
     pc98_mouse_rate_hz = 120u >> (val & 3u);
-    LOG(LOG_MISC,LOG_DEBUG)("PC-98 mouse interrupt rate: %u",pc98_mouse_rate_hz);
+
+    if (pc98_mouse_rate_hz != p_pc98_mouse_rate_hz)
+        LOG(LOG_MISC,LOG_DEBUG)("PC-98 mouse interrupt rate: %u",pc98_mouse_rate_hz);
 }
 //////////
 
 void KEYBOARD_OnEnterPC98(Section *sec) {
     (void)sec;//UNUSED
-    unsigned int i;
 
-    {
-        Section_prop *section=static_cast<Section_prop *>(control->GetSection("dosbox"));
-        enable_pc98_bus_mouse = section->Get_bool("pc-98 bus mouse");
-    }
+	Section_prop * pc98_section=static_cast<Section_prop *>(control->GetSection("pc98"));
+	assert(pc98_section != NULL);
+	enable_pc98_bus_mouse = pc98_section->Get_bool("pc-98 bus mouse");
 
     /* TODO: Keyboard interface change, layout change. */
 
@@ -2418,7 +2427,7 @@ void KEYBOARD_OnEnterPC98(Section *sec) {
      *
      * The 8255 appears at I/O ports 0x31, 0x33, 0x35, 0x37 */
     if (IS_PC98_ARCH) {
-        for (i=0;i < 4;i++) {
+        for (unsigned int i=0;i < 4;i++) {
             ReadHandler_8255_PC98[i].Uninstall();
             WriteHandler_8255_PC98[i].Uninstall();
 
@@ -2426,10 +2435,11 @@ void KEYBOARD_OnEnterPC98(Section *sec) {
             WriteHandler_8255prn_PC98[i].Uninstall();
         }
         
-        Section_prop *section=static_cast<Section_prop *>(control->GetSection("dosbox"));
-        pc98_force_ibm_layout = section->Get_bool("pc-98 force ibm keyboard layout");
+        pc98_force_ibm_layout = pc98_section->Get_bool("pc-98 force ibm keyboard layout");
         if(pc98_force_ibm_layout)
             LOG_MSG("Forcing PC-98 keyboard to use IBM US-English like default layout");
+        mainMenu.get_item("pc98_use_uskb").check(pc98_force_ibm_layout).refresh_item(mainMenu);
+
     }
 
     if (!IS_PC98_ARCH) {
@@ -2580,6 +2590,7 @@ void KEYBOARD_OnReset(Section *sec) {
         IO_RegisterReadHandler(0x60,read_p60,IO_MB);
         IO_RegisterWriteHandler(0x61,write_p61,IO_MB);
         IO_RegisterReadHandler(0x61,read_p61,IO_MB);
+        if (machine==MCH_CGA || machine==MCH_HERC) IO_RegisterReadHandler(0x62,read_p62,IO_MB);
         IO_RegisterWriteHandler(0x64,write_p64,IO_MB);
         IO_RegisterReadHandler(0x64,read_p64,IO_MB);
     }
@@ -2622,6 +2633,11 @@ void AUX_INT33_Takeover() {
     keyb.ps2mouse.int33_taken = 1;
 }
 
+void KEYBOARD_Clear() {
+    keyb.repeat.key=KBD_NONE;
+    KEYBOARD_ClrBuffer();
+}
+
 void KEYBOARD_Reset() {
     /* Init the keyb struct */
     keyb.active=true;
@@ -2653,3 +2669,31 @@ void KEYBOARD_Reset() {
     KEYBOARD_SetLEDs(0);
 }
 
+//save state support
+void *KEYBOARD_TransferBuffer_PIC_Event = (void*)((uintptr_t)KEYBOARD_TransferBuffer);
+void *KEYBOARD_TickHandler_PIC_Timer = (void*)((uintptr_t)KEYBOARD_TickHandler);
+
+namespace
+{
+class SerializeKeyboard : public SerializeGlobalPOD
+{
+public:
+    SerializeKeyboard() : SerializeGlobalPOD("Keyboard")
+    {
+        registerPOD(keyb.buffer);
+        registerPOD(keyb.used); 
+        registerPOD(keyb.pos); 
+        registerPOD(keyb.repeat.key); 
+        registerPOD(keyb.repeat.wait); 
+        registerPOD(keyb.repeat.pause); 
+        registerPOD(keyb.repeat.rate); 
+        registerPOD(keyb.command); 
+        registerPOD(keyb.p60data); 
+        registerPOD(keyb.p60changed); 
+        registerPOD(keyb.active); 
+        registerPOD(keyb.scanning); 
+        registerPOD(keyb.scheduled);
+        registerPOD(port_61_data);
+    }
+} dummy;
+}

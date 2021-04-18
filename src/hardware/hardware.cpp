@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -33,8 +33,9 @@
 #include "cross.h"
 
 #if (C_SSHOT)
+#include <zlib.h>
 #include <png.h>
-#include "../libs/zmbv/zmbv.cpp"
+#include "../libs/zmbv/zmbv.h"
 #endif
 
 #include "riff_wav_writer.h"
@@ -51,7 +52,15 @@ extern "C" {
 #include <libavformat/avformat.h>
 #include <libavformat/avio.h>
 }
+
+/* This code now requires FFMPEG 4.0.2 or higher */
+# if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58,18,100)
+#  error Your libavcodec is too old. Update FFMPEG.
+# endif
+
 #endif
+
+bool            skip_encoding_unchanged_frames = false;
 
 #if (C_AVCODEC)
 bool ffmpeg_init = false;
@@ -68,9 +77,9 @@ AVFrame*		ffmpeg_vidrgb_frame = NULL;
 SwsContext*		ffmpeg_sws_ctx = NULL;
 bool			ffmpeg_avformat_began = false;
 unsigned int		ffmpeg_aud_write = 0;
-Bit64u			ffmpeg_audio_sample_counter = 0;
-Bit64u			ffmpeg_video_frame_time_offset = 0;
-Bit64u			ffmpeg_video_frame_last_time = 0;
+uint64_t			ffmpeg_audio_sample_counter = 0;
+uint64_t			ffmpeg_video_frame_time_offset = 0;
+uint64_t			ffmpeg_video_frame_last_time = 0;
 
 int             ffmpeg_yuv_format_choice = -1;  // -1 default  4 = 444   2 = 422   0 = 420
 
@@ -159,10 +168,10 @@ void ffmpeg_audio_frame_send() {
 	}
 	av_packet_unref(&pkt);
 
-	ffmpeg_audio_sample_counter += (Bit64u)ffmpeg_aud_frame->nb_samples;
+	ffmpeg_audio_sample_counter += (uint64_t)ffmpeg_aud_frame->nb_samples;
 }
 
-void ffmpeg_take_audio(Bit16s *raw,unsigned int samples) {
+void ffmpeg_take_audio(int16_t *raw,unsigned int samples) {
 	if (ffmpeg_aud_codec == NULL || ffmpeg_aud_frame == NULL || ffmpeg_fmt_ctx == NULL) return;
 
 	if ((unsigned long)ffmpeg_aud_write >= (unsigned long)ffmpeg_aud_frame->nb_samples) {
@@ -234,7 +243,7 @@ void ffmpeg_flush_video() {
 					int gotit=0;
 					if (avcodec_encode_video2(ffmpeg_vid_ctx,&pkt,NULL,&gotit) == 0) {
 						if (gotit) {
-							Bit64u tm;
+							uint64_t tm;
 
 							again = true;
 							tm = (uint64_t)pkt.pts;
@@ -303,40 +312,42 @@ bool native_zmbv = false;
 bool export_ffmpeg = false;
 
 std::string capturedir;
+extern std::string savefilename;
+extern bool use_save_file, noremark_save_state, force_load_state;
+extern unsigned int hostkeyalt, sendkeymap;
 extern const char* RunningProgram;
 Bitu CaptureState = 0;
 
 #define WAVE_BUF 16*1024
 #define MIDI_BUF 4*1024
-#define AVI_HEADER_SIZE	500
 
 static struct {
 	struct {
 		riff_wav_writer *writer;
-		Bit16s buf[WAVE_BUF][2];
+		int16_t buf[WAVE_BUF][2];
 		Bitu used;
-		Bit32u length;
-		Bit32u freq;
-	} wave;
+		uint32_t length;
+		uint32_t freq;
+    } wave = {};
     struct {
         avi_writer  *writer;
 		Bitu		audiorate;
         std::map<std::string,size_t> name_to_stream_index;
-    } multitrack_wave;
+    } multitrack_wave = {};
 	struct {
 		FILE * handle;
-		Bit8u buffer[MIDI_BUF];
+		uint8_t buffer[MIDI_BUF];
 		Bitu used,done;
-		Bit32u last;
-	} midi;
+		uint32_t last;
+    } midi = {};
 	struct {
 		Bitu rowlen;
-	} image;
+    } image = {};
 #if (C_SSHOT) || (C_AVCODEC)
 	struct {
 		avi_writer	*writer;
 		Bitu		frames;
-		Bit16s		audiobuf[WAVE_BUF][2];
+		int16_t		audiobuf[WAVE_BUF][2];
 		Bitu		audioused;
 		Bitu		audiorate;
 		Bitu		audiowritten;
@@ -346,7 +357,7 @@ static struct {
 		float		fps;
 		int		bufSize;
 		void		*buf;
-	} video;
+    } video = {};
 #endif
 } capture;
 
@@ -414,8 +425,8 @@ void ffmpeg_reopen_video(double fps,const int bpp) {
 	ffmpeg_vid_ctx->keyint_min = 15; // TODO: make configuration option!
 	ffmpeg_vid_ctx->time_base.num = 1000000;
 	ffmpeg_vid_ctx->time_base.den = (int)(1000000 * fps);
-	ffmpeg_vid_ctx->width = capture.video.width;
-	ffmpeg_vid_ctx->height = capture.video.height;
+	ffmpeg_vid_ctx->width = (int)capture.video.width;
+	ffmpeg_vid_ctx->height = (int)capture.video.height;
 	ffmpeg_vid_ctx->gop_size = 15; // TODO: make config option
 	ffmpeg_vid_ctx->max_b_frames = 0;
 	ffmpeg_vid_ctx->pix_fmt = ffmpeg_choose_pixfmt(ffmpeg_yuv_format_choice);
@@ -428,8 +439,8 @@ void ffmpeg_reopen_video(double fps,const int bpp) {
 	ffmpeg_vid_ctx->rc_buffer_size = (4*1024*1024);
 
 	/* 4:3 aspect ratio. FFMPEG thinks in terms of Pixel Aspect Ratio not Display Aspect Ratio */
-	ffmpeg_vid_ctx->sample_aspect_ratio.num = 4 * capture.video.height;
-	ffmpeg_vid_ctx->sample_aspect_ratio.den = 3 * capture.video.width;
+	ffmpeg_vid_ctx->sample_aspect_ratio.num = 4 * (int)capture.video.height;
+	ffmpeg_vid_ctx->sample_aspect_ratio.den = 3 * (int)capture.video.width;
 
 	{
 		AVDictionary *opts = NULL;
@@ -450,8 +461,8 @@ void ffmpeg_reopen_video(double fps,const int bpp) {
 		E_Exit(" ");
 
 	av_frame_set_colorspace(ffmpeg_vidrgb_frame,AVCOL_SPC_RGB);
-	ffmpeg_vidrgb_frame->width = capture.video.width;
-	ffmpeg_vidrgb_frame->height = capture.video.height;
+	ffmpeg_vidrgb_frame->width = (int)capture.video.width;
+	ffmpeg_vidrgb_frame->height = (int)capture.video.height;
 	ffmpeg_vidrgb_frame->format = ffmpeg_bpp_pick_rgb_format(bpp);
 	if (av_frame_get_buffer(ffmpeg_vidrgb_frame,64) < 0) {
 		E_Exit(" ");
@@ -459,8 +470,8 @@ void ffmpeg_reopen_video(double fps,const int bpp) {
 
 	av_frame_set_colorspace(ffmpeg_vid_frame,AVCOL_SPC_SMPTE170M);
 	av_frame_set_color_range(ffmpeg_vidrgb_frame,AVCOL_RANGE_MPEG);
-	ffmpeg_vid_frame->width = capture.video.width;
-	ffmpeg_vid_frame->height = capture.video.height;
+	ffmpeg_vid_frame->width = (int)capture.video.width;
+	ffmpeg_vid_frame->height = (int)capture.video.height;
 	ffmpeg_vid_frame->format = ffmpeg_vid_ctx->pix_fmt;
 	if (av_frame_get_buffer(ffmpeg_vid_frame,64) < 0)
 		E_Exit(" ");
@@ -506,9 +517,9 @@ std::string GetCaptureFilePath(const char * type,const char * ext) {
 	lowcase(file_start);
 	strcat(file_start,"_");
 	bool is_directory;
-	char tempname[CROSS_LEN];
-	bool testRead = read_directory_first(dir, tempname, is_directory );
-	for ( ; testRead; testRead = read_directory_next(dir, tempname, is_directory) ) {
+    char tempname[CROSS_LEN], sname[15];
+    bool testRead = read_directory_first(dir, tempname, sname, is_directory );
+    for ( ; testRead; testRead = read_directory_next(dir, tempname, sname, is_directory) ) {
 		char * test=strstr(tempname,ext);
 		if (!test || strlen(test)!=strlen(ext)) 
 			continue;
@@ -547,9 +558,9 @@ FILE * OpenCaptureFile(const char * type,const char * ext) {
 	lowcase(file_start);
 	strcat(file_start,"_");
 	bool is_directory;
-	char tempname[CROSS_LEN];
-	bool testRead = read_directory_first(dir, tempname, is_directory );
-	for ( ; testRead; testRead = read_directory_next(dir, tempname, is_directory) ) {
+    char tempname[CROSS_LEN], sname[15];
+    bool testRead = read_directory_first(dir, tempname, sname, is_directory );
+    for ( ; testRead; testRead = read_directory_next(dir, tempname, sname, is_directory) ) {
 		char * test=strstr(tempname,ext);
 		if (!test || strlen(test)!=strlen(ext)) 
 			continue;
@@ -572,7 +583,7 @@ FILE * OpenCaptureFile(const char * type,const char * ext) {
 }
 
 #if (C_SSHOT)
-static void CAPTURE_AddAviChunk(const char * tag, Bit32u size, void * data, Bit32u flags, unsigned int streamindex) {
+static void CAPTURE_AddAviChunk(const char * tag, uint32_t size, void * data, uint32_t flags, unsigned int streamindex) {
     (void)tag;//UNUSED
 	if (capture.video.writer != NULL) {
 		if ((int)streamindex < capture.video.writer->avi_stream_alloc) {
@@ -581,6 +592,10 @@ static void CAPTURE_AddAviChunk(const char * tag, Bit32u size, void * data, Bit3
 		}
 	}
 }
+#endif
+
+#if defined(USE_TTF)
+void ttf_switch_on(bool ss=true), ttf_switch_off(bool ss=true);
 #endif
 
 #if (C_SSHOT)
@@ -594,7 +609,7 @@ void CAPTURE_VideoEvent(bool pressed) {
 
 		if (capture.video.writer != NULL) {
 			if ( capture.video.audioused ) {
-				CAPTURE_AddAviChunk( "01wb", capture.video.audioused * 4, capture.video.audiobuf, 0x10, 1);
+				CAPTURE_AddAviChunk( "01wb", (uint32_t)(capture.video.audioused * 4), capture.video.audiobuf, 0x10, 1);
 				capture.video.audiowritten = capture.video.audioused*4;
 				capture.video.audioused = 0;
 			}
@@ -620,8 +635,15 @@ void CAPTURE_VideoEvent(bool pressed) {
 			delete capture.video.codec;
 			capture.video.codec = NULL;
 		}
+#if defined(USE_TTF)
+        if (!(CaptureState & CAPTURE_IMAGE) && !(CaptureState & CAPTURE_VIDEO))
+            ttf_switch_on();
+#endif
 	} else {
 		CaptureState |= CAPTURE_VIDEO;
+#if defined(USE_TTF)
+        ttf_switch_off();
+#endif
 	}
 
 	mainMenu.get_item("mapper_video").check(!!(CaptureState & CAPTURE_VIDEO)).refresh_item(mainMenu);
@@ -684,10 +706,30 @@ extern uint32_t GFX_palette32bpp[256];
 
 unsigned int GFX_GetBShift();
 
-void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags, float fps, Bit8u * data, Bit8u * pal) {
+void CAPTURE_VideoStart() {
+#if (C_SSHOT)
+	if (CaptureState & CAPTURE_VIDEO) {
+		LOG_MSG("Already capturing video.");
+	} else {
+		CAPTURE_VideoEvent(true);
+	}
+#endif
+}
+
+void CAPTURE_VideoStop() {
+#if (C_SSHOT)
+	if (CaptureState & CAPTURE_VIDEO) {
+		CAPTURE_VideoEvent(true);
+	} else {
+		LOG_MSG("Not capturing video.");
+	}
+#endif
+}
+
+void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags, float fps, uint8_t * data, uint8_t * pal) {
 #if (C_SSHOT)
 	Bitu i;
-	Bit8u doubleRow[SCALER_MAXWIDTH*4];
+	uint8_t doubleRow[SCALER_MAXWIDTH*4];
 	Bitu countWidth = width;
 
 	if (flags & CAPTURE_FLAG_DBLH)
@@ -730,7 +772,7 @@ void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags,
 		png_set_compression_buffer_size(png_ptr, 8192);
 	
 		if (bpp==8) {
-			png_set_IHDR(png_ptr, info_ptr, width, height,
+			png_set_IHDR(png_ptr, info_ptr, (png_uint_32)width, (png_uint_32)height,
 				8, PNG_COLOR_TYPE_PALETTE, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 			for (i=0;i<256;i++) {
@@ -741,14 +783,14 @@ void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags,
 			png_set_PLTE(png_ptr, info_ptr, palette,256);
 		} else {
 			png_set_bgr( png_ptr );
-			png_set_IHDR(png_ptr, info_ptr, width, height,
+			png_set_IHDR(png_ptr, info_ptr, (png_uint_32)width, (png_uint_32)height,
 				8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
 				PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 		}
 #ifdef PNG_TEXT_SUPPORTED
 		int fields = 1;
-		png_text text[1];
-		const char* text_s = "DOSBox " VERSION;
+		png_text text[1] = {};
+		const char* text_s = "DOSBox-X " VERSION;
 		size_t strl = strlen(text_s);
 		char* ptext_s = new char[strl + 1];
 		strcpy(ptext_s, text_s);
@@ -775,23 +817,23 @@ void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags,
 				if (flags & CAPTURE_FLAG_DBLW) {
    					for (Bitu x=0;x<countWidth;x++)
 						doubleRow[x*2+0] =
-						doubleRow[x*2+1] = ((Bit8u *)srcLine)[x];
+						doubleRow[x*2+1] = ((uint8_t *)srcLine)[x];
 					rowPointer = doubleRow;
 				}
 				break;
 			case 15:
 				if (flags & CAPTURE_FLAG_DBLW) {
 					for (Bitu x=0;x<countWidth;x++) {
-						Bitu pixel = ((Bit16u *)srcLine)[x];
+						Bitu pixel = ((uint16_t *)srcLine)[x];
 						doubleRow[x*6+0] = doubleRow[x*6+3] = ((pixel& 0x001f) * 0x21) >>  2;
-						doubleRow[x*6+1] = doubleRow[x*6+4] = ((pixel& 0x03e0) * 0x21) >>  7;
+						doubleRow[x*6+1] = doubleRow[x*6+4] = (uint8_t)(((pixel& 0x03e0) * 0x21) >> 7);
 						doubleRow[x*6+2] = doubleRow[x*6+5] = ((pixel& 0x7c00) * 0x21) >>  12;
 					}
 				} else {
 					for (Bitu x=0;x<countWidth;x++) {
-						Bitu pixel = ((Bit16u *)srcLine)[x];
+						Bitu pixel = ((uint16_t *)srcLine)[x];
 						doubleRow[x*3+0] = ((pixel& 0x001f) * 0x21) >>  2;
-						doubleRow[x*3+1] = ((pixel& 0x03e0) * 0x21) >>  7;
+						doubleRow[x*3+1] = (uint8_t)(((pixel& 0x03e0) * 0x21) >> 7);
 						doubleRow[x*3+2] = ((pixel& 0x7c00) * 0x21) >>  12;
 					}
 				}
@@ -800,14 +842,14 @@ void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags,
 			case 16:
 				if (flags & CAPTURE_FLAG_DBLW) {
 					for (Bitu x=0;x<countWidth;x++) {
-						Bitu pixel = ((Bit16u *)srcLine)[x];
+						Bitu pixel = ((uint16_t *)srcLine)[x];
 						doubleRow[x*6+0] = doubleRow[x*6+3] = ((pixel& 0x001f) * 0x21) >> 2;
 						doubleRow[x*6+1] = doubleRow[x*6+4] = ((pixel& 0x07e0) * 0x41) >> 9;
 						doubleRow[x*6+2] = doubleRow[x*6+5] = ((pixel& 0xf800) * 0x21) >> 13;
 					}
 				} else {
 					for (Bitu x=0;x<countWidth;x++) {
-						Bitu pixel = ((Bit16u *)srcLine)[x];
+						Bitu pixel = ((uint16_t *)srcLine)[x];
 						doubleRow[x*3+0] = ((pixel& 0x001f) * 0x21) >>  2;
 						doubleRow[x*3+1] = ((pixel& 0x07e0) * 0x41) >>  9;
 						doubleRow[x*3+2] = ((pixel& 0xf800) * 0x21) >>  13;
@@ -818,15 +860,15 @@ void CAPTURE_AddImage(Bitu width, Bitu height, Bitu bpp, Bitu pitch, Bitu flags,
 			case 32:
 				if (flags & CAPTURE_FLAG_DBLW) {
 					for (Bitu x=0;x<countWidth;x++) {
-						doubleRow[x*6+0] = doubleRow[x*6+3] = ((Bit8u *)srcLine)[x*4+0];
-						doubleRow[x*6+1] = doubleRow[x*6+4] = ((Bit8u *)srcLine)[x*4+1];
-						doubleRow[x*6+2] = doubleRow[x*6+5] = ((Bit8u *)srcLine)[x*4+2];
+						doubleRow[x*6+0] = doubleRow[x*6+3] = ((uint8_t *)srcLine)[x*4+0];
+						doubleRow[x*6+1] = doubleRow[x*6+4] = ((uint8_t *)srcLine)[x*4+1];
+						doubleRow[x*6+2] = doubleRow[x*6+5] = ((uint8_t *)srcLine)[x*4+2];
 					}
 				} else {
 					for (Bitu x=0;x<countWidth;x++) {
-						doubleRow[x*3+0] = ((Bit8u *)srcLine)[x*4+0];
-						doubleRow[x*3+1] = ((Bit8u *)srcLine)[x*4+1];
-						doubleRow[x*3+2] = ((Bit8u *)srcLine)[x*4+2];
+						doubleRow[x*3+0] = ((uint8_t *)srcLine)[x*4+0];
+						doubleRow[x*3+1] = ((uint8_t *)srcLine)[x*4+1];
+						doubleRow[x*3+2] = ((uint8_t *)srcLine)[x*4+2];
 					}
 				}
 				rowPointer = doubleRow;
@@ -845,10 +887,10 @@ skip_shot:
 	if (CaptureState & CAPTURE_VIDEO) {
 		zmbv_format_t format;
 		/* Disable capturing if any of the test fails */
-		if ((capture.video.width != width ||
+		if (capture.video.width != width ||
 			capture.video.height != height ||
 			capture.video.bpp != bpp ||
-			capture.video.fps != fps)) {
+			capture.video.fps != fps) {
 			if (native_zmbv && capture.video.writer != NULL)
 				CAPTURE_VideoEvent(true);
 #if (C_AVCODEC)
@@ -863,7 +905,7 @@ skip_shot:
 				capture.video.fps = fps;
 				capture.video.frames = 0;
 
-				ffmpeg_reopen_video(fps,bpp);
+				ffmpeg_reopen_video(fps,(int)bpp);
 //				CAPTURE_VideoEvent(true);
 			}
 #endif
@@ -898,9 +940,9 @@ skip_shot:
 			capture.video.codec = new VideoCodec();
 			if (!capture.video.codec)
 				goto skip_video;
-			if (!capture.video.codec->SetupCompress( width, height)) 
+			if (!capture.video.codec->SetupCompress( (int)width, (int)height)) 
 				goto skip_video;
-			capture.video.bufSize = capture.video.codec->NeededSize(width, height, format);
+			capture.video.bufSize = capture.video.codec->NeededSize((int)width, (int)height, format);
 			capture.video.buf = malloc( (size_t)capture.video.bufSize );
 			if (!capture.video.buf)
 				goto skip_video;
@@ -927,8 +969,8 @@ skip_shot:
 			__w_le_u32(&mheader->dwInitialFrames,0);
 			__w_le_u32(&mheader->dwStreams,2);			/* audio+video */
 			__w_le_u32(&mheader->dwSuggestedBufferSize,0);
-			__w_le_u32(&mheader->dwWidth,capture.video.width);
-			__w_le_u32(&mheader->dwHeight,capture.video.height);
+			__w_le_u32(&mheader->dwWidth,(uint32_t)capture.video.width);
+			__w_le_u32(&mheader->dwHeight,(uint32_t)capture.video.height);
 
 
 
@@ -956,19 +998,19 @@ skip_shot:
 			__w_le_u32(&vsheader->dwSampleSize,0u);
 			__w_le_u16(&vsheader->rcFrame.left,0);
 			__w_le_u16(&vsheader->rcFrame.top,0);
-			__w_le_u16(&vsheader->rcFrame.right,capture.video.width);
-			__w_le_u16(&vsheader->rcFrame.bottom,capture.video.height);
+			__w_le_u16(&vsheader->rcFrame.right,(uint16_t)capture.video.width);
+			__w_le_u16(&vsheader->rcFrame.bottom,(uint16_t)capture.video.height);
 
 			windows_BITMAPINFOHEADER vbmp;
 
 			memset(&vbmp,0,sizeof(vbmp));
 			__w_le_u32(&vbmp.biSize,sizeof(vbmp)); /* 40 */
-			__w_le_u32(&vbmp.biWidth,capture.video.width);
-			__w_le_u32(&vbmp.biHeight,capture.video.height);
+			__w_le_u32(&vbmp.biWidth,(uint32_t)capture.video.width);
+			__w_le_u32(&vbmp.biHeight,(uint32_t)capture.video.height);
 			__w_le_u16(&vbmp.biPlanes,0);		/* FIXME: Only repeating what the original DOSBox code did */
 			__w_le_u16(&vbmp.biBitCount,0);		/* FIXME: Only repeating what the original DOSBox code did */
 			__w_le_u32(&vbmp.biCompression,avi_fourcc_const('Z','M','B','V'));
-			__w_le_u32(&vbmp.biSizeImage,capture.video.width * capture.video.height * 4);
+			__w_le_u32(&vbmp.biSizeImage,(uint32_t)(capture.video.width * capture.video.height * 4));
 
 			if (!avi_writer_stream_set_format(vstream,&vbmp,sizeof(vbmp)))
 				goto skip_video;
@@ -990,7 +1032,7 @@ skip_shot:
 			__w_le_u16(&asheader->wLanguage,0);
 			__w_le_u32(&asheader->dwInitialFrames,0);
 			__w_le_u32(&asheader->dwScale,1);
-			__w_le_u32(&asheader->dwRate,capture.video.audiorate);
+			__w_le_u32(&asheader->dwRate,(uint32_t)capture.video.audiorate);
 			__w_le_u32(&asheader->dwStart,0);
 			__w_le_u32(&asheader->dwLength,0);			/* AVI writer updates this automatically */
 			__w_le_u32(&asheader->dwSuggestedBufferSize,0);
@@ -1006,10 +1048,10 @@ skip_shot:
 			memset(&fmt,0,sizeof(fmt));
 			__w_le_u16(&fmt.wFormatTag,windows_WAVE_FORMAT_PCM);
 			__w_le_u16(&fmt.nChannels,2);			/* stereo */
-			__w_le_u32(&fmt.nSamplesPerSec,capture.video.audiorate);
+			__w_le_u32(&fmt.nSamplesPerSec,(uint32_t)capture.video.audiorate);
 			__w_le_u16(&fmt.wBitsPerSample,16);		/* 16-bit/sample */
 			__w_le_u16(&fmt.nBlockAlign,2*2);
-			__w_le_u32(&fmt.nAvgBytesPerSec,capture.video.audiorate*2*2);
+			__w_le_u32(&fmt.nAvgBytesPerSec,(uint32_t)(capture.video.audiorate*2*2));
 
 			if (!avi_writer_stream_set_format(astream,&fmt,sizeof(fmt)))
 				goto skip_video;
@@ -1038,8 +1080,6 @@ skip_shot:
 			if (!ffmpeg_init) {
 				LOG_MSG("Attempting to initialize FFMPEG library");
 				ffmpeg_init = true;
-				av_register_all();
-				avcodec_register_all();
 			}
 
 			ffmpeg_aud_codec = avcodec_find_encoder(AV_CODEC_ID_AAC);
@@ -1074,8 +1114,8 @@ skip_shot:
 			ffmpeg_vid_ctx->keyint_min = 15; // TODO: make configuration option!
 			ffmpeg_vid_ctx->time_base.num = 1000000;
 			ffmpeg_vid_ctx->time_base.den = (int)(1000000 * fps);
-			ffmpeg_vid_ctx->width = capture.video.width;
-			ffmpeg_vid_ctx->height = capture.video.height;
+			ffmpeg_vid_ctx->width = (int)capture.video.width;
+			ffmpeg_vid_ctx->height = (int)capture.video.height;
 			ffmpeg_vid_ctx->gop_size = 15; // TODO: make config option
 			ffmpeg_vid_ctx->max_b_frames = 0;
 			ffmpeg_vid_ctx->pix_fmt = ffmpeg_choose_pixfmt(ffmpeg_yuv_format_choice); // TODO: auto-choose according to what codec says is supported, and let user choose as well
@@ -1088,8 +1128,8 @@ skip_shot:
 			ffmpeg_vid_ctx->rc_buffer_size = (4*1024*1024);
 
 			/* 4:3 aspect ratio. FFMPEG thinks in terms of Pixel Aspect Ratio not Display Aspect Ratio */
-			ffmpeg_vid_ctx->sample_aspect_ratio.num = 4 * capture.video.height;
-			ffmpeg_vid_ctx->sample_aspect_ratio.den = 3 * capture.video.width;
+			ffmpeg_vid_ctx->sample_aspect_ratio.num = 4 * (int)capture.video.height;
+			ffmpeg_vid_ctx->sample_aspect_ratio.den = 3 * (int)capture.video.width;
 
 			{
 				AVDictionary *opts = NULL;
@@ -1105,7 +1145,7 @@ skip_shot:
 				av_dict_free(&opts);
 			}
 
-			ffmpeg_vid_stream->time_base.num = 1000000;
+			ffmpeg_vid_stream->time_base.num = (int)1000000;
 			ffmpeg_vid_stream->time_base.den = (int)(1000000 * fps);
 
 			ffmpeg_aud_stream = avformat_new_stream(ffmpeg_fmt_ctx,ffmpeg_aud_codec);
@@ -1115,7 +1155,7 @@ skip_shot:
 			}
 			ffmpeg_aud_ctx = ffmpeg_aud_stream->codec;
 			avcodec_get_context_defaults3(ffmpeg_aud_ctx,ffmpeg_aud_codec);
-			ffmpeg_aud_ctx->sample_rate = capture.video.audiorate;
+			ffmpeg_aud_ctx->sample_rate = (int)capture.video.audiorate;
 			ffmpeg_aud_ctx->channels = 2;
 			ffmpeg_aud_ctx->flags = 0; // do not use global headers
 			ffmpeg_aud_ctx->bit_rate = 320000;
@@ -1152,7 +1192,7 @@ skip_shot:
 				goto skip_video;
 
 			av_frame_set_channels(ffmpeg_aud_frame,2);
-			av_frame_set_sample_rate(ffmpeg_aud_frame,capture.video.audiorate);
+			av_frame_set_sample_rate(ffmpeg_aud_frame,(int)capture.video.audiorate);
 			av_frame_set_channel_layout(ffmpeg_aud_frame,AV_CH_LAYOUT_STEREO);
 			ffmpeg_aud_frame->nb_samples = ffmpeg_aud_ctx->frame_size;
 			ffmpeg_aud_frame->format = ffmpeg_aud_ctx->sample_fmt;
@@ -1162,9 +1202,9 @@ skip_shot:
 			}
 
 			av_frame_set_colorspace(ffmpeg_vidrgb_frame,AVCOL_SPC_RGB);
-			ffmpeg_vidrgb_frame->width = capture.video.width;
-			ffmpeg_vidrgb_frame->height = capture.video.height;
-			ffmpeg_vidrgb_frame->format = ffmpeg_bpp_pick_rgb_format(bpp);
+			ffmpeg_vidrgb_frame->width = (int)capture.video.width;
+			ffmpeg_vidrgb_frame->height = (int)capture.video.height;
+			ffmpeg_vidrgb_frame->format = ffmpeg_bpp_pick_rgb_format((int)bpp);
 			if (av_frame_get_buffer(ffmpeg_vidrgb_frame,64) < 0) {
 				LOG_MSG("Failed to alloc videorgb frame buffer");
 				goto skip_video;
@@ -1172,8 +1212,8 @@ skip_shot:
 
 			av_frame_set_colorspace(ffmpeg_vid_frame,AVCOL_SPC_SMPTE170M);
 			av_frame_set_color_range(ffmpeg_vidrgb_frame,AVCOL_RANGE_MPEG);
-			ffmpeg_vid_frame->width = capture.video.width;
-			ffmpeg_vid_frame->height = capture.video.height;
+			ffmpeg_vid_frame->width = (int)capture.video.width;
+			ffmpeg_vid_frame->height = (int)capture.video.height;
 			ffmpeg_vid_frame->format = ffmpeg_vid_ctx->pix_fmt;
 			if (av_frame_get_buffer(ffmpeg_vid_frame,64) < 0) {
 				LOG_MSG("Failed to alloc video frame buffer");
@@ -1209,56 +1249,65 @@ skip_shot:
 			else
 				codecFlags = 0;
 
-			if (!capture.video.codec->PrepareCompressFrame( codecFlags, format, (char *)pal, capture.video.buf, capture.video.bufSize))
-				goto skip_video;
+            if ((flags & CAPTURE_FLAG_NOCHANGE) && skip_encoding_unchanged_frames) {
+                /* advance unless at keyframe */
+                if (codecFlags == 0) capture.video.frames++;
 
-			for (i=0;i<height;i++) {
-				void * rowPointer;
-				if (flags & CAPTURE_FLAG_DBLW) {
-					void *srcLine;
-					Bitu x;
-					Bitu countWidth = width >> 1;
-					if (flags & CAPTURE_FLAG_DBLH)
-						srcLine=(data+(i >> 1)*pitch);
-					else
-						srcLine=(data+(i >> 0)*pitch);
-					switch ( bpp) {
-						case 8:
-							for (x=0;x<countWidth;x++)
-								((Bit8u *)doubleRow)[x*2+0] =
-									((Bit8u *)doubleRow)[x*2+1] = ((Bit8u *)srcLine)[x];
-							break;
-						case 15:
-						case 16:
-							for (x=0;x<countWidth;x++)
-								((Bit16u *)doubleRow)[x*2+0] =
-									((Bit16u *)doubleRow)[x*2+1] = ((Bit16u *)srcLine)[x];
-							break;
-						case 32:
-							for (x=0;x<countWidth;x++)
-								((Bit32u *)doubleRow)[x*2+0] =
-									((Bit32u *)doubleRow)[x*2+1] = ((Bit32u *)srcLine)[x];
-							break;
-					}
-					rowPointer=doubleRow;
-				} else {
-					if (flags & CAPTURE_FLAG_DBLH)
-						rowPointer=(data+(i >> 1)*pitch);
-					else
-						rowPointer=(data+(i >> 0)*pitch);
-				}
-				capture.video.codec->CompressLines( 1, &rowPointer );
-			}
+                /* write null non-keyframe */
+                CAPTURE_AddAviChunk( "00dc", (uint32_t)0, capture.video.buf, (uint32_t)(0x0), 0u);
+            }
+            else {
+                if (!capture.video.codec->PrepareCompressFrame( codecFlags, format, (char *)pal, capture.video.buf, capture.video.bufSize))
+                    goto skip_video;
 
-			int written = capture.video.codec->FinishCompressFrame();
-			if (written < 0)
-				goto skip_video;
+                for (i=0;i<height;i++) {
+                    void * rowPointer;
+                    if (flags & CAPTURE_FLAG_DBLW) {
+                        void *srcLine;
+                        Bitu x;
+                        Bitu countWidth = width >> 1;
+                        if (flags & CAPTURE_FLAG_DBLH)
+                            srcLine=(data+(i >> 1)*pitch);
+                        else
+                            srcLine=(data+(i >> 0)*pitch);
+                        switch ( bpp) {
+                            case 8:
+                                for (x=0;x<countWidth;x++)
+                                    ((uint8_t *)doubleRow)[x*2+0] =
+                                        ((uint8_t *)doubleRow)[x*2+1] = ((uint8_t *)srcLine)[x];
+                                break;
+                            case 15:
+                            case 16:
+                                for (x=0;x<countWidth;x++)
+                                    ((uint16_t *)doubleRow)[x*2+0] =
+                                        ((uint16_t *)doubleRow)[x*2+1] = ((uint16_t *)srcLine)[x];
+                                break;
+                            case 32:
+                                for (x=0;x<countWidth;x++)
+                                    ((uint32_t *)doubleRow)[x*2+0] =
+                                        ((uint32_t *)doubleRow)[x*2+1] = ((uint32_t *)srcLine)[x];
+                                break;
+                        }
+                        rowPointer=doubleRow;
+                    } else {
+                        if (flags & CAPTURE_FLAG_DBLH)
+                            rowPointer=(data+(i >> 1)*pitch);
+                        else
+                            rowPointer=(data+(i >> 0)*pitch);
+                    }
+                    capture.video.codec->CompressLines( 1, &rowPointer );
+                }
 
-			CAPTURE_AddAviChunk( "00dc", (Bit32u)written, capture.video.buf, (Bit32u)(codecFlags & 1 ? 0x10 : 0x0), 0u);
-			capture.video.frames++;
+                int written = capture.video.codec->FinishCompressFrame();
+                if (written < 0)
+                    goto skip_video;
+
+                CAPTURE_AddAviChunk( "00dc", (uint32_t)written, capture.video.buf, (uint32_t)(codecFlags & 1 ? 0x10 : 0x0), 0u);
+                capture.video.frames++;
+            }
 
 			if ( capture.video.audioused ) {
-				CAPTURE_AddAviChunk( "01wb", (Bit32u)(capture.video.audioused * 4u), capture.video.audiobuf, /*keyframe*/0x10u, 1u);
+				CAPTURE_AddAviChunk( "01wb", (uint32_t)(capture.video.audioused * 4u), capture.video.audiobuf, /*keyframe*/0x10u, 1u);
 				capture.video.audiowritten = capture.video.audioused*4;
 				capture.video.audioused = 0;
 			}
@@ -1285,12 +1334,12 @@ skip_shot:
 
 						if (flags & CAPTURE_FLAG_DBLW) {
 							for (x=0;x < width;x++)
-								((Bit32u *)dstline)[(x*2)+0] =
-									((Bit32u *)dstline)[(x*2)+1] = GFX_palette32bpp[srcline[x]];
+								((uint32_t *)dstline)[(x*2)+0] =
+									((uint32_t *)dstline)[(x*2)+1] = GFX_palette32bpp[srcline[x]];
 						}
 						else {
 							for (x=0;x < width;x++)
-								((Bit32u *)dstline)[x] = GFX_palette32bpp[srcline[x]];
+								((uint32_t *)dstline)[x] = GFX_palette32bpp[srcline[x]];
 						}
 					}
 				}
@@ -1307,19 +1356,19 @@ skip_shot:
 							switch (bpp) {
 								case 8:
 									for (x=0;x<countWidth;x++)
-										((Bit8u *)dstline)[x*2+0] =
-											((Bit8u *)dstline)[x*2+1] = ((Bit8u *)srcline)[x];
+										((uint8_t *)dstline)[x*2+0] =
+											((uint8_t *)dstline)[x*2+1] = ((uint8_t *)srcline)[x];
 									break;
 								case 15:
 								case 16:
 									for (x=0;x<countWidth;x++)
-										((Bit16u *)dstline)[x*2+0] =
-											((Bit16u *)dstline)[x*2+1] = ((Bit16u *)srcline)[x];
+										((uint16_t *)dstline)[x*2+0] =
+											((uint16_t *)dstline)[x*2+1] = ((uint16_t *)srcline)[x];
 									break;
 								case 32:
 									for (x=0;x<countWidth;x++)
-										((Bit32u *)dstline)[x*2+0] =
-											((Bit32u *)dstline)[x*2+1] = ((Bit32u *)srcline)[x];
+										((uint32_t *)dstline)[x*2+0] =
+											((uint32_t *)dstline)[x*2+1] = ((uint32_t *)srcline)[x];
 									break;
 							}
 						} else {
@@ -1352,9 +1401,9 @@ skip_shot:
 				ffmpeg_vid_frame->key_frame = ((capture.video.frames % 15) == 0)?1:0;
 				if (avcodec_encode_video2(ffmpeg_vid_ctx,&pkt,ffmpeg_vid_frame,&gotit) == 0) {
 					if (gotit) {
-						Bit64u tm;
+						uint64_t tm;
 
-						tm = (Bit64u)pkt.pts;
+						tm = (uint64_t)pkt.pts;
 						pkt.stream_index = ffmpeg_vid_stream->index;
 						av_packet_rescale_ts(&pkt,ffmpeg_vid_ctx->time_base,ffmpeg_vid_stream->time_base);
 						pkt.pts += (int64_t)ffmpeg_video_frame_time_offset;
@@ -1381,7 +1430,7 @@ skip_shot:
 			capture.video.frames++;
 
 			if ( capture.video.audioused ) {
-				ffmpeg_take_audio((Bit16s*)capture.video.audiobuf/*NTS: Ewwwwww.... what if the compiler pads the 2-dimensional array?*/,capture.video.audioused);
+				ffmpeg_take_audio((int16_t*)capture.video.audiobuf/*NTS: Ewwwwww.... what if the compiler pads the 2-dimensional array?*/,capture.video.audioused);
 				capture.video.audiowritten = capture.video.audioused*4;
 				capture.video.audioused = 0;
 			}
@@ -1398,7 +1447,11 @@ skip_shot:
         mainMenu.get_item("mapper_video").check(!!(CaptureState & CAPTURE_VIDEO)).refresh_item(mainMenu);
     }
 
-	return;
+#if defined(USE_TTF)
+    if (!(CaptureState & CAPTURE_IMAGE) && !(CaptureState & CAPTURE_VIDEO))
+        ttf_switch_on();
+#endif
+    return;
 skip_video:
 	capture.video.writer = avi_writer_destroy(capture.video.writer);
 # if (C_AVCODEC)
@@ -1406,9 +1459,12 @@ skip_video:
 	ffmpeg_closeall();
 # endif
 #endif
+#if defined(USE_TTF)
+    if (!(CaptureState & CAPTURE_IMAGE) && !(CaptureState & CAPTURE_VIDEO))
+        ttf_switch_on();
+#endif
 	return;
 }
-
 
 #if (C_SSHOT)
 void CAPTURE_ScreenShotEvent(bool pressed) {
@@ -1417,12 +1473,15 @@ void CAPTURE_ScreenShotEvent(bool pressed) {
 #if !defined(C_EMSCRIPTEN)
 	CaptureState |= CAPTURE_IMAGE;
 #endif
+#if defined(USE_TTF)
+    ttf_switch_off();
+#endif
 }
 #endif
 
 MixerChannel * MIXER_FirstChannel(void);
 
-void CAPTURE_MultiTrackAddWave(Bit32u freq, Bit32u len, Bit16s * data,const char *name) {
+void CAPTURE_MultiTrackAddWave(uint32_t freq, uint32_t len, int16_t * data,const char *name) {
 #if !defined(C_EMSCRIPTEN)
     if (CaptureState & CAPTURE_MULTITRACK_WAVE) {
 		if (capture.multitrack_wave.writer == NULL) {
@@ -1496,7 +1555,7 @@ void CAPTURE_MultiTrackAddWave(Bit32u freq, Bit32u len, Bit16s * data,const char
                     __w_le_u16(&asheader->wLanguage,0);
                     __w_le_u32(&asheader->dwInitialFrames,0);
                     __w_le_u32(&asheader->dwScale,1);
-                    __w_le_u32(&asheader->dwRate,capture.multitrack_wave.audiorate);
+                    __w_le_u32(&asheader->dwRate,(uint32_t)capture.multitrack_wave.audiorate);
                     __w_le_u32(&asheader->dwStart,0);
                     __w_le_u32(&asheader->dwLength,0);			/* AVI writer updates this automatically */
                     __w_le_u32(&asheader->dwSuggestedBufferSize,0);
@@ -1512,10 +1571,10 @@ void CAPTURE_MultiTrackAddWave(Bit32u freq, Bit32u len, Bit16s * data,const char
                     memset(&fmt,0,sizeof(fmt));
                     __w_le_u16(&fmt.wFormatTag,windows_WAVE_FORMAT_PCM);
                     __w_le_u16(&fmt.nChannels,2);			/* stereo */
-                    __w_le_u32(&fmt.nSamplesPerSec,capture.multitrack_wave.audiorate);
+                    __w_le_u32(&fmt.nSamplesPerSec,(uint32_t)capture.multitrack_wave.audiorate);
                     __w_le_u16(&fmt.wBitsPerSample,16);		/* 16-bit/sample */
                     __w_le_u16(&fmt.nBlockAlign,2*2);
-                    __w_le_u32(&fmt.nAvgBytesPerSec,capture.multitrack_wave.audiorate*2*2);
+                    __w_le_u32(&fmt.nAvgBytesPerSec,(uint32_t)(capture.multitrack_wave.audiorate*2*2));
 
                     if (!avi_writer_stream_set_format(astream,&fmt,sizeof(fmt)))
                         goto skip_mt_wav;
@@ -1561,7 +1620,7 @@ skip_mt_wav:
 #endif
 }
 
-void CAPTURE_AddWave(Bit32u freq, Bit32u len, Bit16s * data) {
+void CAPTURE_AddWave(uint32_t freq, uint32_t len, int16_t * data) {
 #if !defined(C_EMSCRIPTEN)
 #if (C_SSHOT)
 	if (CaptureState & CAPTURE_VIDEO) {
@@ -1616,7 +1675,7 @@ void CAPTURE_AddWave(Bit32u freq, Bit32u len, Bit16s * data) {
 			capture.wave.freq = freq;
 			LOG_MSG("Started capturing wave output.");
 		}
-		Bit16s * read = data;
+		int16_t * read = data;
 		while (len > 0 ) {
 			Bitu left = WAVE_BUF - capture.wave.used;
 			if (!left) {
@@ -1630,7 +1689,7 @@ void CAPTURE_AddWave(Bit32u freq, Bit32u len, Bit16s * data) {
 			memcpy( &capture.wave.buf[capture.wave.used], read, left*4);
 			capture.wave.used += left;
 			read += left*2;
-			len -= left;
+			len -= (uint32_t)left;
 		}
 	}
 #endif
@@ -1671,7 +1730,7 @@ void CAPTURE_WaveEvent(bool pressed) {
             LOG_MSG("Stopped capturing wave output.");
             /* Write last piece of audio in buffer */
             riff_wav_writer_data_write(capture.wave.writer,capture.wave.buf,2*2*capture.wave.used);
-            capture.wave.length+=capture.wave.used*4;
+            capture.wave.length+=(uint32_t)(capture.wave.used*4);
             riff_wav_writer_end_data(capture.wave.writer);
             capture.wave.writer = riff_wav_writer_destroy(capture.wave.writer);
             CaptureState &= ~((unsigned int)CAPTURE_WAVE);
@@ -1687,19 +1746,19 @@ void CAPTURE_WaveEvent(bool pressed) {
 
 /* MIDI capturing */
 
-static Bit8u midi_header[]={
-	'M','T','h','d',			/* Bit32u, Header Chunk */
-	0x0,0x0,0x0,0x6,			/* Bit32u, Chunk Length */
-	0x0,0x0,					/* Bit16u, Format, 0=single track */
-	0x0,0x1,					/* Bit16u, Track Count, 1 track */
-	0x01,0xf4,					/* Bit16u, Timing, 2 beats/second with 500 frames */
-	'M','T','r','k',			/* Bit32u, Track Chunk */
-	0x0,0x0,0x0,0x0,			/* Bit32u, Chunk Length */
+static uint8_t midi_header[]={
+	'M','T','h','d',			/* uint32_t, Header Chunk */
+	0x0,0x0,0x0,0x6,			/* uint32_t, Chunk Length */
+	0x0,0x0,					/* uint16_t, Format, 0=single track */
+	0x0,0x1,					/* uint16_t, Track Count, 1 track */
+	0x01,0xf4,					/* uint16_t, Timing, 2 beats/second with 500 frames */
+	'M','T','r','k',			/* uint32_t, Track Chunk */
+	0x0,0x0,0x0,0x0,			/* uint32_t, Chunk Length */
 	//Track data
 };
 
 
-static void RawMidiAdd(Bit8u data) {
+static void RawMidiAdd(uint8_t data) {
 	capture.midi.buffer[capture.midi.used++]=data;
 	if (capture.midi.used >= MIDI_BUF ) {
 		capture.midi.done += capture.midi.used;
@@ -1708,28 +1767,28 @@ static void RawMidiAdd(Bit8u data) {
 	}
 }
 
-static void RawMidiAddNumber(Bit32u val) {
-	if (val & 0xfe00000) RawMidiAdd((Bit8u)(0x80|((val >> 21) & 0x7f)));
-	if (val & 0xfffc000) RawMidiAdd((Bit8u)(0x80|((val >> 14) & 0x7f)));
-	if (val & 0xfffff80) RawMidiAdd((Bit8u)(0x80|((val >> 7) & 0x7f)));
-	RawMidiAdd((Bit8u)(val & 0x7f));
+static void RawMidiAddNumber(uint32_t val) {
+	if (val & 0xfe00000) RawMidiAdd((uint8_t)(0x80|((val >> 21) & 0x7f)));
+	if (val & 0xfffc000) RawMidiAdd((uint8_t)(0x80|((val >> 14) & 0x7f)));
+	if (val & 0xfffff80) RawMidiAdd((uint8_t)(0x80|((val >> 7) & 0x7f)));
+	RawMidiAdd((uint8_t)(val & 0x7f));
 }
 
-void CAPTURE_AddMidi(bool sysex, Bitu len, Bit8u * data) {
+void CAPTURE_AddMidi(bool sysex, Bitu len, uint8_t * data) {
 	if (!capture.midi.handle) {
 		capture.midi.handle=OpenCaptureFile("Raw Midi",".mid");
 		if (!capture.midi.handle) {
 			return;
 		}
 		fwrite(midi_header,1,sizeof(midi_header),capture.midi.handle);
-		capture.midi.last=PIC_Ticks;
+		capture.midi.last=(uint32_t)PIC_Ticks;
 	}
-	Bit32u delta=PIC_Ticks-capture.midi.last;
-	capture.midi.last=PIC_Ticks;
+	uint32_t delta=(uint32_t)(PIC_Ticks-capture.midi.last);
+	capture.midi.last=(uint32_t)PIC_Ticks;
 	RawMidiAddNumber(delta);
 	if (sysex) {
 		RawMidiAdd( 0xf0 );
-		RawMidiAddNumber( len );
+		RawMidiAddNumber((uint32_t)len);
 	}
 	for (Bitu i=0;i<len;i++) 
 		RawMidiAdd(data[i]);
@@ -1751,11 +1810,11 @@ void CAPTURE_MidiEvent(bool pressed) {
 		fwrite(capture.midi.buffer,1,capture.midi.used,capture.midi.handle);
 		capture.midi.done+=capture.midi.used;
 		fseek(capture.midi.handle,18, SEEK_SET);
-		Bit8u size[4];
-		size[0]=(Bit8u)(capture.midi.done >> 24);
-		size[1]=(Bit8u)(capture.midi.done >> 16);
-		size[2]=(Bit8u)(capture.midi.done >> 8);
-		size[3]=(Bit8u)(capture.midi.done >> 0);
+		uint8_t size[4];
+		size[0]=(uint8_t)(capture.midi.done >> 24);
+		size[1]=(uint8_t)(capture.midi.done >> 16);
+		size[2]=(uint8_t)(capture.midi.done >> 8);
+		size[3]=(uint8_t)(capture.midi.done >> 0);
 		fwrite(&size,1,4,capture.midi.handle);
 		fclose(capture.midi.handle);
 		capture.midi.handle=0;
@@ -1786,6 +1845,49 @@ void CAPTURE_Destroy(Section *sec) {
 	if (capture.midi.handle) CAPTURE_MidiEvent(true);
 }
 
+bool enable_autosave = false;
+int autosave_second = 0, autosave_count = 0, autosave_start[10], autosave_end[10], autosave_last[10];
+std::string autosave_name[10];
+void OPL_SaveRawEvent(bool pressed), SetGameState_Run(int value), ResolvePath(std::string& in);
+
+void ParseAutoSaveArg(std::string arg) {
+    if (arg.size()) {
+        size_t found=arg.find_last_of(":");
+        int start, end;
+        if (found==std::string::npos||found==0) {
+            found=arg.find_last_of("-");
+            if (found==std::string::npos||found==0) {
+                start=atoi(arg.c_str());
+                if (start>0) autosave_start[0]=start;
+                else if (start<0) autosave_start[0]=-1;
+            } else {
+                start=atoi(arg.substr(0, found).c_str());
+                end=atoi(arg.substr(found+1).c_str());
+                if (start>0) {
+                    autosave_start[0]=start;
+                    if (end>=start) autosave_end[0]=end;
+                } else if (start<0) autosave_start[0]=-1;
+            }
+        } else if (autosave_count<9) {
+            autosave_name[++autosave_count]=arg.substr(0, found);
+            std::string remain=arg.substr(found+1);
+            found=remain.find_last_of("-");
+            if (found==std::string::npos||found==0) {
+                start=atoi(remain.c_str());
+                if (start>0) autosave_start[autosave_count]=start;
+                else if (start<0) autosave_start[autosave_count]=-1;
+            } else {
+                start=atoi(remain.substr(0, found).c_str());
+                end=atoi(remain.substr(found+1).c_str());
+                if (start>0) {
+                    autosave_start[autosave_count]=start;
+                    if (end>=start) autosave_end[autosave_count]=end;
+                } else if (start<0) autosave_start[autosave_count]=-1;
+            }
+        }
+    }
+}
+
 void CAPTURE_Init() {
 	DOSBoxMenu::item *item;
 
@@ -1798,6 +1900,50 @@ void CAPTURE_Init() {
 	Prop_path *proppath = section->Get_path("captures");
 	assert(proppath != NULL);
 	capturedir = proppath->realpath;
+    SetGameState_Run(section->Get_int("saveslot")-1);
+    noremark_save_state = !section->Get_bool("saveremark");
+    mainMenu.get_item("noremark_savestate").check(noremark_save_state).refresh_item(mainMenu);
+    force_load_state = section->Get_bool("forceloadstate");
+    mainMenu.get_item("force_loadstate").check(force_load_state).refresh_item(mainMenu);
+    savefilename = section->Get_string("savefile");
+    trim(savefilename);
+    if (savefilename.size()) {
+        use_save_file=true;
+        ResolvePath(savefilename);
+        mainMenu.get_item("usesavefile").set_text("Use save file ("+savefilename+")").check(use_save_file);
+        mainMenu.get_item("browsesavefile").enable(use_save_file);
+        std::string slot="";
+        for (int i=0; i<=9; i++) {
+            slot="slot"+std::to_string(i);
+            mainMenu.get_item(slot).enable(!use_save_file).refresh_item(mainMenu);
+        }
+    }
+    Prop_multival* prop = section->Get_multival("autosave");
+    autosave_second = atoi(prop->GetSection()->Get_string("second"));
+    for (int i=0; i<10; i++) {
+        autosave_name[i] = "";
+        autosave_start[i] = autosave_end[i] = 0;
+        autosave_last[i] = -1;
+        ParseAutoSaveArg(prop->GetSection()->Get_string("arg"+std::to_string(i)));
+    }
+    enable_autosave = autosave_second>0;
+    if (autosave_second<0) autosave_second=-autosave_second;
+    mainMenu.get_item("enable_autosave").check(enable_autosave).enable(autosave_second>0).refresh_item(mainMenu);
+    mainMenu.get_item("lastautosaveslot").enable(autosave_second>0).refresh_item(mainMenu);
+    std::string hostkey = section->Get_string("hostkey");
+    if (hostkey=="ctrlalt") hostkeyalt=1;
+    else if (hostkey=="ctrlshift") hostkeyalt=2;
+    else if (hostkey=="altshift") hostkeyalt=3;
+    else hostkeyalt=0;
+    std::string mapsendkey = section->Get_string("mapper send key");
+    if (mapsendkey=="winlogo") sendkeymap=1;
+    else if (mapsendkey=="winmenu") sendkeymap=2;
+    else if (mapsendkey=="alttab") sendkeymap=3;
+    else if (mapsendkey=="ctrlesc") sendkeymap=4;
+    else if (mapsendkey=="ctrlbreak") sendkeymap=5;
+    else sendkeymap=0;
+
+    skip_encoding_unchanged_frames = section->Get_bool("skip encoding unchanged frames");
 
     std::string ffmpeg_pixfmt = section->Get_string("capture chroma format");
 
@@ -1839,21 +1985,23 @@ void CAPTURE_Init() {
 
 #if !defined(C_EMSCRIPTEN)
 	// mapper shortcuts for capture
-	MAPPER_AddHandler(CAPTURE_WaveEvent,MK_w,MMOD3|MMODHOST,"recwave","Rec Wave", &item);
+	MAPPER_AddHandler(CAPTURE_WaveEvent,MK_w,MMODHOST,"recwave","Record audio to WAV", &item);
 	item->set_text("Record audio to WAV");
 
-	MAPPER_AddHandler(CAPTURE_MTWaveEvent,MK_nothing,0,"recmtwave","Rec MTWav", &item);
+	MAPPER_AddHandler(CAPTURE_MTWaveEvent,MK_nothing,0,"recmtwave","Record to M.T. AVI", &item);
 	item->set_text("Record audio to multi-track AVI");
 
-	MAPPER_AddHandler(CAPTURE_MidiEvent,MK_nothing,0,"caprawmidi","Cap MIDI", &item);
+	MAPPER_AddHandler(CAPTURE_MidiEvent,MK_nothing,0,"caprawmidi","Record MIDI output", &item);
 	item->set_text("Record MIDI output");
 
+	MAPPER_AddHandler(OPL_SaveRawEvent,MK_nothing,0,"caprawopl","Record FM/OPL output",&item);
+	item->set_text("Record FM (OPL) output");
 #if (C_SSHOT)
-	MAPPER_AddHandler(CAPTURE_ScreenShotEvent,MK_s,MMOD3|MMODHOST,"scrshot","Screenshot", &item);
-	item->set_text("Take screenshot");
-
-	MAPPER_AddHandler(CAPTURE_VideoEvent,MK_v,MMOD3|MMODHOST,"video","Video", &item);
+	MAPPER_AddHandler(CAPTURE_VideoEvent,MK_i,MMODHOST,"video","Record video to AVI", &item);
 	item->set_text("Record video to AVI");
+
+	MAPPER_AddHandler(CAPTURE_ScreenShotEvent,MK_p,MMODHOST,"scrshot","Take screenshot", &item);
+	item->set_text("Take screenshot");
 #endif
 #endif
 
@@ -1883,6 +2031,8 @@ void update_capture_fmt_menu(void) {
 #endif
 
 bool capture_fmt_menu_callback(DOSBoxMenu * const menu,DOSBoxMenu::item * const menuitem) {
+    (void)menu;
+
     const char *ts = menuitem->get_name().c_str();
     Bitu old_CaptureState = CaptureState;
     bool new_native_zmbv = native_zmbv;

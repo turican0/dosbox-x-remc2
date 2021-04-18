@@ -11,14 +11,16 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include "dosbox.h"
 #include "control.h"
 #include "menu.h"
+
+bool informd3d = false;
 
 #if (HAVE_D3D9_H) && defined(WIN32)
 
@@ -47,6 +49,25 @@ void CDirect3D::EnterLOGCriticalSection(LPCRITICAL_SECTION lpCriticalSection, in
 #endif
 
 #include "d3d_components.h"
+
+/* Most DOSBox forks incorporating the "D3D patch" expect the pixelshader filename
+   to exist in a shaders\ subdirectory. */
+std::string shader_translate_directory(const std::string& path) {
+    if (path == "none")
+        return path;
+
+    /* DOSBox fork compatability: if only the name of a file is given, assume it
+       exists in the shaders\ directory.
+
+       DOSBox-X's variation is to NOT prefix shaders\ to it if it looks like a
+       full path, with or without a drive letter. */
+    if (path.length() >= 2 && isalpha(path[0]) && path[1] == ':') /* drive letter ex. C:, D:, etc. */
+        return path;
+    if (path.length() >= 1 && path.find('\\') != std::string::npos) /* perhaps a path with "\" */
+        return path;
+
+    return std::string("shaders\\") + path;
+}
 
 HRESULT CDirect3D::InitializeDX(HWND wnd, bool triplebuf)
 {
@@ -102,7 +123,11 @@ HRESULT CDirect3D::InitializeDX(HWND wnd, bool triplebuf)
 
     thread_run = true;
     thread_command = D3D_IDLE;
+#if defined(C_SDL2)
+    thread = SDL_CreateThread(EntryPoint, "Direct3D", this);
+#else
     thread = SDL_CreateThread(EntryPoint, this);
+#endif
     SDL_SemWait(thread_ack);
 #endif
 
@@ -184,7 +209,7 @@ int CDirect3D::Start(void)
 }
 #endif
 
-bool CDirect3D::LockTexture(Bit8u * & pixels,Bitu & pitch)
+bool CDirect3D::LockTexture(uint8_t * & pixels,Bitu & pitch)
 {
 #if D3D_THREAD
     Wait(false);
@@ -212,7 +237,7 @@ bool CDirect3D::LockTexture(Bit8u * & pixels,Bitu & pitch)
     }
 #endif
 
-    pixels=(Bit8u *)d3dlr.pBits;
+    pixels=(uint8_t *)d3dlr.pBits;
     pitch=d3dlr.Pitch;
     return true;
 }
@@ -250,7 +275,7 @@ lock_texture:
     return S_OK;
 }
 
-bool CDirect3D::UnlockTexture(const Bit16u *changed)
+bool CDirect3D::UnlockTexture(const uint16_t *changed)
 {
 	changedLines = changed;
 #if D3D_THREAD
@@ -281,8 +306,8 @@ bool CDirect3D::UnlockTexture(void)
             if(!(index & 1)) {
                 y += changedLines[index];
             } else {
-                rect.top = y;
-                rect.bottom = y + changedLines[index];
+                rect.top = (LONG)y;
+                rect.bottom = (LONG)(y + changedLines[index]);
                 lpTexture->AddDirtyRect(&rect);
                 y += changedLines[index];
             }
@@ -732,12 +757,12 @@ pass2:
 			LOG_MSG("D3D:Unable to create file!");
 		    } else {
 			for(int i = 0; i < dwTexHeight; i++) {
-			    Bit8u * ptr = (Bit8u*)d3dlr.pBits;
+			    uint8_t * ptr = (uint8_t*)d3dlr.pBits;
 			    for(int j = 0; j < dwTexWidth; j++) {
 				fwrite(ptr, 3, sizeof(char), debug);
 				ptr += 4;
 			    }
-			    d3dlr.pBits = (Bit8u*)d3dlr.pBits + d3dlr.Pitch;
+			    d3dlr.pBits = (uint8_t*)d3dlr.pBits + d3dlr.Pitch;
 			}
 			fclose(debug);
 		    }
@@ -800,8 +825,13 @@ pass2:
     if(GCC_UNLIKELY(hr=pD3DDevice9->Present(NULL, NULL, NULL, NULL)) != D3D_OK) {
 	switch(hr) {
 	    case D3DERR_DEVICELOST:
-		// This will be handled when SDL catches alt-tab and resets GFX
-		return true;
+        LOG_MSG("D3D:Driver device lost");
+        if (!deviceLost) {
+            deviceLost = true;
+            void RENDER_CallBack(GFX_CallBackFunctions_t f);
+            RENDER_CallBack(GFX_CallBackRedraw);
+        }
+		return false;
 		break;
 	    case D3DERR_DRIVERINTERNALERROR:
 		LOG_MSG("D3D:Driver internal error");
@@ -926,6 +956,7 @@ HRESULT CDirect3D::RestoreDeviceObjects(void)
 }
 
 extern void RENDER_SetForceUpdate(bool);
+extern bool systemmessagebox(char const * aTitle, char const * aMessage, char const * aDialogType, char const * aIconType, int aDefaultButton);
 HRESULT CDirect3D::LoadPixelShader(const char * shader, double scalex, double scaley, bool forced)
 {
     if(!psEnabled) {
@@ -936,13 +967,13 @@ HRESULT CDirect3D::LoadPixelShader(const char * shader, double scalex, double sc
 
 #if C_D3DSHADERS
     // See if the shader is already running
-    if((!psEffect) || (strcmp(pshader+8, shader))) {
+    if((!psEffect) || pshader != shader) {
 
 	// This is called in main thread to test if pixelshader needs to be changed
 	if((scalex == 0) && (scaley == 0)) return S_OK;
 
 	RENDER_SetForceUpdate(false);
-	safe_strncpy(pshader+8, shader, 22); pshader[29] = '\0';
+    pshader = shader;
 #if D3D_THREAD
 	Wait(false);
 	thread_command = D3D_LOADPS;
@@ -962,18 +993,21 @@ HRESULT CDirect3D::LoadPixelShader(const char * shader, double scalex, double sc
     }
 
     if (psEffect) {
-#if LOG_D3D
 	LOG_MSG("D3D:Shader scale: %.2f", psEffect->getScale());
-#endif
 	// Compare optimal scaling factor
 	bool dblgfx=((scalex < scaley ? scalex : scaley) >= psEffect->getScale());
 
+    std::string message;
 	if(dblgfx || forced) {
+	    message = "Loaded pixel shader - "+std::string(shader);
+	    if (informd3d) systemmessagebox("Direct3D shader", message.c_str(), "ok","info", 1);
 	    LOG_MSG("D3D:Pixel shader %s active", shader);
 	    RENDER_SetForceUpdate(psEffect->getForceUpdate());
 	    psActive = true;
 	    return S_OK;
 	} else {
+	    message = "Pixel shader not needed - "+std::string(shader);
+	    if (informd3d) systemmessagebox("Direct3D shader", message.c_str(), "ok","info", 1);
 	    LOG_MSG("D3D:Pixel shader not needed");
 	    psActive = false;
 	    return E_FAIL;
@@ -994,7 +1028,7 @@ HRESULT CDirect3D::LoadPixelShader(void)
 	psEffect = NULL;
     }
 
-    if(!strcmp(pshader+8, "none")) {
+    if(pshader.empty() || pshader == "none") {
 	// Returns E_FAIL so that further shader processing is disabled
 	psActive = false;
 	return E_FAIL;
@@ -1012,8 +1046,8 @@ HRESULT CDirect3D::LoadPixelShader(void)
 #endif
 
     psEffect->setinputDim((float)dwWidth, (float)dwHeight);
-    if(FAILED(psEffect->LoadEffect(pshader)) || FAILED(psEffect->Validate())) {
-	/*LOG_MSG("D3D:Pixel shader error:");
+    if(FAILED(psEffect->LoadEffect(shader_translate_directory(pshader).c_str())) || FAILED(psEffect->Validate())) {
+	LOG_MSG("D3D:Pixel shader error:");
 
 	// The resulting string can exceed 512 char LOG_MSG limit, split on newlines
 	std::stringstream ss(psEffect->getErrors());
@@ -1022,11 +1056,10 @@ HRESULT CDirect3D::LoadPixelShader(void)
 	    LOG_MSG(" %s", line.c_str());
 	}
 
-	LOG_MSG("D3D:Pixel shader output disabled");*/
+	LOG_MSG("D3D:Pixel shader output disabled");
 	delete psEffect;
 	psEffect = NULL;
 	psActive = false;
-	pshader[8] = '\0';
 	return E_FAIL;
     }
 
@@ -1048,17 +1081,17 @@ HRESULT CDirect3D::Resize3DEnvironment(Bitu window_width, Bitu window_height, Bi
 	(void)fullscreen; // FIXME: This should be stored and used!
 
     // set the presentation parameters
-	d3dpp.BackBufferWidth = window_width;
-	d3dpp.BackBufferHeight = window_height;
+	d3dpp.BackBufferWidth = (UINT)window_width;
+	d3dpp.BackBufferHeight = (UINT)window_height;
 
-    dwScaledWidth = width;
-    dwScaledHeight = height;
+    dwScaledWidth = (DWORD)width;
+    dwScaledHeight = (DWORD)height;
 
-    dwX = x;
-    dwY = y;
+    dwX = (DWORD)x;
+    dwY = (DWORD)y;
 
-    dwWidth = rwidth;
-    dwHeight = rheight;
+    dwWidth = (DWORD)rwidth;
+    dwHeight = (DWORD)rheight;
 
 #if LOG_D3D
     LOG_MSG("D3D:Resolution set to %dx%d%s", d3dpp.BackBufferWidth, d3dpp.BackBufferHeight, fullscreen ? ", fullscreen" : "");
@@ -1197,7 +1230,7 @@ HRESULT CDirect3D::CreateDisplayTexture(void)
 
     // Initialize texture to black
     if(LockTexture() == S_OK) {
-	Bit8u * pixels = (Bit8u *)d3dlr.pBits;
+	uint8_t * pixels = (uint8_t *)d3dlr.pBits;
 
 	for(Bitu lines = dwTexHeight; lines; lines--) {
 	    memset(pixels, 0, (dwTexWidth<<2)>>(bpp16?1:0));
@@ -1293,7 +1326,7 @@ HRESULT CDirect3D::CreateDisplayTexture(void)
 	    return E_FAIL;
 	}
 
-	BuildHq2xLookupTexture(dwScaledWidth, dwScaledHeight, dwWidth, dwHeight, (Bit8u *)lockedBox.pBits);
+	BuildHq2xLookupTexture(dwScaledWidth, dwScaledHeight, dwWidth, dwHeight, (uint8_t *)lockedBox.pBits);
 
 #if LOG_D3D
 	// Debug: Write look-up texture to file
@@ -1374,21 +1407,40 @@ HRESULT CDirect3D::CreateVertex(void)
     vertexBuffer->Lock(0, 0, (void**)&vertices, 0);
 
     //Setup vertices
-    vertices[0].position = D3DXVECTOR3( (float)dwX,					  (float)dwY,					 0.0f );
-    vertices[0].diffuse  = 0xFFFFFFFF;
-    vertices[0].texcoord = D3DXVECTOR2( 0.0f,						  0.0f );
+    if (psActive) {
+        vertices[0].position = D3DXVECTOR3(-0.5f, -0.5f, 0.0f);
+        vertices[0].diffuse = 0xFFFFFFFF;
+        vertices[0].texcoord = D3DXVECTOR2(0.0f, (float)sizey);
 
-    vertices[1].position = D3DXVECTOR3( (float)dwX,					  (float)(dwY + dwScaledHeight), 0.0f );
-    vertices[1].diffuse  = 0xFFFFFFFF;
-    vertices[1].texcoord = D3DXVECTOR2( 0.0f,						  (float)sizey );
-    
-    vertices[2].position = D3DXVECTOR3( (float)(dwX + dwScaledWidth), (float)dwY,				     0.0f );
-    vertices[2].diffuse  = 0xFFFFFFFF;
-    vertices[2].texcoord = D3DXVECTOR2( (float)sizex,				  0.0f );
-    
-    vertices[3].position = D3DXVECTOR3( (float)(dwX + dwScaledWidth), (float)(dwY + dwScaledHeight), 0.0f );
-    vertices[3].diffuse  = 0xFFFFFFFF;
-    vertices[3].texcoord = D3DXVECTOR2( (float)sizex,				  (float)sizey );
+        vertices[1].position = D3DXVECTOR3(-0.5f, 0.5f, 0.0f);
+        vertices[1].diffuse = 0xFFFFFFFF;
+        vertices[1].texcoord = D3DXVECTOR2(0.0f, 0.0f);
+
+        vertices[2].position = D3DXVECTOR3(0.5f, -0.5f, 0.0f);
+        vertices[2].diffuse = 0xFFFFFFFF;
+        vertices[2].texcoord = D3DXVECTOR2((float)sizex, (float)sizey);
+
+        vertices[3].position = D3DXVECTOR3(0.5f, 0.5f, 0.0f);
+        vertices[3].diffuse = 0xFFFFFFFF;
+        vertices[3].texcoord = D3DXVECTOR2((float)sizex, 0.0f);
+    }
+    else {
+        vertices[0].position = D3DXVECTOR3((float)dwX, (float)dwY, 0.0f);
+        vertices[0].diffuse = 0xFFFFFFFF;
+        vertices[0].texcoord = D3DXVECTOR2(0.0f, 0.0f);
+
+        vertices[1].position = D3DXVECTOR3((float)dwX, (float)(dwY + dwScaledHeight), 0.0f);
+        vertices[1].diffuse = 0xFFFFFFFF;
+        vertices[1].texcoord = D3DXVECTOR2(0.0f, (float)sizey);
+
+        vertices[2].position = D3DXVECTOR3((float)(dwX + dwScaledWidth), (float)dwY, 0.0f);
+        vertices[2].diffuse = 0xFFFFFFFF;
+        vertices[2].texcoord = D3DXVECTOR2((float)sizex, 0.0f);
+
+        vertices[3].position = D3DXVECTOR3((float)(dwX + dwScaledWidth), (float)(dwY + dwScaledHeight), 0.0f);
+        vertices[3].diffuse = 0xFFFFFFFF;
+        vertices[3].texcoord = D3DXVECTOR2((float)sizex, (float)sizey);
+    }
 
     // Additional vertices required for some PS effects
     // FIXME: Recent changes may have BROKEN pixel shader support here!!!!!
@@ -1432,22 +1484,47 @@ void CDirect3D::SetupSceneScaled(void)
 
     // Projection is screenspace coords
     D3DXMatrixOrthoOffCenterLH(&m_matProj, 0.0f, (float)Viewport.Width, 0.0f, (float)Viewport.Height, 0.0f, 1.0f);
-    {
+    if (!psActive) {
 	    D3DXMATRIX x;
 	    D3DXMatrixScaling(&x, 1.0f, -1.0f, 1.0f);
 	    m_matProj *= x;
     }
 
-    // View matrix with -0.5f offset to avoid a fuzzy picture
-    D3DXMatrixTranslation(&m_matView, -0.5f, -0.5f, 0.0f);
+    if (psActive) {
+        // View matrix does offset
+        // A -0.5f modifier is applied to vertex coordinates to match texture
+        // and screen coords. Some drivers may compensate for this
+        // automatically, but on others texture alignment errors are introduced
+        // More information on this can be found in the Direct3D 9 documentation
+        D3DXMatrixTranslation(&m_matView, (float)Viewport.Width / 2 - 0.5f, (float)Viewport.Height / 2 + 0.5f, 0.0f);
+    }
+    else {
+        // View matrix with -0.5f offset to avoid a fuzzy picture
+        D3DXMatrixTranslation(&m_matView, -0.5f, -0.5f, 0.0f);
+    }
 
     // TODO: Re-implement 5:4 monitor autofit
-
-#if LOG_D3D
-    LOG_MSG("D3D:Scaled resolution: %.1fx%.1f, factor: %dx%d", sizex, sizey, x, y);
-#endif
-
-    D3DXMatrixScaling(&m_matWorld, 1.0, 1.0, 1.0f);
+    if (psActive) {
+        D3DXMatrixScaling(&m_matWorld, (float)dwScaledWidth, (float)dwScaledHeight, 1.0f);
+        { /* translation matrix to make dwX and dwY effective. Note that the code inherited from Daum naturally
+             centers the image on screen by it's design, so the calculation has to account for that. */
+            /* NTS: The reason we go to these great pains for pixel shaders is that there are other forks of
+                    DOSBox that have this same Direct3D code, but without this fork's alterations that use
+                    pure integer coordinates. The shaders require the -0.5 to 0.5 vertex and texture coordinates
+                    to work properly and will not render properly with this fork's modifications. */
+            D3DXMATRIX t;
+            float nx = float(Viewport.Width - dwScaledWidth) / 2.0f;
+            float ny = float(Viewport.Height - dwScaledHeight) / 2.0f;
+            float dx = float(dwX);
+            float dy = float(dwY);
+//          LOG_MSG("dx=%.3f dy=%.3f nx=%.3f ny=%.3f", dx, dy, nx, ny);
+            D3DXMatrixTranslation(&t, -(dx - nx), -(dy - ny), 0.0f);
+            m_matWorld *= t;
+        }
+    }
+    else {
+        D3DXMatrixScaling(&m_matWorld, 1.0, 1.0, 1.0f);
+    }
 }
 
 #if !(C_D3DSHADERS)

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -53,27 +53,30 @@
 /* Wrapper functions for the function pointers
     - call these functions to perform I/O.
  */
-     short  Inp32 (short portaddr)
+     short Inp32(short portaddr)
      {
-          return (inp32fp)(portaddr);
+         return inp32fp(portaddr);
      }
 
-     void  Out32 (short portaddr, short datum)
+     void Out32(short portaddr, short datum)
      {
-          (oup32fp)(portaddr,datum);
-     } 
+         oup32fp(portaddr, datum);
+     }
 
 //********************************************************
 
 
 
-CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
+CDirectLPT::CDirectLPT (Bitu nr, uint8_t initIrq, CommandLine* cmd)
                               :CParallel (cmd, nr, initIrq) {
      HINSTANCE hLib;
 
-     /* Load the library for win 64 driver */
+     /* Load the library for Windows 32/64-bit driver */
      hLib = LoadLibrary("inpout32.dll");
 
+#if defined (_M_AMD64)
+     if (hLib == NULL) hLib = LoadLibrary("inpoutx64.dll");
+#endif
      if (hLib == NULL) {
           LOG_MSG("LoadLibrary Failed.\n");
           return ;
@@ -85,6 +88,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 
      if (inp32fp == NULL) {
           LOG_MSG("GetProcAddress for Inp32 Failed.\n");
+          FreeLibrary(hLib);
           return ;
      }
 
@@ -93,6 +97,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 
      if (oup32fp == NULL) {
           LOG_MSG("GetProcAddress for Oup32 Failed.\n");
+          FreeLibrary(hLib);
           return ;
      }
 
@@ -107,12 +112,14 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 	if(cmd->FindStringBegin("realbase:",str,false)) {
 		if(sscanf(str.c_str(), "%x",&realbaseaddress)!=1) {
 			LOG_MSG("parallel%d: Invalid realbase parameter.",nr);
+            FreeLibrary(hLib);
 			return;
 		} 
 	}
 
 	if(realbaseaddress>=0x10000) {
 		LOG_MSG("Error: Invalid base address.");
+        FreeLibrary(hLib);
 		return;
 	}
 	/*
@@ -135,6 +142,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 		((realbaseaddress>=0x3f0)&&(realbaseaddress<=0x3f7)) ||	// floppy + prim. HDD
 		((realbaseaddress>=0x370)&&(realbaseaddress<=0x377))) {	// sek. hdd
 		LOG_MSG("Parallel Port: Invalid base address.");
+        FreeLibrary(hLib);
 		return;
 	}
 	/*	
@@ -144,10 +152,11 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 		LOG_MSG("Parallel Port: Invalid base address.");
 		return;
 	}*/
-	Bit32u ecpbase = 0;
+	uint32_t ecpbase = 0;
 	if(cmd->FindStringBegin("ecpbase:",str,false)) {
 		if(sscanf(str.c_str(), "%x",&ecpbase)!=1) {
 			LOG_MSG("parallel%d: Invalid realbase parameter.",nr);
+            FreeLibrary(hLib);
 			return;
 		}
 		isECP=true;
@@ -158,12 +167,12 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 	}
 	/*
 	// add the standard parallel port registers
-	addIOPermission((Bit16u)realbaseaddress);
-	addIOPermission((Bit16u)realbaseaddress+1);
-	addIOPermission((Bit16u)realbaseaddress+2);
+	addIOPermission((uint16_t)realbaseaddress);
+	addIOPermission((uint16_t)realbaseaddress+1);
+	addIOPermission((uint16_t)realbaseaddress+2);
 	
 	// if it could be a ECP port: make the extended control register accessible
-	if(isECP)addIOPermission((Bit16u)ecpbase);
+	if(isECP)addIOPermission((uint16_t)ecpbase);
 	
 	// bail out if porttalk fails
 	if(!setPermissionList())
@@ -174,7 +183,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 	if(isECP) {
 		// check if there is a ECP port (try to set bidir)
 		originalECPControlReg = inportb(ecpbase);
-		Bit8u new_bidir = originalECPControlReg&0x1F;
+		uint8_t new_bidir = originalECPControlReg&0x1F;
 		new_bidir|=0x20;
 
 		outportb(ecpbase,new_bidir);
@@ -188,7 +197,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 
 	// check if there is a parallel port at all: the autofeed bit
 	/*
-	Bit8u controlreg=inportb(realbaseaddress+2);
+	uint8_t controlreg=inportb(realbaseaddress+2);
 	outportb(realbaseaddress+2,controlreg|2);
 	if(!(inportb(realbaseaddress+2)&0x2))
 	{
@@ -198,12 +207,13 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 	}
 	*/
 	//realbaseaddress=0x378;
-	Bit8u controlreg=Inp32(realbaseaddress+2);
+	uint8_t controlreg=Inp32(realbaseaddress+2);
 	Out32(realbaseaddress+2,controlreg|2);
 	if(!(Inp32(realbaseaddress+2)&0x2))
 	{
 		LOG_MSG("No parallel port detected at 0x%x!",realbaseaddress);
 		// cannot remember 1
+        FreeLibrary(hLib);
 		return;
 	}
 	
@@ -223,6 +233,7 @@ CDirectLPT::CDirectLPT (Bitu nr, Bit8u initIrq, CommandLine* cmd)
 	{
 		LOG_MSG("No parallel port detected at 0x%x!",realbaseaddress);
 		// cannot remember 0
+        FreeLibrary(hLib);
 		return;
 	}
 	Out32(realbaseaddress+2,controlreg);
@@ -254,13 +265,13 @@ CDirectLPT::~CDirectLPT () {
 		Out32(realbaseaddress+0x402,originalECPControlReg);
 }
 
-bool CDirectLPT::Putchar(Bit8u val)
+bool CDirectLPT::Putchar(uint8_t val)
 {	
 	//LOG_MSG("putchar: %x",val);
 
 	// check if printer online and not busy
 	// PE and Selected: no printer attached
-	Bit8u sr=Read_SR();
+	uint8_t sr=Read_SR();
 	//LOG_MSG("SR: %x",sr);
 	if((sr&0x30)==0x30)
 	{
@@ -317,8 +328,8 @@ Bitu CDirectLPT::Read_PR() {
 	return Inp32(realbaseaddress);
 }
 Bitu CDirectLPT::Read_COM() {
-	//Bit8u retval=inportb(realbaseaddress+2);
-	Bit8u retval=0;
+	//uint8_t retval=inportb(realbaseaddress+2);
+	uint8_t retval=0;
 	retval=Inp32(realbaseaddress+2);
 	if(!interruptflag)// interrupt activated
 	retval&=~0x10;
@@ -330,7 +341,7 @@ Bitu CDirectLPT::Read_SR() {
 }
 
 void CDirectLPT::Write_PR(Bitu val) {
-	//LOG_MSG("%c,%x",(Bit8u)val,val);
+	//LOG_MSG("%c,%x",(uint8_t)val,val);
 	//outportb(realbaseaddress,val);
 	Out32(realbaseaddress,val);
 }
@@ -345,7 +356,7 @@ void CDirectLPT::Write_IOSEL(Bitu val) {
 	Out32(realbaseaddress+1,val);
 }
 
-void CDirectLPT::handleUpperEvent(Bit16u type) { (void)type; }
+void CDirectLPT::handleUpperEvent(uint16_t type) { (void)type; }
 
 
 #endif

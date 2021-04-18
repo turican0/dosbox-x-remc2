@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 // include guard
@@ -36,23 +36,23 @@
 class CDirectLPT : public CParallel {
 public:
 	//HANDLE driverHandle;
-	Bit32u realbaseaddress;
-	Bit8u originalECPControlReg;
+	uint32_t realbaseaddress = 0;
+	uint8_t originalECPControlReg = 0;
 	
 	CDirectLPT(
 			Bitu nr,
-			Bit8u initIrq,
+			uint8_t initIrq,
 			CommandLine* cmd
             );
 	
 
 	~CDirectLPT();
 	
-	bool interruptflag;
-	bool isECP;
-	bool InstallationSuccessful;	// check after constructing. If
+	bool interruptflag = false;
+	bool isECP = false;
+	bool InstallationSuccessful = false;	// check after constructing. If
 									// something was wrong, delete it right away.
-	bool ack_polarity;
+	bool ack_polarity = false;
 
 	Bitu Read_PR();
 	Bitu Read_COM();
@@ -61,9 +61,9 @@ public:
 	void Write_PR(Bitu);
 	void Write_CON(Bitu);
 	void Write_IOSEL(Bitu);
-	bool Putchar(Bit8u);
+	bool Putchar(uint8_t);
 
-	void handleUpperEvent(Bit16u type);
+	void handleUpperEvent(uint16_t type);
 };
 
 #endif	// WIN32

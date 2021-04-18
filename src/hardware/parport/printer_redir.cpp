@@ -9,9 +9,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -25,7 +25,7 @@
 
 // Purpose of this is to pass LPT register access to the virtual printer 
 
-CPrinterRedir::CPrinterRedir(Bitu nr, Bit8u initIrq, CommandLine* cmd)
+CPrinterRedir::CPrinterRedir(Bitu nr, uint8_t initIrq, CommandLine* cmd)
                               :CParallel (cmd, nr, initIrq) {
 	InstallationSuccessful = PRINTER_isInited();
 }
@@ -34,7 +34,7 @@ CPrinterRedir::~CPrinterRedir () {
 	// close file
 }
 
-bool CPrinterRedir::Putchar(Bit8u val)
+bool CPrinterRedir::Putchar(uint8_t val)
 {	
 	Write_CON(0xD4);
 	// strobe data out
@@ -66,7 +66,10 @@ void CPrinterRedir::Write_CON(Bitu val) {
 	PRINTER_writecontrol(0,val,1);
 }
 void CPrinterRedir::Write_IOSEL(Bitu val) {
+    (void)val; // UNUSED
 	// nothing
 }
-void CPrinterRedir::handleUpperEvent(Bit16u type) {}
+void CPrinterRedir::handleUpperEvent(uint16_t type) {
+    (void)type; // UNUSED
+}
 #endif // C_PRINTER

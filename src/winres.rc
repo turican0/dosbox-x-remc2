@@ -3,7 +3,10 @@
 #include "../include/resource.h"
 
 // icon resource
-dosbox_ico ICON "dosbox.ico"
+dosbox_ico ICON "../contrib/icons/dosbox-x.ico"
+IDI_MAPPER ICON "../contrib/icons/mapper.ico"
+IDI_CFG_GUI ICON "../contrib/icons/cfggui.ico"
+IDI_PAUSE ICON "../contrib/icons/pause.ico"
 
 // version resource
 VS_VERSION_INFO VERSIONINFO

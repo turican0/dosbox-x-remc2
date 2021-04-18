@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -44,15 +44,24 @@ char *rtrim(char *str);
 char *trim(char * str);
 char * upcase(char * str);
 char * lowcase(char * str);
-
+char * StripArg(char *&cmd);
 bool ScanCMDBool(char * cmd,char const * const check);
 char * ScanCMDRemain(char * cmd);
-char * StripWord(char *&cmd);
-bool IsDecWord(char * word);
-bool IsHexWord(char * word);
+char * StripWord(char *&line);
 Bits ConvDecWord(char * word);
 Bits ConvHexWord(char * word);
 
+enum {
+	UTF8ERR_INVALID=-1,
+	UTF8ERR_NO_ROOM=-2
+};
+
+int utf8_encode(char **ptr,const char *fence,uint32_t code);
+int utf8_decode(const char **ptr,const char *fence);
+int utf16le_encode(char **ptr,const char *fence,uint32_t code);
+int utf16le_decode(const char **ptr,const char *fence);
+
+void trim(std::string& str);
 void upcase(std::string &str);
 void lowcase(std::string &str);
 
@@ -79,6 +88,33 @@ static inline bool is_power_of_2(Bitu val) {
 	 * See how that works?
 	 *
 	 * For more info see https://graphics.stanford.edu/~seander/bithacks.html#DetermineIfPowerOf2*/
+}
+
+/// Copy a string into C array
+///
+/// This function copies string pointed by src to fixed-size buffer dst.
+/// At most N bytes from src are copied, where N is size of dst.
+/// If exactly N bytes are copied, then terminating null byte is put
+/// into buffer, thus buffer overrun is prevented.
+///
+/// Function returns pointer to buffer to be compatible with std::strcpy.
+///
+/// Usage:
+///
+///     char buffer[2];
+///     safe_strcpy(buffer, "abc");
+///     // buffer is filled with "a"
+
+template<size_t N>
+char * safe_strcpy(char (& dst)[N], const char * src) noexcept {
+        snprintf(dst, N, "%s", src);
+        return & dst[0];
+}
+
+template<size_t N>
+char * safe_strcat(char (& dst)[N], const char * src) noexcept {
+        strncat(dst, src, N - strnlen(dst, N) - 1);
+        return & dst[0];
 }
 
 #endif

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
  
 
@@ -60,14 +60,14 @@ bool CDROM_Interface_Ioctl::ReadSectors(PhysPt buffer, bool raw, unsigned long s
 	Bitu buflen = raw ? num * (unsigned int)CD_FRAMESIZE_RAW : num * (unsigned int)CD_FRAMESIZE;
     assert(buflen != 0u);
 
-	Bit8u* buf = new Bit8u[buflen];	
+	uint8_t* buf = new uint8_t[buflen];	
 	int ret;
 	
 	if (raw) {
 		struct cdrom_read cdrom_read;
-		cdrom_read.cdread_lba = sector;
+		cdrom_read.cdread_lba = (int)sector;
 		cdrom_read.cdread_bufaddr = (char*)buf;
-		cdrom_read.cdread_buflen = buflen;
+		cdrom_read.cdread_buflen = (int)buflen;
 		
 		ret = ioctl(cdrom_fd, CDROMREADRAW, &cdrom_read);		
 	} else {
@@ -88,13 +88,9 @@ bool CDROM_Interface_Ioctl::SetDevice(char* path, int forceCD)
 	bool success = CDROM_Interface_SDL::SetDevice(path, forceCD);
 	
 	if (success) {
-#if defined(C_SDL2)
-        strcpy(device_name, "unknown");
-#else
 		const char* tmp = SDL_CDName(forceCD);
 		if (tmp) safe_strncpy(device_name, tmp, 512);
 		else success = false;
-#endif
 	}
 	
 	return success;

@@ -14,7 +14,7 @@
 
     You should have received a copy of the GNU Library General Public
     License along with this library; if not, write to the Free
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1335 USA  USA
 
     Sam Lantinga
     slouken@libsdl.org
@@ -554,7 +554,11 @@ static OSStatus CheckInit ()
     callbackSem = SDL_CreateSemaphore(0);
 
     /* Start callback thread */
+#if defined(C_SDL2)
+    SDL_CreateThread(RunCallBackThread, "CDPlayer", NULL);
+#else
     SDL_CreateThread(RunCallBackThread, NULL);
+#endif
 
     { /*try {*/
         ComponentDescription desc;

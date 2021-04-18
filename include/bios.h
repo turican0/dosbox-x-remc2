@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <stdio.h>
@@ -85,6 +85,7 @@
 #define BIOS_VDU_CONTROL                0x465
 #define BIOS_VDU_COLOR_REGISTER         0x466
 /* 0x467-0x468 is reserved */
+#define BIOS_LAST_UNEXPECTED_IRQ        0x46b
 #define BIOS_TIMER                      0x46c
 #define BIOS_24_HOURS_FLAG              0x470
 #define BIOS_CTRL_BREAK_FLAG            0x471
@@ -157,6 +158,7 @@ extern Bitu BIOS_DEFAULT_IRQ0_LOCATION;		// (RealMake(0xf000,0xfea5))
 extern Bitu BIOS_DEFAULT_IRQ1_LOCATION;		// (RealMake(0xf000,0xe987))
 extern Bitu BIOS_DEFAULT_IRQ2_LOCATION;		// (RealMake(0xf000,0xff55))
 extern Bitu BIOS_DEFAULT_HANDLER_LOCATION;	// (RealMake(0xf000,0xff53))
+extern Bitu BIOS_DEFAULT_INT5_LOCATION;		// (RealMake(0xf000,0xff54))
 extern Bitu BIOS_VIDEO_TABLE_LOCATION;		// (RealMake(0xf000,0xf0a4))
 extern Bitu BIOS_DEFAULT_RESET_LOCATION;	// RealMake(0xf000,0xe05b)
 extern Bitu BIOS_VIDEO_TABLE_SIZE;
@@ -174,20 +176,12 @@ extern RegionAllocTracking rombios_alloc;
 //#define MAX_SWAPPABLE_DISKS 20
 
 void BIOS_ZeroExtendedSize(bool in);
-void char_out(Bit8u chr,Bit32u att,Bit8u page);
-void INT10_StartUp(void);
-void INT16_StartUp(void);
-void INT2A_StartUp(void);
-void INT2F_StartUp(void);
-void INT33_StartUp(void);
-void INT13_StartUp(void);
 
-bool BIOS_AddKeyToBuffer(Bit16u code);
+bool BIOS_AddKeyToBuffer(uint16_t code);
 
 void INT10_ReloadRomFonts();
 
-void BIOS_SetComPorts (Bit16u baseaddr[]);
-void BIOS_SetLPTPort (Bitu port, Bit16u baseaddr);
+void BIOS_SetLPTPort (Bitu port, uint16_t baseaddr);
 
 // \brief Synchronizes emulator num lock state with host.
 void BIOS_SynchronizeNumLock();
@@ -321,18 +315,18 @@ public:
 	void write_IO_Port(const uint16_t min_port,const uint16_t max_port,const uint8_t count,const uint8_t alignment=1,const bool full16bitdecode=true);
 	void write_End_Dependent_Functions();
 public:
-	unsigned char		CSN;
-	unsigned char		logical_device;
+    unsigned char       CSN = 0;
+    unsigned char       logical_device = 0;
 	unsigned char		ident[9];		/* 72-bit vendor + serial + checksum identity */
-	unsigned char		ident_bp;		/* bit position of identity read */
-	unsigned char		ident_2nd;
-	unsigned char		resource_ident;
-	unsigned char*		resource_data;
-	size_t			resource_data_len;
-	unsigned int		resource_data_pos;
-	size_t			alloc_write;
-	unsigned char*		alloc_res;
-	size_t			alloc_sz;
+    unsigned char       ident_bp = 0;   /* bit position of identity read */
+    unsigned char       ident_2nd = 0;
+    unsigned char       resource_ident = 0;
+    unsigned char*      resource_data = NULL;
+    size_t              resource_data_len = 0;
+    unsigned int        resource_data_pos = 0;
+    size_t              alloc_write = 0;
+    unsigned char*      alloc_res = NULL;
+    size_t              alloc_sz = 0;
 };
 
 /* abc = ASCII letters of the alphabet

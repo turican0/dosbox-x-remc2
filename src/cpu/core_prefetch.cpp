@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -49,7 +49,7 @@ extern bool ignore_opcode_63;
 #define LoadMb(off) mem_readb(off)
 #define LoadMw(off) mem_readw(off)
 #define LoadMd(off) mem_readd(off)
-#define LoadMq(off) ((Bit64u)((Bit64u)mem_readd(off+4)<<32 | (Bit64u)mem_readd(off)))
+#define LoadMq(off) ((uint64_t)((uint64_t)mem_readd(off+4)<<32 | (uint64_t)mem_readd(off)))
 #define SaveMb(off,val)	mem_writeb(off,val)
 #define SaveMw(off,val)	mem_writew(off,val)
 #define SaveMd(off,val)	mem_writed(off,val)
@@ -59,7 +59,7 @@ extern bool ignore_opcode_63;
 #define LoadMb(off) mem_readb_inline(off)
 #define LoadMw(off) mem_readw_inline(off)
 #define LoadMd(off) mem_readd_inline(off)
-#define LoadMq(off) ((Bit64u)((Bit64u)mem_readd_inline(off+4)<<32 | (Bit64u)mem_readd_inline(off)))
+#define LoadMq(off) ((uint64_t)((uint64_t)mem_readd_inline(off+4)<<32 | (uint64_t)mem_readd_inline(off)))
 #define SaveMb(off,val)	mem_writeb_inline(off,val)
 #define SaveMw(off,val)	mem_writew_inline(off,val)
 #define SaveMd(off,val)	mem_writed_inline(off,val)
@@ -74,6 +74,8 @@ extern Bitu cycle_count;
 
 #define CPU_PIC_CHECK 1u
 #define CPU_TRAP_CHECK 1u
+
+#define CPU_TRAP_DECODER	CPU_Core_Prefetch_Trap_Run
 
 #define OPCODE_NONE			0x000u
 #define OPCODE_0F			0x100u
@@ -104,7 +106,7 @@ extern Bitu cycle_count;
 
 typedef PhysPt (*GetEAHandler)(void);
 
-static const Bit32u AddrMaskTable[2]={0x0000ffffu,0xffffffffu};
+static const uint32_t AddrMaskTable[2]={0x0000ffffu,0xffffffffu};
 
 static struct {
 	Bitu opcode_index;
@@ -124,9 +126,10 @@ static struct {
 #define BaseDS		core.base_ds
 #define BaseSS		core.base_ss
 
+//#define PREFETCH_DEBUG
 
 #define MAX_PQ_SIZE 32
-static Bit8u prefetch_buffer[MAX_PQ_SIZE];
+static uint8_t prefetch_buffer[MAX_PQ_SIZE];
 static bool pq_valid=false;
 static Bitu pq_start;
 static Bitu pq_fill;
@@ -137,123 +140,28 @@ static double pq_next_dbg=0;
 static unsigned int pq_hit=0,pq_miss=0;
 #endif
 
-//#define PREFETCH_DEBUG
+/* MUST BE POWER OF 2 */
+#define prefetch_unit       (4ul)
 
-/* WARNING: This code needs MORE TESTING. So far, it seems to work fine. */
+#include "core_prefetch_buf.h"
 
-template <class T> static inline bool prefetch_hit(const Bitu w) {
-    return pq_valid && (w >= pq_start && (w + sizeof(T)) <= pq_fill);
+static INLINE void FetchDiscardb() {
+	FetchDiscard<uint8_t>();
 }
 
-template <class T> static inline T prefetch_read(const Bitu w);
-
-template <class T> static inline void prefetch_read_check(const Bitu w) {
-    (void)w;//POSSIBLY UNUSED
-#ifdef PREFETCH_DEBUG
-    if (!pq_valid) E_Exit("CPU: Prefetch read when not valid!");
-    if (w < pq_start) E_Exit("CPU: Prefetch read below prefetch base");
-    if ((w+sizeof(T)) > pq_fill) E_Exit("CPU: Prefetch read beyond prefetch fill");
-#endif
+static INLINE uint8_t FetchPeekb() {
+	return FetchPeek<uint8_t>();
 }
 
-template <> uint8_t prefetch_read<uint8_t>(const Bitu w) {
-    prefetch_read_check<uint8_t>(w);
-    return prefetch_buffer[w - pq_start];
-}
-
-template <> uint16_t prefetch_read<uint16_t>(const Bitu w) {
-    prefetch_read_check<uint16_t>(w);
-    return host_readw(&prefetch_buffer[w - pq_start]);
-}
-
-template <> uint32_t prefetch_read<uint32_t>(const Bitu w) {
-    prefetch_read_check<uint32_t>(w);
-    return host_readd(&prefetch_buffer[w - pq_start]);
-}
-
-static inline void prefetch_init(const Bitu start) {
-    /* start must be DWORD aligned */
-    pq_start = pq_fill = start;
-    pq_valid = true;
-}
-
-static inline void prefetch_filldword(void) {
-    host_writed(&prefetch_buffer[pq_fill - pq_start],LoadMd(pq_fill));
-    pq_fill += 4/*DWORD*/;
-}
-
-static inline void prefetch_refill(const Bitu stop) {
-    while (pq_fill < stop) prefetch_filldword();
-}
-
-static inline void prefetch_lazyflush(const Bitu w) {
-    /* assume: prefetch buffer hit.
-     * assume: w >= pq_start + sizeof(T) and w + sizeof(T) <= pq_fill
-     * assume: prefetch buffer is full.
-     * assume: w is the memory address + sizeof(T)
-     * assume: pq_start is DWORD aligned.
-     * assume: CPU_PrefetchQueueSize >= 4 */
-    if ((w - pq_start) >= pq_limit) {
-        memmove(prefetch_buffer,prefetch_buffer+4,pq_limit-4);
-        pq_start += 4;
-
-        prefetch_filldword();
-#ifdef PREFETCH_DEBUG
-        assert(pq_start+pq_limit == pq_fill);
-#endif
-    }
-}
-
-/* this implementation follows what I think the Intel 80386/80486 is more likely
- * to do when fetching from prefetch and refilling prefetch --J.C. */
-template <class T> static inline T Fetch(void) {
-    T temp;
-
-    if (prefetch_hit<T>(core.cseip)) {
-        /* as long as prefetch hits are occurring, keep loading more! */
-        if ((pq_fill - pq_start) < pq_limit) {
-            prefetch_filldword();
-            if (sizeof(T) >= 4 && (pq_fill - pq_start) < pq_limit)
-                prefetch_filldword();
-        }
-        else {
-            prefetch_lazyflush(core.cseip + 4 + sizeof(T));
-        }
-
-        temp = prefetch_read<T>(core.cseip);
-#ifdef PREFETCH_DEBUG
-        pq_hit++;
-#endif
-    }
-    else {
-        prefetch_init(core.cseip & (~0x3)); /* fill prefetch starting on DWORD boundary */
-        prefetch_refill(pq_start + pq_reload); /* perhaps in the time it takes for a prefetch miss the 80486 can load two DWORDs */
-        temp = prefetch_read<T>(core.cseip);
-#ifdef PREFETCH_DEBUG
-        pq_miss++;
-#endif
-    }
-
-#ifdef PREFETCH_DEBUG
-    if (pq_valid) {
-        assert(core.cseip >= pq_start && (core.cseip+sizeof(T)) <= pq_fill);
-        assert(pq_fill >= pq_start && (pq_fill - pq_start) <= pq_limit);
-    }
-#endif
-
-    core.cseip += sizeof(T);
-    return temp;
-}
-
-static Bit8u Fetchb() {
+static uint8_t Fetchb() {
 	return Fetch<uint8_t>();
 }
 
-static Bit16u Fetchw() {
+static uint16_t Fetchw() {
 	return Fetch<uint16_t>();
 }
 
-static Bit32u Fetchd() {
+static uint32_t Fetchd() {
 	return Fetch<uint32_t>();
 }
 
@@ -275,12 +183,22 @@ bool CPU_WRMSR();
 void CPU_Core_Prefetch_reset(void) {
     pq_valid=false;
     prefetch_init(0);
+#ifdef PREFETCH_DEBUG
+    pq_next_dbg=0;
+#endif
 }
 
 Bits CPU_Core_Prefetch_Run(void) {
 	bool invalidate_pq=false;
 
-    pq_limit = CPU_PrefetchQueueSize & (~0x3u);
+    if (CPU_Cycles <= 0)
+	    return CBRET_NONE;
+
+    // FIXME: This makes 8086 4-byte prefetch queue impossible to emulate.
+    //        The best way to accomplish this is to have an alternate version
+    //        of this prefetch queue for 286 or lower that fetches in 16-bit
+    //        WORDs instead of 32-bit WORDs.
+    pq_limit = (max(CPU_PrefetchQueueSize,(unsigned int)(4ul + prefetch_unit)) + prefetch_unit - 1ul) & (~(prefetch_unit-1ul));
     pq_reload = min(pq_limit,(Bitu)8u);
 
 	while (CPU_Cycles-->0) {
@@ -289,7 +207,7 @@ Bits CPU_Core_Prefetch_Run(void) {
 			invalidate_pq=false;
 		}
 		LOADIP;
-		core.opcode_index=cpu.code.big*0x200u;
+		core.opcode_index=cpu.code.big*(Bitu)0x200u;
 		core.prefixes=cpu.code.big;
 		core.ea_table=&EATable[cpu.code.big*256u];
 		BaseDS=SegBase(ds);
@@ -300,12 +218,12 @@ Bits CPU_Core_Prefetch_Run(void) {
 		if (DEBUG_HeavyIsBreakpoint()) {
 			FillFlags();
 			return (Bits)debugCallback;
-		};
+		}
 #endif
 		cycle_count++;
 #endif
 restart_opcode:
-		Bit8u next_opcode=Fetchb();
+		uint8_t next_opcode=Fetchb();
 		invalidate_pq=false;
 		if (core.opcode_index&OPCODE_0F) invalidate_pq=true;
 		else switch (next_opcode) {
@@ -389,7 +307,7 @@ Bits CPU_Core_Prefetch_Trap_Run(void) {
 	cpu.trap_skip = false;
 
 	Bits ret=CPU_Core_Prefetch_Run();
-	if (!cpu.trap_skip) CPU_HW_Interrupt(1);
+	if (!cpu.trap_skip) CPU_DebugException(DBINT_STEP,reg_eip);
 	CPU_Cycles = oldCycles-1;
 	cpudecoder = &CPU_Core_Prefetch_Run;
 

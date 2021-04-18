@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -46,10 +46,10 @@ static Bitu call_int16 = 0,call_irq1 = 0,irq1_ret_ctrlbreak_callback = 0,call_ir
 /* Nice table from BOCHS i should feel bad for ripping this */
 #define none 0
 static struct {
-  Bit16u normal;
-  Bit16u shift;
-  Bit16u control;
-  Bit16u alt;
+  uint16_t normal;
+  uint16_t shift;
+  uint16_t control;
+  uint16_t alt;
   } scan_to_scanascii[MAX_SCAN_CODE + 1] = {
       {   none,   none,   none,   none },
       { 0x011b, 0x011b, 0x011b, 0x01f0 }, /* escape */
@@ -142,12 +142,12 @@ static struct {
       { 0x8600, 0x8800, 0x8a00, 0x8c00 }  /* F12 */
       };
 
-bool BIOS_AddKeyToBuffer(Bit16u code) {
+bool BIOS_AddKeyToBuffer(uint16_t code) {
     if (!IS_PC98_ARCH) {
         if (mem_readb(BIOS_KEYBOARD_FLAGS2)&8) return true;
     }
 
-    Bit16u start,end,head,tail,ttail;
+    uint16_t start,end,head,tail,ttail;
     if (IS_PC98_ARCH) {
         start=0x502;
         end=0x522;
@@ -195,12 +195,12 @@ bool BIOS_AddKeyToBuffer(Bit16u code) {
     return true;
 }
 
-static void add_key(Bit16u code) {
+static void add_key(uint16_t code) {
     if (code!=0 || IS_PC98_ARCH) BIOS_AddKeyToBuffer(code);
 }
 
-static bool get_key(Bit16u &code) {
-    Bit16u start,end,head,tail,thead;
+static bool get_key(uint16_t &code) {
+    uint16_t start,end,head,tail,thead;
     if (IS_PC98_ARCH) {
         start=0x502;
         end=0x522;
@@ -217,16 +217,16 @@ static bool get_key(Bit16u &code) {
     if (IS_PC98_ARCH) {
         head =mem_readw(0x524/*head*/);
         tail =mem_readw(0x526/*tail*/);
+
+        /* PC-98 BIOSes also manage a key counter, which is required for
+         * some games and even the PC-98 version of MS-DOS to detect keyboard input */
+        unsigned char b = real_readw(0,0x528);
+        if (b != 0) real_writew(0,0x528,b-1);
     }
     else {
         head =mem_readw(BIOS_KEYBOARD_BUFFER_HEAD);
         tail =mem_readw(BIOS_KEYBOARD_BUFFER_TAIL);
     }
-
-    /* PC-98 BIOSes also manage a key counter, which is required for
-     * some games and even the PC-98 version of MS-DOS to detect keyboard input */
-    unsigned char b = real_readw(0,0x528);
-    if (b != 0) real_writew(0,0x528,b-1);
 
     if (head==tail) return false;
     thead=head+2;
@@ -244,12 +244,12 @@ static bool get_key(Bit16u &code) {
     return true;
 }
 
-bool INT16_get_key(Bit16u &code) {
+bool INT16_get_key(uint16_t &code) {
     return get_key(code);
 }
 
-static bool check_key(Bit16u &code) {
-    Bit16u head,tail;
+static bool check_key(uint16_t &code) {
+    uint16_t head,tail;
 
     if (IS_PC98_ARCH) {
         head =mem_readw(0x524/*head*/);
@@ -270,7 +270,7 @@ static bool check_key(Bit16u &code) {
     return true;
 }
 
-bool INT16_peek_key(Bit16u &code) {
+bool INT16_peek_key(uint16_t &code) {
     return check_key(code);
 }
 
@@ -311,7 +311,8 @@ static void empty_keyboard_buffer() {
     */
 
 
-void KEYBOARD_SetLEDs(Bit8u bits);
+void KEYBOARD_SetLEDs(uint8_t bits);
+bool ctrlbrk=false;
 
 /* the scancode is in reg_al */
 static Bitu IRQ1_Handler(void) {
@@ -319,7 +320,7 @@ static Bitu IRQ1_Handler(void) {
  * states for numlock capslock. 
  */
     Bitu scancode=reg_al;
-    Bit8u flags1,flags2,flags3,leds,leds_orig;
+    uint8_t flags1,flags2,flags3,leds,leds_orig;
     flags1=mem_readb(BIOS_KEYBOARD_FLAGS1);
     flags2=mem_readb(BIOS_KEYBOARD_FLAGS2);
     flags3=mem_readb(BIOS_KEYBOARD_FLAGS3);
@@ -368,6 +369,13 @@ static Bitu IRQ1_Handler(void) {
     case 0xb6:                      /* Right Shift Released */
         flags1 &=~0x01;
         break;
+    case 0x37:						/* Keypad * or PrtSc Pressed */
+        if (!(flags3 & 0x02)) goto normal_key;
+        reg_ip += 7; // call int 5
+        break;
+    case 0xb7:						/* Keypad * or PrtSc Released */
+        if (!(flags3 & 0x02)) goto normal_key;
+        break;
     case 0x38:                      /* Alt Pressed */
         flags1 |=0x08;
         if (flags3 &0x02) flags3 |=0x08;
@@ -378,7 +386,7 @@ static Bitu IRQ1_Handler(void) {
         else flags2 &= ~0x02;
         if( !( (flags3 &0x08) || (flags2 &0x02) ) ) { /* Both alt released */
             flags1 &= ~0x08;
-            Bit16u token =mem_readb(BIOS_KEYBOARD_TOKEN);
+            uint16_t token =mem_readb(BIOS_KEYBOARD_TOKEN);
             if(token != 0){
                 add_key(token);
                 mem_writeb(BIOS_KEYBOARD_TOKEN,0);
@@ -437,11 +445,16 @@ static Bitu IRQ1_Handler(void) {
     case 0x46:                      /* Scroll Lock or Ctrl-Break */
         /* if it has E0 prefix, or is Ctrl-NumLock on non-enhanced keyboard => Break */
         if((flags3&0x02) || (!(flags3&0x10) && (flags1&0x04))) {                /* Ctrl-Break? */
+            ctrlbrk=true;
             /* remove 0xe0-prefix */
             flags3 &=~0x02;
             mem_writeb(BIOS_KEYBOARD_FLAGS3,flags3);
             mem_writeb(BIOS_CTRL_BREAK_FLAG,0x80);
             empty_keyboard_buffer();
+            /* NTS: Real hardware shows that, at least through INT 16h, CTRL+BREAK injects
+             *      scan code word 0x0000 into the keyboard buffer. Upon CTRL+BREAK, 0x0000
+             *      appears in the keyboard buffer, which INT 16h AH=1h/AH=11h will signal as
+             *      an available scan code, and INT 16h AH=0h/10h will return with ZF=0. */
             BIOS_AddKeyToBuffer(0);
             SegSet16(cs, RealSeg(CALLBACK_RealPointer(irq1_ret_ctrlbreak_callback)));
             reg_ip = RealOff(CALLBACK_RealPointer(irq1_ret_ctrlbreak_callback));
@@ -456,6 +469,7 @@ static Bitu IRQ1_Handler(void) {
         } else {
             flags1 ^=0x10;flags2 &=~0x10;leds ^=0x01;break;     /* Scroll Lock released */
         }
+        break;
     case 0xd2: /* NUMPAD insert, ironically, regular one is handled by 0x52 */
 		if (flags3 & BIOS_KEYBOARD_FLAGS3_HIDDEN_E0 || !(flags1 & BIOS_KEYBOARD_FLAGS1_NUMLOCK_ACTIVE))
 		{
@@ -474,6 +488,10 @@ static Bitu IRQ1_Handler(void) {
     case 0x51:
     case 0x52:
     case 0x53: /* del . Not entirely correct, but works fine */
+        if (scancode == 0x53 && !(flags3 & 0x01) && !(flags1 & 0x03) && (flags1 & 0x0c) == 0x0c && ((!(flags3 & 0x10) && (flags3 & 0x0c) == 0x0c) || ((flags3 & 0x10) && (flags2 & 0x03) == 0x03))) { /* Ctrl-Alt-Del? */
+			throw int(3);
+            break;
+		}
         if(flags3 &0x02) {  /*extend key. e.g key above arrows or arrows*/
             if(scancode == 0x52) flags2 |=0x80; /* press insert */         
             if(flags1 &0x08) {
@@ -486,8 +504,8 @@ static Bitu IRQ1_Handler(void) {
             break;
         }
         if(flags1 &0x08) {
-            Bit8u token = mem_readb(BIOS_KEYBOARD_TOKEN);
-            token = token*10 + (Bit8u)(scan_to_scanascii[scancode].alt&0xff);
+            uint8_t token = mem_readb(BIOS_KEYBOARD_TOKEN);
+            token = token*10 + (uint8_t)(scan_to_scanascii[scancode].alt&0xff);
             mem_writeb(BIOS_KEYBOARD_TOKEN,token);
         } else if (flags1 &0x04) {
             add_key(scan_to_scanascii[scancode].control);
@@ -497,7 +515,10 @@ static Bitu IRQ1_Handler(void) {
         break;
 
     default: /* Normal Key */
-        Bit16u asciiscan;
+        if (scancode==0x2e && !(flags3 & 0x01) && (flags1&0x04))
+            ctrlbrk=true;
+    normal_key:
+        uint16_t asciiscan;
         /* Now Handle the releasing of keys and see if they match up for a code */
         /* Handle the actual scancode */
         if (scancode & 0x80) goto irq1_end;
@@ -540,7 +561,7 @@ static Bitu IRQ1_Handler(void) {
         }
         add_key(asciiscan);
         break;
-    };
+    }
 irq1_end:
     if(scancode !=0xe0) flags3 &=~0x02;                                 //Reset 0xE0 Flag
     mem_writeb(BIOS_KEYBOARD_FLAGS1,flags1);
@@ -553,27 +574,38 @@ irq1_end:
     if (leds_orig != leds) KEYBOARD_SetLEDs(leds);
 
     /* update insert cursor */
+    /* FIXME: Wait a second... I doubt the BIOS IRQ1 handler does this! The program (or DOS prompt) decides whether INS changes cursor shape! */
     extern bool dos_program_running;
     if (!dos_program_running)
     {
+        /* As long as this hack exists... maintain the cursor's invisible state if invisible so it
+         * does not reappear unexpectedly when the user presses Insert. Though long term, this should
+         * be handled by the shell, not the keyboard ISR */
+        const auto invisible = static_cast<bool>(real_readw(BIOSMEM_SEG,BIOSMEM_CURSOR_TYPE) & 0x2000); /* NTS: Written (last|(first<<8)) and (first & 0x20) means invisible */
         const auto flg = mem_readb(BIOS_KEYBOARD_FLAGS1);
         const auto ins = static_cast<bool>(flg & BIOS_KEYBOARD_FLAGS1_INSERT_ACTIVE);
-        const auto ssl = static_cast<Bit8u>(ins ? CURSOR_SCAN_LINE_INSERT : CURSOR_SCAN_LINE_NORMAL);
-        if (CurMode->type == M_TEXT)
-            INT10_SetCursorShape(ssl, CURSOR_SCAN_LINE_END);
+        const auto ssl = static_cast<uint8_t>(ins ? CURSOR_SCAN_LINE_INSERT : CURSOR_SCAN_LINE_NORMAL);
+        if (CurMode->type == M_TEXT) {
+            if (machine==MCH_MDA||machine==MCH_HERC)
+                INT10_SetCursorShape((ssl + 6) | (invisible?0x20:0x00), CURSOR_SCAN_LINE_END + 6); /* 14 - 8 = 6 */
+            else
+                INT10_SetCursorShape(ssl | (invisible?0x20:0x00), CURSOR_SCAN_LINE_END);
+        }
     }
 					
 /*  IO_Write(0x20,0x20); moved out of handler to be virtualizable */
 #if 0
 /* Signal the keyboard for next code */
 /* In dosbox port 60 reads do this as well */
-    Bit8u old61=IO_Read(0x61);
+    uint8_t old61=IO_Read(0x61);
     IO_Write(0x61,old61 | 128);
     IO_Write(0x64,0xae);
 #endif
     return CBRET_NONE;
 }
 
+bool CPU_PUSHF(Bitu use32);
+void CPU_Push16(uint16_t value);
 unsigned char AT_read_60(void);
 extern bool pc98_force_ibm_layout;
 
@@ -594,24 +626,22 @@ extern bool pc98_force_ibm_layout;
  * NFER         0x5100      0xA100      0xB100  0x5100  0x5100  0xA100
  * GRPH         --          --          --      --      --      --
  * TAB          0x0F09      0x0F09      0x0F09  0x0F09  0x0F09  0x0F09
- * - / 口       --          --          --      --      0x33DB  0x33DB      Kana+CTRL = 0x331F
+ * - / 口       --          0x335F      0x331F  --      0x33DB  0x33DB      Kana+CTRL = 0x331F
  */
 static Bitu IRQ1_Handler_PC98(void) {
-    unsigned char sc_8251,status;
+    unsigned char status;
     unsigned int patience = 32;
-    Bit16u scan_add;
-    bool pressed;
 
     status = IO_ReadB(0x43); /* 8251 status */
     while (status & 2/*RxRDY*/) {
-        sc_8251 = IO_ReadB(0x41); /* 8251 data */
+        unsigned char sc_8251 = IO_ReadB(0x41); /* 8251 data */
 
-        pressed = !(sc_8251 & 0x80);
+        bool pressed = !(sc_8251 & 0x80);
         sc_8251 &= 0x7F;
 
         /* Testing on real hardware shows INT 18h AH=0 returns raw scancode in upper half, ASCII in lower half.
          * Just like INT 16h on IBM PC hardware */
-        scan_add = sc_8251 << 8U;
+        uint16_t scan_add = sc_8251 << 8U;
 
         /* NOTES:
          *  - The bitmap also tracks CAPS, and KANA state. It does NOT track NUM state.
@@ -629,8 +659,9 @@ static Bitu IRQ1_Handler_PC98(void) {
          *    bit[1] = CAPS engaged
          *    bit[0] = SHIFT is down
          */
-        Bit8u modflags = mem_readb(0x52A + 0xE);
+        uint8_t modflags = mem_readb(0x52A + 0xE);
 
+        bool ctrl = !!(modflags & 0x10);
         bool caps_capitals = (modflags & 1) ^ ((modflags >> 1) & 1); /* CAPS XOR SHIFT */
 
         /* According to Neko Project II, the BIOS maintains a "pressed key" bitmap at 0x50:0x2A.
@@ -647,6 +678,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 c &= ~b;
 
             mem_writeb(o,c);
+
+            /* mirror CTRL+GRAPH+KANA+CAPS+SHIFT at 0x53A which is returned by INT 18h AH=2 */
+            if (o == 0x538) mem_writeb(0x53A,c);
         }
 
         /* NOTES:
@@ -854,7 +888,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x10: // q
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'q' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'Q');
                     else
                         add_key(scan_add + 'q');
@@ -862,7 +898,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x11: // w
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'w' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'W');
                     else
                         add_key(scan_add + 'w');
@@ -870,7 +908,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x12: // e
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'e' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'E');
                     else
                         add_key(scan_add + 'e');
@@ -878,7 +918,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x13: // r
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'r' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'R');
                     else
                         add_key(scan_add + 'r');
@@ -886,7 +928,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x14: // t
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 't' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'T');
                     else
                         add_key(scan_add + 't');
@@ -894,7 +938,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x15: // y
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'y' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'Y');
                     else
                         add_key(scan_add + 'y');
@@ -902,7 +948,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x16: // u
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'u' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'U');
                     else
                         add_key(scan_add + 'u');
@@ -910,7 +958,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x17: // i
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'i' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'I');
                     else
                         add_key(scan_add + 'i');
@@ -918,7 +968,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x18: // o
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'o' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'O');
                     else
                         add_key(scan_add + 'o');
@@ -926,7 +978,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x19: // p
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'p' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'P');
                     else
                         add_key(scan_add + 'p');
@@ -960,7 +1014,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x1D: // A
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'a' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'A');
                     else
                         add_key(scan_add + 'a');
@@ -968,7 +1024,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x1E: // S
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 's' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'S');
                     else
                         add_key(scan_add + 's');
@@ -976,7 +1034,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x1F: // D
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'd' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'D');
                     else
                         add_key(scan_add + 'd');
@@ -984,7 +1044,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x20: // F
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'f' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'F');
                     else
                         add_key(scan_add + 'f');
@@ -992,7 +1054,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x21: // G
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'g' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'G');
                     else
                         add_key(scan_add + 'g');
@@ -1000,7 +1064,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x22: // H
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'h' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'H');
                     else
                         add_key(scan_add + 'h');
@@ -1008,7 +1074,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x23: // J
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'j' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'J');
                     else
                         add_key(scan_add + 'j');
@@ -1016,7 +1084,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x24: // K
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'k' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'K');
                     else
                         add_key(scan_add + 'k');
@@ -1024,7 +1094,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x25: // L
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'l' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'L');
                     else
                         add_key(scan_add + 'l');
@@ -1068,7 +1140,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x29: // Z
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'z' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'Z');
                     else
                         add_key(scan_add + 'z');
@@ -1076,7 +1150,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2A: // X
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'x' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'X');
                     else
                         add_key(scan_add + 'x');
@@ -1084,7 +1160,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2B: // C
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'c' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'C');
                     else
                         add_key(scan_add + 'c');
@@ -1092,7 +1170,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2C: // V
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'v' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'V');
                     else
                         add_key(scan_add + 'v');
@@ -1100,7 +1180,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2D: // B
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'b' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'B');
                     else
                         add_key(scan_add + 'b');
@@ -1108,7 +1190,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2E: // N
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'n' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'N');
                     else
                         add_key(scan_add + 'n');
@@ -1116,7 +1200,9 @@ static Bitu IRQ1_Handler_PC98(void) {
                 break;
             case 0x2F: // M
                 if (pressed) {
-                    if (caps_capitals) /* shift */
+                    if (ctrl)
+                        add_key(scan_add + 'm' + 1 - 'a');
+                    else if (caps_capitals) /* shift */
                         add_key(scan_add + 'M');
                     else
                         add_key(scan_add + 'm');
@@ -1144,6 +1230,14 @@ static Bitu IRQ1_Handler_PC98(void) {
                         add_key(scan_add + '?');
                     else
                         add_key(scan_add + '/');
+                }
+                break;
+            case 0x33: //  _ / Ro
+                if (pressed) {
+                    if (modflags & 1) /* shift */
+                        add_key(scan_add + '_');
+                    else
+                        { /*nothing*/ }
                 }
                 break;
             case 0x34: // <space>
@@ -1238,8 +1332,45 @@ static Bitu IRQ1_Handler_PC98(void) {
                 }
                 break;
 
+            case 0x52: // VF1           vf･1    ???     ???     ???     ???
+            case 0x53: // VF2           vf･2    ???     ???     ???     ???
+            case 0x54: // VF3           vf･3    ???     ???     ???     ???
+            case 0x55: // VF4           vf･4    ???     ???     ???     ???
+            case 0x56: // VF5           vf･5    ???     ???     ???     ???
+                if (pressed) {
+                    if (modflags & 0x10) /* CTRL */
+                        add_key(scan_add + 0x8000); /* 0xD2-0xD6 */
+                    else if (modflags & 1) /* SHIFT */
+                        add_key(scan_add + 0x7000); /* 0xC2-0xC6 */
+                    else
+                        add_key(scan_add + 0x0000); /* 0x52-0x56 */
+                }
+                break;
+
             case 0x60: // STOP
-                // does not pass it on
+                // does not pass it on.
+                // According to Neko Project II source code, STOP invokes INT 6h
+                // which is PC-98's version of the break interrupt IBM maps to INT 1Bh.
+                // Obviously defined before Intel decided that INT 6h is the Invalid
+                // Opcode exception. Booting PC-98 MS-DOS and looking at the INT 6h
+                // interrupt handler in the debugger confirms this.
+                if (pressed) {
+                    /* push an IRET frame pointing at INT 06h. */
+
+                    /* we can't just CALLBACK_RunRealInt() here because we're in the
+                     * middle of an ISR and we need to acknowledge the interrupt to
+                     * the PIC before we call INT 06h. Funny things happen otherwise,
+                     * including an unresponsive keyboard. */
+
+                    /* I noticed that Neko Project II has the code to emulate this,
+                     * as a direct call to run a CPU interrupt, but it's commented
+                     * out for probably the same issue. */
+                    const uint32_t cb = real_readd(0,0x06u * 4u);
+
+                    CPU_PUSHF(0);
+                    CPU_Push16((uint16_t)(cb >> 16u));
+                    CPU_Push16((uint16_t)(cb & 0xFFFFu));
+                }
                 break;
 
             case 0x62: // F1            f･1     ???     ???     ???     ???
@@ -1271,6 +1402,9 @@ static Bitu IRQ1_Handler_PC98(void) {
             case 0x72: // kana. do nothing
                 break;
 
+            case 0x73: // graph. do nothing
+                break;
+
             case 0x74: // left/right ctrl. do nothing
                 break;
 
@@ -1300,14 +1434,13 @@ static Bitu PCjr_NMI_Keyboard_Handler(void) {
 }
 
 static Bitu IRQ1_CtrlBreakAfterInt1B(void) {
-    BIOS_AddKeyToBuffer(0x0000);
     return CBRET_NONE;
 }
 
 
 /* check whether key combination is enhanced or not,
    translate key if necessary */
-static bool IsEnhancedKey(Bit16u &key) {
+static bool IsEnhancedKey(uint16_t &key) {
     if (IS_PC98_ARCH)
         return false;
 
@@ -1334,15 +1467,25 @@ static bool IsEnhancedKey(Bit16u &key) {
     return false;
 }
 
+extern bool DOS_BreakFlag;
+extern bool DOS_BreakConioFlag;
+
 bool int16_unmask_irq1_on_read = true;
 bool int16_ah_01_cf_undoc = true;
 
 Bitu INT16_Handler(void) {
-    Bit16u temp=0;
+    uint16_t temp=0;
     switch (reg_ah) {
     case 0x00: /* GET KEYSTROKE */
         if (int16_unmask_irq1_on_read)
             PIC_SetIRQMask(1,false); /* unmask keyboard */
+
+        // HACK: Make STOP key work
+        if (IS_PC98_ARCH && DOS_BreakConioFlag) {
+            DOS_BreakConioFlag=false;
+            reg_ax=0;
+            return CBRET_NONE;
+        }
 
         if ((get_key(temp)) && (!IsEnhancedKey(temp))) {
             /* normal key found, return translated key in ax */
@@ -1355,6 +1498,13 @@ Bitu INT16_Handler(void) {
     case 0x10: /* GET KEYSTROKE (enhanced keyboards only) */
         if (int16_unmask_irq1_on_read)
             PIC_SetIRQMask(1,false); /* unmask keyboard */
+
+        // HACK: Make STOP key work
+        if (IS_PC98_ARCH && DOS_BreakConioFlag) {
+            DOS_BreakConioFlag=false;
+            reg_ax=0;
+            return CBRET_NONE;
+        }
 
         if (get_key(temp)) {
             if (!IS_PC98_ARCH && ((temp&0xff)==0xf0) && (temp>>8)) {
@@ -1400,6 +1550,16 @@ Bitu INT16_Handler(void) {
         if (int16_unmask_irq1_on_read)
             PIC_SetIRQMask(1,false); /* unmask keyboard */
 
+        /* NOTE: The FreeDOS EDIT.COM editor built into DOSBox-X has a problem where if
+         *       this call return AX=0 and ZF=0, it will treat it the same as if we had
+         *       returned ZF=1 to indicate no scan code. Unfortunately scan code 0x0000
+         *       is added to the buffer for CTRL+BREAK, meaning that if you hit CTRL+BREAK
+         *       while using EDIT.COM, you effectively disable all keyboard input to the
+         *       program until you exit, or trick the program into reading the scan code
+         *       to remove it from the buffer.
+         *
+         * TODO: If you run EDIT.COM on real MS-DOS, does the same problem come up? */
+
         if (!check_key(temp)) {
             CALLBACK_SZF(true);
         } else {
@@ -1443,7 +1603,7 @@ Bitu INT16_Handler(void) {
         LOG(LOG_BIOS,LOG_ERROR)("INT16:Unhandled call %02X",reg_ah);
         break;
 
-    };
+    }
 
     return CBRET_NONE;
 }
@@ -1476,8 +1636,8 @@ static void InitBiosSegment(void) {
         mem_writew(BIOS_KEYBOARD_BUFFER_END,0x3e);
         mem_writew(BIOS_KEYBOARD_BUFFER_HEAD,0x1e);
         mem_writew(BIOS_KEYBOARD_BUFFER_TAIL,0x1e);
-        Bit8u flag1 = 0;
-        Bit8u leds = 16; /* Ack received */
+        uint8_t flag1 = 0;
+        uint8_t leds = 16; /* Ack received */
 
 #if 0 /*SDL_VERSION_ATLEAST(1, 2, 14)*/
         //Nothing, mapper handles all.
@@ -1545,7 +1705,7 @@ void BIOS_SetupKeyboard(void) {
 
         CALLBACK_Setup(call_irq_pcjr_nmi,&PCjr_NMI_Keyboard_Handler,CB_IRET,"PCjr NMI Keyboard");
 
-        Bit32u a = CALLBACK_RealPointer(call_irq_pcjr_nmi);
+        uint32_t a = CALLBACK_RealPointer(call_irq_pcjr_nmi);
 
         RealSetVec(0x02/*NMI*/,a);
 
@@ -1582,6 +1742,14 @@ void BIOS_SetupKeyboard(void) {
         //  out 0x20, al
         //  pop ax
         //  iret
+        //  cli
+        //  mov al, 0x20
+        //  out 0x20, al
+        //  push bp
+        //  int 0x05
+        //  pop bp
+        //  pop ax
+        //  iret
     }
 
     irq1_ret_ctrlbreak_callback=CALLBACK_Allocate();
@@ -1604,7 +1772,11 @@ void BIOS_SetupKeyboard(void) {
         //  in al, 0x60
         //  cmp al, 0xe0
         //  je skip
+        //  push ds
+        //  push 0x40
+        //  pop ds
         //  int 0x09
+        //  pop ds
         //  label skip:
         //  cli
         //  mov al, 0x20

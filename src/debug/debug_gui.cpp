@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2020  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -21,6 +21,13 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
+#include <errno.h>
+#include <fstream>
+
+#if defined(WIN32)
+#include <conio.h>
+#include <SDL.h>
+#endif
 
 #include "dosbox.h"
 #include "logging.h"
@@ -35,6 +42,9 @@
 #include <exception>
 
 using namespace std;
+
+bool log_int21 = false;
+bool log_fileio = false;
 
 static bool has_LOG_Init = false;
 static bool has_LOG_EarlyInit = false;
@@ -68,7 +78,7 @@ std::string DBGBlock::windowlist_by_name(void) {
 }
 
 const unsigned int dbg_def_win_height[DBGBlock::WINI_MAX_INDEX] = {
-    5,          /* WINI_REG */
+    7,          /* WINI_REG */
     9,          /* WINI_DATA */
     12,         /* WINI_CODE */
     5,          /* WINI_VAR */
@@ -96,6 +106,16 @@ static list<string> logBuff;
 static list<string>::iterator logBuffPos = logBuff.end();
 
 extern int old_cursor_state;
+
+bool savetologfile(const char *name) {
+    std::ofstream out(name);
+    if (!out.is_open()) return false;
+    std::list<string>::iterator it;
+    for (it = logBuff.begin(); it != logBuff.end(); ++it)
+        out << (std::string)(*it) << endl;
+    out.close();
+    return true;
+}
 
 const char *DBGBlock::get_winname(int idx) {
     if (idx >= 0 && idx < DBGBlock::WINI_MAX_INDEX)
@@ -251,11 +271,11 @@ void DEBUG_RefreshPage(char scroll) {
 	if (dbg.win_out == NULL) return;
 
 	while (scroll < 0 && logBuffPos!=logBuff.begin()) {
-        logBuffPos--;
+        --logBuffPos;
         scroll++;
     }
 	while (scroll > 0 && logBuffPos!=logBuff.end()) {
-        logBuffPos++;
+        ++logBuffPos;
         scroll--;
     }
 
@@ -281,7 +301,7 @@ void DEBUG_RefreshPage(char scroll) {
      *
      *      rem_lines starts out as the number of lines in the subwin. */
     if (i != logBuff.begin()) {
-        i--;
+        --i;
 
         wattrset(dbg.win_out,0);
         while (rem_lines > 0) {
@@ -290,7 +310,7 @@ void DEBUG_RefreshPage(char scroll) {
             DBGUI_DrawDebugOutputLine(rem_lines,*i);
 
             if (i != logBuff.begin())
-                i--;
+                --i;
             else
                 break;
         }
@@ -341,6 +361,18 @@ static void Draw_RegisterLayout(void) {
 	mvwaddstr(dbg.win_reg,2,75,"CPL");
 	mvwaddstr(dbg.win_reg,2,68,"IOPL");
 
+	mvwaddstr(dbg.win_reg,4,0,"ST0=");
+	mvwaddstr(dbg.win_reg,5,0,"ST4=");
+
+	mvwaddstr(dbg.win_reg,4,14,"ST1=");
+	mvwaddstr(dbg.win_reg,5,14,"ST5=");
+
+	mvwaddstr(dbg.win_reg,4,28,"ST2=");
+	mvwaddstr(dbg.win_reg,5,28,"ST6=");
+
+	mvwaddstr(dbg.win_reg,4,42,"ST3=");
+	mvwaddstr(dbg.win_reg,5,42,"ST7=");
+
 	mvwaddstr(dbg.win_reg,1,52,"C  Z  S  O  A  P  D  I  T ");
 }
 
@@ -351,7 +383,7 @@ static void DrawSubWinBox(WINDOW *wnd,const char *title) {
 
     if (wnd == NULL) return;
 
-    WINDOW *active_win = dbg.get_active_win();
+    const WINDOW *active_win = dbg.get_active_win();
 
     if (wnd == active_win)
         active = true;
@@ -390,7 +422,7 @@ static void DestroySubWindows(void) {
         WINDOW* &ref = dbg.get_win_ref((int)wnd);
 
         if (ref != NULL) {
-            if (ref) delwin(ref);
+            delwin(ref);
             ref = NULL;
         }
     }
@@ -458,7 +490,7 @@ static void MakeSubWindows(void) {
 
             /* add height to the window */
             yheight[wndi] += (unsigned int)expand_by;
-            outy += (int)wndi;
+            outy += (int)expand_by;
             wndi++;
 
             /* move the others down */
@@ -524,12 +556,33 @@ bool DEBUG_IsDebuggerConsoleVisible(void) {
 	return (dbg.win_main != NULL);
 }
 
+void DEBUG_FlushInput(void) {
+    if (dbg.win_main != NULL) {
+        while (getch() >= 0); /* remember nodelay() is called to make getch() non-blocking */
+    }
+}
+
 void DBGUI_StartUp(void) {
-	mainMenu.get_item("show_console").check(true).refresh_item(mainMenu);
+	mainMenu.get_item("show_console").check(true).enable(false).refresh_item(mainMenu);
 
 	LOG(LOG_MISC,LOG_DEBUG)("DEBUG GUI startup");
 	/* Start the main window */
 	dbg.win_main=initscr();
+
+#ifdef WIN32
+    /* Tell Windows 10 we DONT want a thin tall console window that fills the screen top to bottom.
+       It's a nuisance especially when the user attempts to move the windwo up to the top to see
+       the status, only for Windows to auto-maximize. 30 lines is enough, thanks. */
+    {
+        if (dbg.win_main) {
+            int win_main_maxy, win_main_maxx; getmaxyx(dbg.win_main, win_main_maxy, win_main_maxx);
+            if (win_main_maxx > 100) win_main_maxy = 100;
+            if (win_main_maxy > 40) win_main_maxy = 40;
+            resize_term(win_main_maxy, win_main_maxx);
+        }
+    }
+#endif
+
 	cbreak();       /* take input chars one at a time, no wait for \n */
 	noecho();       /* don't echo input */
 	scrollok(stdscr,false);
@@ -577,6 +630,10 @@ void DEBUG_EndPagedContent(void) {
 #endif
 }
 
+extern bool gfx_in_mapper;
+
+bool in_debug_showmsg = false;
+
 bool IsDebuggerActive(void);
 
 void DEBUG_ShowMsg(char const* format,...) {
@@ -585,12 +642,16 @@ void DEBUG_ShowMsg(char const* format,...) {
 	va_list msg;
 	size_t len;
 
+    in_debug_showmsg = true;
+
     // in case of runaway error from the CPU core, user responsiveness can be helpful
     CPU_CycleLeft += CPU_Cycles;
     CPU_Cycles = 0;
 
-    void GFX_Events();
-    GFX_Events();
+    if (!gfx_in_mapper && !in_debug_showmsg) {
+        void GFX_Events();
+        GFX_Events();
+    }
 
     va_start(msg,format);
 	len = (size_t)vsnprintf(buf,sizeof(buf)-2u,format,msg); /* <- NTS: Did you know sprintf/vsnprintf returns number of chars written? */
@@ -599,14 +660,14 @@ void DEBUG_ShowMsg(char const* format,...) {
     /* remove newlines if present */
     while (len > 0 && buf[len-1] == '\n') buf[--len] = 0;
 
-	if (do_LOG_stderr || debuglog == NULL)
-		stderrlog = true;
-
 #if C_DEBUG
 	if (dbg.win_out != NULL)
 		stderrlog = false;
     else
         stderrlog = true;
+#else
+	if (do_LOG_stderr || debuglog == NULL)
+		stderrlog = true;
 #endif
 
 	if (debuglog != NULL) {
@@ -634,7 +695,7 @@ void DEBUG_ShowMsg(char const* format,...) {
 	logBuff.push_back(buf);
 	if (logBuff.size() > MAX_LOG_BUFFER) {
         logBuffHasDiscarded = true;
-        if (logBuffPos == logBuff.begin()) logBuffPos++; /* keep the iterator valid */
+        if (logBuffPos == logBuff.begin()) ++logBuffPos; /* keep the iterator valid */
 		logBuff.pop_front();
     }
 
@@ -659,15 +720,22 @@ void DEBUG_ShowMsg(char const* format,...) {
 
     if (IsDebuggerActive() && debugPageStopAt > 0) {
         if (++debugPageCounter >= debugPageStopAt) {
-            int key;
-
             debugPageCounter = 0;
             DEBUG_RefreshPage(0);
             DEBUG_DrawInput();
 
             /* pause, wait for input */
             do {
-                key = getch();
+#if defined(WIN32)
+                int key;
+
+                if (kbhit())
+                    key = getch();
+                else
+                    key = -1;
+#else
+                int key = getch();
+#endif
                 if (key > 0) {
                     if (key == ' ' || key == 0x0A) {
                         /* continue */
@@ -680,10 +748,23 @@ void DEBUG_ShowMsg(char const* format,...) {
                         break;
                     }
                 }
+
+#if defined(WIN32)
+                /* help inspire confidence in users and in Windows by keeping the event loop going.
+                   This is to prevent Windows from graying out the main window during this loop
+                   as "application not responding" */
+                SDL_Event ev;
+
+                if (SDL_PollEvent(&ev)) {
+                    /* TODO */
+                }
+#endif
             } while (1);
         }
     }
 #endif
+
+    in_debug_showmsg = false;
 }
 
 /* callback function when DOSBox-X exits */
@@ -709,7 +790,7 @@ void LOG::operator() (char const* format, ...){
 		case LOG_ERROR: s_severity = " ERROR"; break;
 		case LOG_FATAL: s_severity = " FATAL"; break;
 		default: break;
-	};
+	}
 
 	va_start(msg,format);
 	vsnprintf(buf,sizeof(buf)-1,format,msg);
@@ -717,7 +798,7 @@ void LOG::operator() (char const* format, ...){
 
 	if (d_type>=LOG_MAX) return;
 	if (d_severity < loggrp[d_type].min_severity) return;
-	DEBUG_ShowMsg("%10u%s %s:%s\n",static_cast<Bit32u>(cycle_count),s_severity,loggrp[d_type].front,buf);
+	DEBUG_ShowMsg("%10u%s %s:%s\n",static_cast<uint32_t>(cycle_count),s_severity,loggrp[d_type].front,buf);
 }
 
 void LOG::ParseEnableSetting(_LogGroup &group,const char *setting) {
@@ -739,8 +820,9 @@ void LOG::ParseEnableSetting(_LogGroup &group,const char *setting) {
 		group.min_severity = LOG_NORMAL;
 }
 
+void ResolvePath(std::string& in);
 void LOG::Init() {
-	char buf[1024];
+	char buf[64];
 
 	assert(control != NULL);
 
@@ -752,18 +834,19 @@ void LOG::Init() {
 	LOG_MSG("Logging init: beginning logging proper. This is the end of the early init logging");
 
 	/* get the [log] section */
-	Section_prop *sect = static_cast<Section_prop *>(control->GetSection("log"));
+	const Section_prop *sect = static_cast<Section_prop *>(control->GetSection("log"));
 	assert(sect != NULL);
 
 	/* do we write to a logfile, or not? */
-	const char *blah = sect->Get_string("logfile");
-	if (blah != NULL && blah[0] != 0) {
-		if ((debuglog=fopen(blah,"wt+")) != NULL) {
-			LOG_MSG("Logging: opened logfile '%s' successfully. All further logging will go to that file.",blah);
+	std::string logfile = sect->Get_string("logfile");
+	if (logfile.size()) {
+		ResolvePath(logfile);
+		if ((debuglog=fopen(logfile.c_str(),"wt+")) != NULL) {
+			LOG_MSG("Logging: opened logfile '%s' successfully. All further logging will go to this file.",logfile.c_str());
 			setbuf(debuglog,NULL);
 		}
 		else {
-			LOG_MSG("Logging: failed to open logfile '%s'. All further logging will be discarded. Error: %s",blah,strerror(errno));
+			LOG_MSG("Logging: failed to open logfile '%s'. All further logging will be discarded. Error: %s",logfile.c_str(),strerror(errno));
 		}
 	}
 	else {
@@ -771,14 +854,16 @@ void LOG::Init() {
 		debuglog=0;
 	}
 
+    log_int21 = sect->Get_bool("int21") || control->opt_logint21;
+    log_fileio = sect->Get_bool("fileio") || control->opt_logfileio;
+
 	/* end of early init logging */
 	do_LOG_stderr = false;
 
 	/* read settings for each log category, unless the -debug option was given,
 	 * in which case everything is set to debug level */
-	for (Bitu i=1;i<LOG_MAX;i++) {
-		strcpy(buf,loggrp[i].front);
-		buf[strlen(buf)]=0;
+	for (Bitu i = LOG_ALL + 1;i < LOG_MAX;i++) { //Skip LOG_ALL, it is always enabled
+		safe_strncpy(buf,loggrp[i].front,sizeof(buf));
 		lowcase(buf);
 
 		if (control->opt_debug)
@@ -861,14 +946,23 @@ void LOG::SetupConfigSection(void) {
 	Section_prop * sect=control->AddSection_prop("log",Null_Init);
 	Prop_string* Pstring = sect->Add_string("logfile",Property::Changeable::Always,"");
 	Pstring->Set_help("file where the log messages will be saved to");
-	char buf[1024];
-	for (Bitu i=1;i<LOG_MAX;i++) {
-		strcpy(buf,loggrp[i].front);
+	Pstring->SetBasic(true);
+	char buf[64];
+	for (Bitu i = LOG_ALL + 1;i < LOG_MAX;i++) {
+		safe_strncpy(buf,loggrp[i].front, sizeof(buf));
 		lowcase(buf);
 
 		Pstring = sect->Add_string(buf,Property::Changeable::Always,"false");
 		Pstring->Set_values(log_values);
 		Pstring->Set_help("Enable/Disable logging of this type.");
-	}
+    }
+
+    Prop_bool* Pbool;
+
+    Pbool = sect->Add_bool("int21",Property::Changeable::Always,false);
+    Pbool->Set_help("Log all INT 21h calls");
+
+    Pbool = sect->Add_bool("fileio",Property::Changeable::Always,false);
+    Pbool->Set_help("Log file I/O through INT 21h");
 }
 

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2018  Jon Campbell
+ *  Copyright (C) 2018-2020  Jon Campbell
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include "dosbox.h"
@@ -59,7 +59,7 @@ Bitu pc98_a1_read(Bitu port,Bitu iolen) {
             return pc98_font_char_read(a1_font_load_addr,a1_font_char_offset & 0xF,(a1_font_char_offset & 0x20) ? 0 : 1);
         default:
             break;
-    };
+    }
 
     return ~0ul;
 }
@@ -88,7 +88,7 @@ void pc98_a1_write(Bitu port,Bitu val,Bitu iolen) {
              *    bit [3:0] = C3-C0
              *
              * This so far is consistent with real hardware behavior */
-            a1_font_char_offset = val;
+            a1_font_char_offset = (uint8_t)val;
             break;
         case 0xA7:
             /* TODO: Various controls for the text layer */
@@ -117,13 +117,13 @@ void pc98_a1_write(Bitu port,Bitu val,Bitu iolen) {
                    // by the hardware (since that conflicts with single-wide chars) but you can
                    // write to that cell if you write to 0x8056 instead.
             if ((a1_font_load_addr & 0x007E) == 0x0056 && (a1_font_load_addr & 0xFF00) != 0x0000)
-                pc98_font_char_write(a1_font_load_addr,a1_font_char_offset & 0xF,(a1_font_char_offset & 0x20) ? 0 : 1,val);
+                pc98_font_char_write(a1_font_load_addr,a1_font_char_offset & 0xF,(a1_font_char_offset & 0x20) ? 0 : 1,(uint8_t)val);
             else
                 LOG_MSG("A1 port attempt to write FONT ROM char 0x%x",a1_font_load_addr);
             break;
         default:
-            LOG_MSG("A1 port %lx val %lx unexpected",port,val);
+            LOG_MSG("A1 port %lx val %lx unexpected",(unsigned long)port,(unsigned long)val);
             break;
-    };
+    }
 }
 

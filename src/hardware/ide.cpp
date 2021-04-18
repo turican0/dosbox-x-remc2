@@ -38,6 +38,8 @@
 # pragma warning(disable:4065) /* switch statement no case labels */
 #endif
 
+extern int bootdrive;
+extern bool bootguest, bootvm, use_quick_reboot;
 static unsigned char init_ide = 0;
 
 static const unsigned char IDE_default_IRQs[4] = {
@@ -63,6 +65,8 @@ static const unsigned short IDE_default_alts[4] = {
 
 bool fdc_takes_port_3F7();
 
+static void ide_pc98ctlio_w(Bitu port,Bitu val,Bitu iolen);
+static Bitu ide_pc98ctlio_r(Bitu port,Bitu iolen);
 static void ide_altio_w(Bitu port,Bitu val,Bitu iolen);
 static Bitu ide_altio_r(Bitu port,Bitu iolen);
 static void ide_baseio_w(Bitu port,Bitu val,Bitu iolen);
@@ -167,7 +171,7 @@ public:
 
 class IDEATADevice:public IDEDevice {
 public:
-    IDEATADevice(IDEController *c,unsigned char bios_disk_index);
+    IDEATADevice(IDEController *c,unsigned char disk_index);
     virtual ~IDEATADevice();
     virtual void writecommand(uint8_t cmd);
 public:
@@ -188,8 +192,9 @@ public:
     Bitu multiple_sector_max,multiple_sector_count;
     Bitu heads,sects,cyls,headshr,progress_count;
     Bitu phys_heads,phys_sects,phys_cyls;
-    unsigned char sector[512*128];
+    unsigned char sector[512 * 128] = {};
     Bitu sector_i,sector_total;
+    bool geo_translate;
 };
 
 enum {
@@ -414,7 +419,7 @@ bool IDEATAPICDROMDevice::common_spinup_response(bool trigger,bool wait) {
             break;
         default:
             abort();
-    };
+    }
 
     return true;
 }
@@ -530,65 +535,95 @@ void IDEATAPICDROMDevice::mode_sense() {
 
     write = sector;
 
-    /* some header. not well documented */
-    *write++ = 0x00;    /* ?? */
-    *write++ = 0x00;    /* length */
-    *write++ = 0x00;    /* ?? */
-    *write++ = 0x00;
-    *write++ = 0x00;
-    *write++ = 0x00;
-    *write++ = 0x00;
-    *write++ = 0x00;
+    /* Mode Parameter List MMC-3 Table 340 */
+    /* - Mode parameter header */
+    /* - Page(s) */
 
-    *write++ = PAGE;    /* page code */
-    *write++ = 0x00;    /* page length (fill in later) */
+    /* Mode Parameter Header (response for 10-byte MODE SENSE) SPC-2 Table 148 */
+    *write++ = 0x00;    /* MODE DATA LENGTH                     (MSB) */
+    *write++ = 0x00;    /*                                      (LSB) */
+    *write++ = 0x00;    /* MEDIUM TYPE */
+    *write++ = 0x00;    /* DEVICE-SPECIFIC PARAMETER */
+    *write++ = 0x00;    /* Reserved */
+    *write++ = 0x00;    /* Reserved */
+    *write++ = 0x00;    /* BLOCK DESCRIPTOR LENGTH              (MSB) */
+    *write++ = 0x00;    /*                                      (LSB) */
+    /* NTS: MMC-3 Table 342 says that BLOCK DESCRIPTOR LENGTH is zero, where it would be 8 for legacy units */
+
+    /* Mode Page Format MMC-3 Table 341 */
+    *write++ = PAGE;    /* PS|reserved|Page Code */
+    *write++ = 0x00;    /* Page Length (n - 1) ... Length in bytes of the mode parameters that follow */
     switch (PAGE) {
-        case 0x01: /* Read error recovery */
-            *write++ = 0x00;    /* maximum error correction */
-            *write++ = 3;       /* read retry count */
-            *write++ = 0x00;
-            *write++ = 0x00;
-            *write++ = 0x00;
-            *write++ = 0x00;
+        case 0x01: /* Read error recovery MMC-3 Section 6.3.4 table 344 */
+            *write++ = 0x00;    /* +2 Error recovery Parameter  AWRE|ARRE|TB|RC|Reserved|PER|DTE|DCR */
+            *write++ = 3;       /* +3 Read Retry Count */
+            *write++ = 0x00;    /* +4 Reserved */
+            *write++ = 0x00;    /* +5 Reserved */
+            *write++ = 0x00;    /* +6 Reserved */
+            *write++ = 0x00;    /* +7 Reserved */
+            *write++ = 0x00;    /* +8 Write Retry Count (this is not yet CD burner) */
+            *write++ = 0x00;    /* +9 Reserved */
+            *write++ = 0x00;    /* +10 Recovery Time Limit (should be zero)         (MSB) */
+            *write++ = 0x00;    /* +11                                              (LSB) */
             break;
-        case 0x0E: /* CD-ROM audio control */
-            *write++ = 0x04;    /* ?? */
-            *write++ = 0x00;    /* reserved @+3 */
-            *write++ = 0x00;    /* reserved @+4 */
-            *write++ = 0x00;    /* reserved @+5 */
-            *write++ = 0x00;
-            *write++ = 75;      /* logical blocks per second */
-
-            *write++ = 0x01;    /* output port 0 selection */
-            *write++ = 0xD8;    /* output port 0 volume (?) */
-            *write++ = 0x02;    /* output port 1 selection */
-            *write++ = 0xD8;    /* output port 1 volume (?) */
-            *write++ = 0x00;    /* output port 2 selection */
-            *write++ = 0x00;    /* output port 2 volume (?) */
-            *write++ = 0x00;    /* output port 3 selection */
-            *write++ = 0x00;    /* output port 3 volume (?) */
+        case 0x0E: /* CD-ROM audio control MMC-3 Section 6.3.7 table 354 */
+                   /* also MMC-1 Section 5.2.3.1 table 97 */
+            *write++ = 0x04;    /* +2 Reserved|IMMED=1|SOTC=0|Reserved */
+            *write++ = 0x00;    /* +3 Reserved */
+            *write++ = 0x00;    /* +4 Reserved */
+            *write++ = 0x00;    /* +5 Reserved */
+            *write++ = 0x00;    /* +6 Obsolete (75) */
+            *write++ = 75;      /* +7 Obsolete (75) */
+            *write++ = 0x01;    /* +8 output port 0 selection (0001b = channel 0) */
+            *write++ = 0xFF;    /* +9 output port 0 volume (0xFF = 0dB atten.) */
+            *write++ = 0x02;    /* +10 output port 1 selection (0010b = channel 1) */
+            *write++ = 0xFF;    /* +11 output port 1 volume (0xFF = 0dB atten.) */
+            *write++ = 0x00;    /* +12 output port 2 selection (none) */
+            *write++ = 0x00;    /* +13 output port 2 volume (0x00 = mute) */
+            *write++ = 0x00;    /* +14 output port 3 selection (none) */
+            *write++ = 0x00;    /* +15 output port 3 volume (0x00 = mute) */
             break;
-        case 0x2A: /* CD-ROM mechanical status */
-            *write++ = 0x00;    /* reserved @+2 ?? */
-            *write++ = 0x00;    /* reserved @+3 ?? */
-            *write++ = 0xF1;    /* multisession=0 mode2form2=1 mode2form=1 audioplay=1 */
-            *write++ = 0xFF;    /* ISRC=1 UPC=1 C2=1 RWDeinterleave=1 RWSupported=1 CDDAAccurate=1 CDDASupported=1 */
-            *write++ = 0x29;    /* loading mechanism type=tray  eject=1  prevent jumper=0  lockstate=0  lock=1 */
-            *write++ = 0x03;    /* separate channel mute=1 separate channel volume levels=1 */
+        case 0x2A: /* CD-ROM mechanical status MMC-3 Section 6.3.11 table 361 */
+                                /*    MSB            |             |             |             |              |               |              |       LSB */
+            *write++ = 0x07;    /* +2 Reserved       |Reserved     |DVD-RAM read |DVD-R read   |DVD-ROM read  |   Method 2    | CD-RW read   | CD-R read */
+            *write++ = 0x00;    /* +3 Reserved       |Reserved     |DVD-RAM write|DVD-R write  |   Reserved   |  Test Write   | CD-RW write  | CD-R write */
+            *write++ = 0x71;    /* +4 Buffer Underrun|Multisession |Mode 2 form 2|Mode 2 form 1|Digital Port 2|Digital Port 1 |  Composite   | Audio play */
+            *write++ = 0xFF;    /* +5 Read code bar  |UPC          |ISRC         |C2 Pointers  |R-W deintcorr | R-W supported |CDDA accurate |CDDA support */
+            *write++ = 0x2F;    /* +6 Loading mechanism type                     |Reserved     |Eject         |Prevent Jumper |Lock state    |Lock */
+                                /*      0 (0x00) = Caddy
+                                 *      1 (0x20) = Tray
+                                 *      2 (0x40) = Popup
+                                 *      3 (0x60) = Reserved
+                                 *      4 (0x80) = Changer with indivually changeable discs
+                                 *      5 (0xA0) = Changer using a magazine mechanism
+                                 *      6 (0xC0) = Reserved
+                                 *      6 (0xE0) = Reserved */
+            *write++ = 0x03;    /* +7 Reserved       |Reserved     |R-W in leadin|Side chg cap |S/W slot sel  |Changer disc pr|Sep. ch. mute |Sep. volume levels */
 
-            x = 176 * 8;        /* maximum speed supported: 8X */
+            x = 176 * 8;        /* +8 maximum speed supported in kB: 8X  (obsolete in MMC-3) */
             *write++ = x>>8;
             *write++ = x;
 
-            x = 256;        /* (?) */
+            x = 256;            /* +10 Number of volume levels supported */
             *write++ = x>>8;
             *write++ = x;
 
-            x = 6 * 256;        /* (?) */
+            x = 6 * 256;        /* +12 buffer size supported by drive in kB */
             *write++ = x>>8;
             *write++ = x;
 
-            x = 176 * 8;        /* current speed supported: 8X */
+            x = 176 * 8;        /* +14 current read speed selected in kB: 8X  (obsolete in MMC-3) */
+            *write++ = x>>8;
+            *write++ = x;
+
+            *write++ = 0;       /* +16 Reserved */
+            *write++ = 0x00;    /* +17 Reserved | Reserved | Length | Length | LSBF | RCK | BCK | Reserved */
+
+            x = 0;              /* +18 maximum write speed supported in kB: 0  (obsolete in MMC-3) */
+            *write++ = x>>8;
+            *write++ = x;
+
+            x = 0;              /* +20 current write speed in kB: 0  (obsolete in MMC-3) */
             *write++ = x>>8;
             *write++ = x;
             break;
@@ -596,10 +631,13 @@ void IDEATAPICDROMDevice::mode_sense() {
             memset(write,0,6); write += 6;
             LOG_MSG("WARNING: MODE SENSE on page 0x%02x not supported\n",PAGE);
             break;
-    };
+    }
 
-    /* fill in page length */
-    sector[1] = (unsigned int)(write-sector) - 2;
+    /* mode param header, data length */
+    x = (unsigned int)(write-sector) - 2;
+    sector[0] = (unsigned char)(x >> 8u);
+    sector[1] = (unsigned char)x;
+    /* page length */
     sector[8+1] = (unsigned int)(write-sector) - 2 - 8;
 
     prepare_read(0,MIN((unsigned int)(write-sector),(unsigned int)host_maximum_byte_count));
@@ -767,7 +805,7 @@ void IDEATAPICDROMDevice::read_toc() {
             start.fr = 0;
         }
 
-        LOG_MSG("Track %u attr=0x%02x\n",first,attr);
+        LOG_MSG("Track %u attr=0x%02x %02u:%02u:%02u\n",first,attr,start.min,start.sec,start.fr);
 
         *write++ = 0x00;        /* entry+0 RESERVED */
         *write++ = (attr >> 4) | 0x10;  /* entry+1 ADR=1 CONTROL=4 (DATA) */
@@ -810,7 +848,7 @@ void IDEATAPICDROMDevice::read_toc() {
             if ((write+8) > (sector+AllocationLength))
                 break;
 
-            LOG_MSG("Track %u attr=0x%02x\n",track,attr);
+            LOG_MSG("Track %u attr=0x%02x %02u:%02u:%02u\n",first,attr,start.min,start.sec,start.fr);
 
             *write++ = 0x00;        /* entry+0 RESERVED */
             *write++ = (attr >> 4) | 0x10; /* entry+1 ADR=1 CONTROL=4 (DATA) */
@@ -891,8 +929,8 @@ void IDEATAPICDROMDevice::on_atapi_busy_time() {
                 if (!common_spinup_response(/*spin up*/true,/*wait*/false)) {
                     count = 0x03;
                     state = IDE_DEV_READY;
-                    feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                    status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                    feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                    status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                     controller->raise_irq();
                     allow_writing = true;
                     return;
@@ -1177,7 +1215,7 @@ void IDEATAPICDROMDevice::on_atapi_busy_time() {
             controller->raise_irq();
             allow_writing = true;
             break;
-    };
+    }
 
 }
 
@@ -1196,9 +1234,17 @@ void IDEATAPICDROMDevice::set_sense(unsigned char SK,unsigned char ASC,unsigned 
 IDEATAPICDROMDevice::IDEATAPICDROMDevice(IDEController *c,unsigned char drive_index) : IDEDevice(c) {
     this->drive_index = drive_index;
     sector_i = sector_total = 0;
+    atapi_to_host = false;
+    host_maximum_byte_count = 0;
+    LBA = 0;
+    TransferLength = 0;
+    memset(atapi_cmd, 0, sizeof(atapi_cmd));
+    atapi_cmd_i = 0;
+    atapi_cmd_total = 0;
+    memset(sector, 0, sizeof(sector));
 
     memset(sense,0,sizeof(sense));
-    set_sense(/*SK=*/0);
+    IDEATAPICDROMDevice::set_sense(/*SK=*/0);
 
     /* FIXME: Spinup/down times should be dosbox.conf configurable, if the DOSBox gamers
      *        care more about loading times than emulation accuracy. */
@@ -1216,13 +1262,13 @@ IDEATAPICDROMDevice::IDEATAPICDROMDevice(IDEController *c,unsigned char drive_in
 
     type = IDE_TYPE_CDROM;
     id_serial = "123456789";
-    id_firmware_rev = "0.74-X";
-    id_model = "DOSBox Virtual CD-ROM";
+    id_firmware_rev = "0.83-X";
+    id_model = "DOSBox-X Virtual CD-ROM";
 
     /* INQUIRY strings */
-    id_mmc_vendor_id = "DOSBox";
+    id_mmc_vendor_id = "DOSBox-X";
     id_mmc_product_id = "Virtual CD-ROM";
-    id_mmc_product_rev = "0.74-X";
+    id_mmc_product_rev = "0.83-X";
 }
 
 IDEATAPICDROMDevice::~IDEATAPICDROMDevice() {
@@ -1270,7 +1316,7 @@ void IDEATAPICDROMDevice::atapi_io_completion() {
             case 0x55: /* MODE SELECT(10) */
                 on_mode_select_io_complete();
                 break;
-        };
+        }
     }
 
     count = 0x03; /* no more data (command/data=1, input/output=1) */
@@ -1490,8 +1536,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
 
             count = 0x03;
             state = IDE_DEV_READY;
-            feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-            status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+            feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+            status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
             controller->raise_irq();
             allow_writing = true;
             break;
@@ -1524,8 +1570,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1571,8 +1617,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1610,8 +1656,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1628,8 +1674,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1646,8 +1692,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1666,8 +1712,8 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             else {
                 count = 0x03;
                 state = IDE_DEV_READY;
-                feature = ((sense[2]&0xF) << 4) | (sense[2]&0xF ? 0x04/*abort*/ : 0x00);
-                status = IDE_STATUS_DRIVE_READY|(sense[2]&0xF ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
+                feature = ((sense[2]&0xF) << 4) | ((sense[2]&0xF) ? 0x04/*abort*/ : 0x00);
+                status = IDE_STATUS_DRIVE_READY|((sense[2]&0xF) ? IDE_STATUS_ERROR:IDE_STATUS_DRIVE_SEEK_COMPLETE);
                 controller->raise_irq();
                 allow_writing = true;
             }
@@ -1696,7 +1742,7 @@ void IDEATAPICDROMDevice::atapi_cmd_completion() {
             controller->raise_irq();
             allow_writing = true;
             break;
-    };
+    }
 }
 
 void IDEATAPICDROMDevice::data_write(Bitu v,Bitu iolen) {
@@ -2025,17 +2071,22 @@ void IDEATADevice::generate_identify_device() {
     sector[511] = 0 - csum;
 }
 
-IDEATADevice::IDEATADevice(IDEController *c,unsigned char bios_disk_index) : IDEDevice(c) {
-    this->bios_disk_index = bios_disk_index;
+IDEATADevice::IDEATADevice(IDEController *c,unsigned char disk_index)
+    : IDEDevice(c), id_serial("8086"), id_firmware_rev("8086"), id_model("DOSBox IDE disk"), bios_disk_index(disk_index) {
     sector_i = sector_total = 0;
 
     headshr = 0;
     type = IDE_TYPE_HDD;
-    id_serial = "8086";
-    id_firmware_rev = "8086";
-    id_model = "DOSBox IDE disk";
     multiple_sector_max = sizeof(sector) / 512;
     multiple_sector_count = 1;
+    geo_translate = false;
+    heads = 0;
+    sects = 0;
+    cyls = 0;
+    progress_count = 0;
+    phys_heads = 0;
+    phys_sects = 0;
+    phys_cyls = 0;
 }
 
 IDEATADevice::~IDEATADevice() {
@@ -2071,6 +2122,7 @@ void IDEATADevice::update_from_biosdisk() {
     }
 
     headshr = 0;
+    geo_translate = false;
     cyls = dsk->cylinders;
     heads = dsk->heads;
     sects = dsk->sectors;
@@ -2092,13 +2144,15 @@ void IDEATADevice::update_from_biosdisk() {
     if (heads > 16) {
         unsigned long tmp;
 
+        geo_translate = true;
+
         tmp = heads * cyls * sects;
         sects = 63;
         heads = 16;
         cyls = (tmp + ((63 * 16) - 1)) / (63 * 16);
         LOG_MSG("WARNING: Unable to reduce heads to 16 and below\n");
         LOG_MSG("If at all possible, please consider using INT 13h geometry with a head\n");
-        LOG_MSG("cound that is easier to map to the BIOS, like 240 heads or 128 heads/track.\n");
+        LOG_MSG("count that is easier to map to the BIOS, like 240 heads or 128 heads/track.\n");
         LOG_MSG("Some OSes, such as Windows 95, will not enable their 32-bit IDE driver if\n");
         LOG_MSG("a clean mapping does not exist between IDE and BIOS geometry.\n");
         LOG_MSG("Mapping BIOS DISK C/H/S %u/%u/%u as IDE %u/%u/%u (non-straightforward mapping)\n",
@@ -2125,12 +2179,12 @@ void IDEATADevice::update_from_biosdisk() {
 }
 
 void IDE_Auto(signed char &index,bool &slave) {
-    IDEController *c;
     unsigned int i;
 
     index = -1;
     slave = false;
     for (i=0;i < MAX_IDE_CONTROLLERS;i++) {
+        IDEController* c;
         if ((c=idecontroller[i]) == NULL) continue;
         index = (signed char)i;
 
@@ -2210,6 +2264,21 @@ void IDE_CDROM_Detach(unsigned char drive_index) {
     }
 }
 
+void IDE_CDROM_DetachAll() {
+    for (int index = 0; index < MAX_IDE_CONTROLLERS; index++) {
+        IDEController *c = idecontroller[index];
+        if (c)
+        for (int slave = 0; slave < 2; slave++) {
+            IDEATAPICDROMDevice *dev;
+            dev = dynamic_cast<IDEATAPICDROMDevice*>(c->device[slave]);
+            if (dev) {
+                delete dev;
+                c->device[slave] = NULL;
+            }
+        }
+    }
+}
+
 /* bios_disk_index = index into BIOS INT 13h disk array: imageDisk *imageDiskList[MAX_DISK_IMAGES]; */
 void IDE_Hard_Disk_Attach(signed char index,bool slave,unsigned char bios_disk_index/*not INT13h, the index into DOSBox's BIOS drive emulation*/) {
     IDEController *c;
@@ -2250,6 +2319,41 @@ void IDE_Hard_Disk_Detach(unsigned char bios_disk_index) {
         }
     }
 }
+
+char idepos[4];
+char * GetIDEPosition(unsigned char bios_disk_index) {
+    for (int index = 0; index < MAX_IDE_CONTROLLERS; index++) {
+        IDEController *c = GetIDEController(index);
+        if (c)
+        for (int slave = 0; slave < 2; slave++) {
+            IDEATADevice *dev = dynamic_cast<IDEATADevice*>(c->device[slave]);
+            if (dev && dev->bios_disk_index == bios_disk_index) {
+                sprintf(idepos, "%d%c", index+1, slave?'s':'m');
+                return idepos;
+            }
+        }
+    }
+    return (char*)("");
+}
+
+std::string info="";
+std::string GetIDEInfo() {
+    info="";
+    for (int index = 0; index < MAX_IDE_CONTROLLERS; index++) {
+        IDEController *c = GetIDEController(index);
+        if (c)
+        for (int slave = 0; slave < 2; slave++) {
+            IDEATADevice *dev = dynamic_cast<IDEATADevice*>(c->device[slave]);
+            info+="IDE position "+std::to_string(index+1)+(slave?'s':'m')+": ";
+            if (dynamic_cast<IDEATADevice*>(c->device[slave])) info+="disk image";
+            else if (dynamic_cast<IDEATAPICDROMDevice*>(c->device[slave])) info+="CD image";
+            else info+="none";
+            info+="\n";
+        }
+    }
+    return info;
+}
+
 static IDEController* GetIDEController(Bitu idx) {
     if (idx >= MAX_IDE_CONTROLLERS) return NULL;
     return idecontroller[idx];
@@ -2327,7 +2431,6 @@ void IDE_EmuINT13DiskReadByBIOS_LBA(unsigned char disk,uint64_t lba) {
 
             if (dev->type == IDE_TYPE_HDD) {
                 IDEATADevice *ata = (IDEATADevice*)dev;
-                static bool vm86_warned = false;
 //              static bool int13_fix_wrap_warned = false;
                 bool vm86 = IDE_CPU_Is_Vm86();
 
@@ -2401,6 +2504,7 @@ void IDE_EmuINT13DiskReadByBIOS_LBA(unsigned char disk,uint64_t lba) {
                         ide->drivehead = dev->drivehead = 0xE0u | (ms<<4u) | (lba>>24u); /* drive head and master/slave (WDCTRL test phase 9/10/17) */
                         dev->status = IDE_STATUS_DRIVE_READY|IDE_STATUS_DRIVE_SEEK_COMPLETE; /* status (WDCTRL test phase A/11/18) */
                         dev->allow_writing = true;
+                        static bool vm86_warned = false;
 
                         if (vm86 && !vm86_warned) {
                             LOG_MSG("IDE warning: INT 13h extensions read from virtual 8086 mode.\n");
@@ -2454,8 +2558,6 @@ void IDE_EmuINT13DiskReadByBIOS(unsigned char disk,unsigned int cyl,unsigned int
 
             if (dev->type == IDE_TYPE_HDD) {
                 IDEATADevice *ata = (IDEATADevice*)dev;
-                static bool vm86_warned = false;
-                static bool int13_fix_wrap_warned = false;
                 bool vm86 = IDE_CPU_Is_Vm86();
 
                 if ((ata->bios_disk_index-2) == (disk-0x80)) {
@@ -2476,12 +2578,15 @@ void IDE_EmuINT13DiskReadByBIOS(unsigned char disk,unsigned int cyl,unsigned int
                      *       sectors starting at C/H/S 30/9/42 without regard for
                      *       track boundaries. */
                     if (sect > dsk->sectors) {
+#if 0 /* this warning is pointless */
+                        static bool int13_fix_wrap_warned = false;
                         if (!int13_fix_wrap_warned) {
                             LOG_MSG("INT 13h implementation warning: we were given over-large sector number.\n");
                             LOG_MSG("This is normally the fault of DOSBox INT 13h emulation that counts sectors\n");
                             LOG_MSG("without consideration of track boundaries\n");
                             int13_fix_wrap_warned = true;
                         }
+#endif
 
                         do {
                             sect -= dsk->sectors;
@@ -2493,7 +2598,7 @@ void IDE_EmuINT13DiskReadByBIOS(unsigned char disk,unsigned int cyl,unsigned int
                     }
 
                     /* translate BIOS INT 13h geometry to IDE geometry */
-                    if (ata->headshr != 0) {
+                    if (ata->headshr != 0 || ata->geo_translate) {
                         unsigned long lba;
 
                         if (dsk == NULL) return;
@@ -2570,6 +2675,7 @@ void IDE_EmuINT13DiskReadByBIOS(unsigned char disk,unsigned int cyl,unsigned int
                         ide->drivehead = dev->drivehead = 0xA0u | (ms<<4u) | head; /* drive head and master/slave (WDCTRL test phase 9/10/17) */
                         dev->status = IDE_STATUS_DRIVE_READY|IDE_STATUS_DRIVE_SEEK_COMPLETE; /* status (WDCTRL test phase A/11/18) */
                         dev->allow_writing = true;
+                        static bool vm86_warned = false;
 
                         if (vm86 && !vm86_warned) {
                             LOG_MSG("IDE warning: INT 13h read from virtual 8086 mode.\n");
@@ -3109,24 +3215,41 @@ static void IDE_DelayedCommand(Bitu idx/*which IDE controller*/) {
     }
 }
 
+void PC98_IDE_UpdateIRQ(void);
+
 void IDEController::raise_irq() {
     irq_pending = true;
-    if (IRQ >= 0 && interrupt_enable) PIC_ActivateIRQ((unsigned int)IRQ);
+    if (IS_PC98_ARCH) {
+        PC98_IDE_UpdateIRQ();
+    }
+    else {
+        if (IRQ >= 0 && interrupt_enable) PIC_ActivateIRQ((unsigned int)IRQ);
+    }
 }
 
 void IDEController::lower_irq() {
     irq_pending = false;
-    if (IRQ >= 0) PIC_DeActivateIRQ((unsigned int)IRQ);
+    if (IS_PC98_ARCH) {
+        PC98_IDE_UpdateIRQ();
+    }
+    else {
+        if (IRQ >= 0) PIC_DeActivateIRQ((unsigned int)IRQ);
+    }
 }
 
-IDEController *match_ide_controller(Bitu port) {
-    unsigned int i;
+unsigned int pc98_ide_select = 0;
 
-    for (i=0;i < MAX_IDE_CONTROLLERS;i++) {
-        IDEController *ide = idecontroller[i];
-        if (ide == NULL) continue;
-        if (ide->base_io != 0U && ide->base_io == (port&0xFFF8U)) return ide;
-        if (ide->alt_io != 0U && ide->alt_io == (port&0xFFFEU)) return ide;
+IDEController *match_ide_controller(Bitu port) {
+    if (IS_PC98_ARCH) {
+        return idecontroller[pc98_ide_select];
+    }
+    else {
+        for (unsigned int i=0;i < MAX_IDE_CONTROLLERS;i++) {
+            IDEController *ide = idecontroller[i];
+            if (ide == NULL) continue;
+            if (ide->base_io != 0U && ide->base_io == (port&0xFFF8U)) return ide;
+            if (ide->alt_io != 0U && ide->alt_io == (port&0xFFFEU)) return ide;
+        }
     }
 
     return NULL;
@@ -3341,12 +3464,12 @@ void IDEATADevice::writecommand(uint8_t cmd) {
             uint64_t n;
 
             n = ((unsigned int)(drivehead&0xF)<<24)+((unsigned int)lba[2]<<16)+((unsigned int)lba[1]<<8)+(unsigned int)lba[0];
-            LOG_MSG("IDE ATA command %02x dh=0x%02x count=0x%02x lba=%07llx/%07llx\n",cmd,
+            LOG(LOG_SB,LOG_DEBUG)("IDE ATA command %02x dh=0x%02x count=0x%02x lba=%07llx/%07llx\n",cmd,
                 drivehead,count,(unsigned long long)n,
                 (unsigned long long)(phys_sects * phys_cyls * phys_heads));
         }
         else {
-            LOG_MSG("IDE ATA command %02x dh=0x%02x count=0x%02x chs=%02x/%02x/%02x\n",cmd,
+            LOG(LOG_SB,LOG_DEBUG)("IDE ATA command %02x dh=0x%02x count=0x%02x chs=%02x/%02x/%02x\n",cmd,
                 drivehead,count,((unsigned int)lba[2]<<8)+(unsigned int)lba[1],(unsigned int)(drivehead&0xF),(unsigned int)lba[0]);
         }
 
@@ -3546,6 +3669,7 @@ IDEController::IDEController(Section* configuration,unsigned char index):Module_
     select = 0;
     alt_io = 0;
     IRQ = -1;
+    drivehead = 0;
 
     i = section->Get_int("irq");
     if (i > 0 && i <= 15) IRQ = i;
@@ -3556,7 +3680,17 @@ IDEController::IDEController(Section* configuration,unsigned char index):Module_
     i = section->Get_hex("altio");
     if (i >= 0x100 && i <= 0x3FF) alt_io = (unsigned int)(i & ~1);
 
-    if (index < sizeof(IDE_default_IRQs)) {
+    if (IS_PC98_ARCH) {
+        /* PC-98 evidently maps all IDE controllers to one set of I/O ports and allows
+         * "bank switching" between them through I/O ports 430h-435h. This is also why
+         * the IDE emulation will NOT register I/O ports per controller in PC-98 mode.
+         * If PC-98 supports IDE controllers outside this scheme, then that shall be
+         * implemented later. */
+        IRQ = 9; // INT 8+9 = 17 = 11h
+        alt_io = 0x74C; // even
+        base_io = 0x640; // even
+    }
+    else if (index < sizeof(IDE_default_IRQs)) {
         if (IRQ < 0) IRQ = IDE_default_IRQs[index];
         if (alt_io == 0) alt_io = IDE_default_alts[index];
         if (base_io == 0) base_io = IDE_default_bases[index];
@@ -3568,6 +3702,9 @@ IDEController::IDEController(Section* configuration,unsigned char index):Module_
 }
 
 void IDEController::register_isapnp() {
+    if (IS_PC98_ARCH)
+        return;
+
     if (register_pnp && base_io > 0 && alt_io > 0) {
         unsigned char tmp[256];
         unsigned int i;
@@ -3626,10 +3763,11 @@ void IDEController::register_isapnp() {
 }
 
 void IDEController::install_io_port(){
-    unsigned int i;
+    if (IS_PC98_ARCH)
+        return;
 
     if (base_io != 0) {
-        for (i=0;i < 8;i++) {
+        for (unsigned int i=0;i < 8;i++) {
             WriteHandler[i].Install(base_io+i,ide_baseio_w,IO_MA);
             ReadHandler[i].Install(base_io+i,ide_baseio_r,IO_MA);
         }
@@ -3662,6 +3800,56 @@ IDEController::~IDEController() {
     }
 }
 
+static void IDE_PC98_Select(Bitu val) {
+    val &= 1;
+    pc98_ide_select = val;
+    // TODO: IRQ raise by signal
+}
+
+static void ide_pc98ctlio_w(Bitu port,Bitu val,Bitu iolen) {
+    (void)iolen;
+
+    switch (port & 7) {
+        case 0:     // 430h
+            // ???
+            break;
+        case 2:     // 432h
+            if (val & 0x80) {
+                // test write?
+            }
+            else {
+                IDE_PC98_Select(val & 1);
+            }
+            break;
+        case 5:     // 435h
+            // ???
+            break;
+    }
+}
+
+static Bitu ide_pc98ctlio_r(Bitu port,Bitu iolen) {
+    (void)iolen;
+
+    switch (port & 7) {
+        case 0:     // 430h
+            return pc98_ide_select;
+        case 2:     // 432h
+            return pc98_ide_select;
+        case 5:     // 435h
+            {
+                Bitu bf = ~0ul;
+                if (idecontroller[0] != NULL)
+                    bf &= ~(1u << 0u);
+                if (idecontroller[1] != NULL)
+                    bf &= ~(1u << 1u);
+
+                return bf;
+            }
+    }
+
+    return ~0ul;
+}
+
 static void ide_altio_w(Bitu port,Bitu val,Bitu iolen) {
     IDEController *ide = match_ide_controller(port);
     if (ide == NULL) {
@@ -3677,14 +3865,23 @@ static void ide_altio_w(Bitu port,Bitu val,Bitu iolen) {
     else if (ide->ignore_pio32 && iolen == 4)
         return;
 
-    port &= 1;
+    if (IS_PC98_ARCH)
+        port = (port >> 1) & 1;
+    else
+        port &= 1;
+
     if (port == 0) {/*3F6*/
         ide->interrupt_enable = (val&2u)?0:1;
         if (ide->interrupt_enable) {
             if (ide->irq_pending) ide->raise_irq();
         }
         else {
-            if (ide->IRQ >= 0) PIC_DeActivateIRQ((unsigned int)ide->IRQ);
+            if (IS_PC98_ARCH) {
+                PC98_IDE_UpdateIRQ();
+            }
+            else {
+                if (ide->IRQ >= 0) PIC_DeActivateIRQ((unsigned int)ide->IRQ);
+            }
         }
 
         if ((val&4) && !ide->host_reset) {
@@ -3715,7 +3912,12 @@ static Bitu ide_altio_r(Bitu port,Bitu iolen) {
         return ~0ul;
 
     dev = ide->device[ide->select];
-    port &= 1;
+
+    if (IS_PC98_ARCH)
+        port = (port >> 1) & 1;
+    else
+        port &= 1;
+
     if (port == 0)/*3F6(R) status, does NOT clear interrupt*/
         return (dev != NULL) ? dev->status : ide->status;
     else /*3F7(R) Drive Address Register*/
@@ -3741,7 +3943,12 @@ static Bitu ide_baseio_r(Bitu port,Bitu iolen) {
         return ~0ul;
 
     dev = ide->device[ide->select];
-    port &= 7;
+
+    if (IS_PC98_ARCH)
+        port = (port >> 1) & 7;
+    else
+        port &= 7;
+
     switch (port) {
         case 0: /* 1F0 */
             ret = (dev != NULL) ? dev->data_read(iolen) : 0xFFFFFFFFUL;
@@ -3799,7 +4006,11 @@ static void ide_baseio_w(Bitu port,Bitu val,Bitu iolen) {
         return;
 
     dev = ide->device[ide->select];
-    port &= 7;
+
+    if (IS_PC98_ARCH)
+        port = (port >> 1) & 7;
+    else
+        port &= 7;
 
     /* ignore I/O writes if the controller is busy */
     if (dev) {
@@ -3903,6 +4114,9 @@ static void IDE_Init(Section* sec,unsigned char ide_interface) {
 
     assert(ide_interface < MAX_IDE_CONTROLLERS);
 
+    if (IS_PC98_ARCH && ide_interface >= 2)
+        return;
+
     if (!section->Get_bool("enable"))
         return;
 
@@ -3977,11 +4191,62 @@ void (*ide_inits[MAX_IDE_CONTROLLERS])(Section *) = {
     &IDE_Octernary_Init
 };
 
+IO_ReadHandleObject  PC98_ReadHandler[8], PC98_ReadHandlerAlt[2], PC98_ReadHandlerSel[3];
+IO_WriteHandleObject PC98_WriteHandler[8],PC98_WriteHandlerAlt[2],PC98_WriteHandlerSel[3];
+
+void PC98_IDE_UpdateIRQ(void) {
+    if (IS_PC98_ARCH) {
+        bool raise = false;
+        IDEController *ide = match_ide_controller(0);
+        if (ide != NULL)
+            raise = ide->irq_pending && ide->interrupt_enable;
+
+        if (raise)
+            PIC_ActivateIRQ(9);
+        else
+            PIC_DeActivateIRQ(9);
+    }
+}
+
 void IDE_OnReset(Section *sec) {
+    if ((bootguest||(use_quick_reboot&&!bootvm))&&bootdrive>=0) return;
     (void)sec;//UNUSED
-    if (IS_PC98_ARCH) return;
 
     for (size_t i=0;i < MAX_IDE_CONTROLLERS;i++) ide_inits[i](control->GetSection(ide_names[i]));
+
+    if (IS_PC98_ARCH) {//TODO: Only if any IDE interfaces are enabled
+        for (size_t i=0;i < 8;i++) {
+            PC98_WriteHandler[i].Uninstall();
+            PC98_ReadHandler[i].Uninstall();
+            PC98_WriteHandler[i].Install(0x640+(i*2),ide_baseio_w,IO_MA);
+            PC98_ReadHandler[i].Install(0x640+(i*2),ide_baseio_r,IO_MA);
+        }
+
+        for (size_t i=0;i < 2;i++) {
+            PC98_WriteHandlerAlt[i].Uninstall();
+            PC98_ReadHandlerAlt[i].Uninstall();
+        }
+
+        PC98_WriteHandlerAlt[0].Install(0x74C,ide_altio_w,IO_MA);
+        PC98_ReadHandlerAlt[0].Install(0x74C,ide_altio_r,IO_MA);
+
+        PC98_WriteHandlerAlt[1].Install(0x74E,ide_altio_w,IO_MA);
+        PC98_ReadHandlerAlt[1].Install(0x74E,ide_altio_r,IO_MA);
+
+        for (size_t i=0;i < 3;i++) {
+            PC98_WriteHandlerSel[i].Uninstall();
+            PC98_ReadHandlerSel[i].Uninstall();
+        }
+
+        PC98_WriteHandlerSel[0].Install(0x430,ide_pc98ctlio_w,IO_MA);
+        PC98_ReadHandlerSel[0].Install(0x430,ide_pc98ctlio_r,IO_MA);
+
+        PC98_WriteHandlerSel[1].Install(0x432,ide_pc98ctlio_w,IO_MA);
+        PC98_ReadHandlerSel[1].Install(0x432,ide_pc98ctlio_r,IO_MA);
+
+        PC98_WriteHandlerSel[2].Install(0x435,ide_pc98ctlio_w,IO_MA);
+        PC98_ReadHandlerSel[2].Install(0x435,ide_pc98ctlio_r,IO_MA);
+    }
 }
 
 void IDE_Init() {

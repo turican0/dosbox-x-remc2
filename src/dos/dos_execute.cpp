@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -26,27 +26,28 @@
 #include "callback.h"
 #include "debug.h"
 #include "cpu.h"
+#include "menu.h"
 
-const char * RunningProgram="DOSBOX";
+const char * RunningProgram="DOSBOX-X";
 
 #ifdef _MSC_VER
 #pragma pack(1)
 #endif
 struct EXE_Header {
-	Bit16u signature;					/* EXE Signature MZ or ZM */
-	Bit16u extrabytes;					/* Bytes on the last page */
-	Bit16u pages;						/* Pages in file */
-	Bit16u relocations;					/* Relocations in file */
-	Bit16u headersize;					/* Paragraphs in header */
-	Bit16u minmemory;					/* Minimum amount of memory */
-	Bit16u maxmemory;					/* Maximum amount of memory */
-	Bit16u initSS;
-	Bit16u initSP;
-	Bit16u checksum;
-	Bit16u initIP;
-	Bit16u initCS;
-	Bit16u reloctable;
-	Bit16u overlay;
+	uint16_t signature;					/* EXE Signature MZ or ZM */
+	uint16_t extrabytes;					/* Bytes on the last page */
+	uint16_t pages;						/* Pages in file */
+	uint16_t relocations;					/* Relocations in file */
+	uint16_t headersize;					/* Paragraphs in header */
+	uint16_t minmemory;					/* Minimum amount of memory */
+	uint16_t maxmemory;					/* Maximum amount of memory */
+	uint16_t initSS;
+	uint16_t initSP;
+	uint16_t checksum;
+	uint16_t initIP;
+	uint16_t initCS;
+	uint16_t reloctable;
+	uint16_t overlay;
 } GCC_ATTRIBUTE(packed);
 #ifdef _MSC_VER
 #pragma pack()
@@ -93,13 +94,14 @@ static void RestoreRegisters(void) {
 	reg_sp+=18;
 }
 
-extern void GFX_SetTitle(Bit32s cycles, Bits frameskip, Bits timing, bool paused);
+extern uint8_t ZDRIVE_NUM;
+extern void GFX_SetTitle(int32_t cycles, int frameskip, Bits timing, bool paused), menu_update_autocycle(void);
 void DOS_UpdatePSPName(void) {
 	DOS_MCB mcb(dos.psp()-1);
 	static char name[9];
 	mcb.GetFileName(name);
 	name[8] = 0;
-	if (!strlen(name)) strcpy(name,"DOSBOX");
+	if (!strlen(name)) strcpy(name,"DOSBOX-X");
 	for(Bitu i = 0;i < 8;i++) { //Don't put garbage in the title bar. Mac OS X doesn't like it
 		if (name[i] == 0) break;
 		if ( !isprint(*reinterpret_cast<unsigned char*>(&name[i])) ) name[i] = '?';
@@ -108,10 +110,10 @@ void DOS_UpdatePSPName(void) {
 	GFX_SetTitle(-1,-1,-1,false);
 }
 
-void DOS_Terminate(Bit16u pspseg,bool tsr,Bit8u exitcode) {
+void DOS_Terminate(uint16_t pspseg,bool tsr,uint8_t exitcode) {
 
 	dos.return_code=exitcode;
-	dos.return_mode=(tsr)?(Bit8u)RETURN_TSR:(Bit8u)RETURN_EXIT;
+	dos.return_mode=(tsr)?(uint8_t)RETURN_TSR:(uint8_t)RETURN_EXIT;
 	
 	DOS_PSP curpsp(pspseg);
 	if (pspseg==curpsp.GetParent()) return;
@@ -149,13 +151,16 @@ void DOS_Terminate(Bit16u pspseg,bool tsr,Bit8u exitcode) {
 		CPU_CycleLeft=0;
 		CPU_Cycles=0;
 		CPU_CycleMax=CPU_OldCycleMax;
-		GFX_SetTitle(CPU_OldCycleMax,-1,-1,false);
+		GFX_SetTitle((int32_t)CPU_OldCycleMax,-1,-1,false);
+		menu_update_autocycle();
 	} else {
 		GFX_SetTitle(-1,-1,-1,false);
 	}
-#if (C_DYNAMIC_X86)
+#if (C_DYNAMIC_X86) || (C_DYNREC)
 	if (CPU_AutoDetermineMode&CPU_AUTODETERMINE_CORE) {
 		cpudecoder=&CPU_Core_Normal_Run;
+        mainMenu.get_item("mapper_normal").check(true).refresh_item(mainMenu);
+        mainMenu.get_item("mapper_dynamic").check(false).refresh_item(mainMenu);
 		CPU_CycleLeft=0;
 		CPU_Cycles=0;
 	}
@@ -164,12 +169,12 @@ void DOS_Terminate(Bit16u pspseg,bool tsr,Bit8u exitcode) {
 	return;
 }
 
-static bool MakeEnv(char * name,Bit16u * segment) {
+static bool MakeEnv(const char* name, uint16_t* segment) {
 	/* If segment to copy environment is 0 copy the caller's environment */
 	DOS_PSP psp(dos.psp());
 	PhysPt envread,envwrite;
 	unsigned int keepfree;
-	Bit16u envsize=1;
+	uint16_t envsize=1;
 	bool parentenv=true;
 
 	/* below 83 bytes, we must not append the mystery 0x01 + program name string */
@@ -193,7 +198,7 @@ static bool MakeEnv(char * name,Bit16u * segment) {
 		}
 		envsize += 2;									/* account for trailing \0\0 */
 	}
-	Bit16u size = long2para(envsize+keepfree);
+	uint16_t size = long2para(envsize+keepfree);
 	if (size == 0) size = 1;
 	if (!DOS_AllocateMemory(segment,&size)) return false;
 	envwrite=PhysMake(*segment,0);
@@ -222,10 +227,10 @@ static bool MakeEnv(char * name,Bit16u * segment) {
 	return true;
 }
 
-bool DOS_NewPSP(Bit16u segment, Bit16u size) {
+bool DOS_NewPSP(uint16_t segment, uint16_t size) {
 	DOS_PSP psp(segment);
 	psp.MakeNew(size);
-	Bit16u parent_psp_seg=psp.GetParent();
+	uint16_t parent_psp_seg=psp.GetParent();
 	DOS_PSP psp_parent(parent_psp_seg);
 	psp.CopyFileTable(&psp_parent,false);
 	// copy command line as well (Kings Quest AGI -cga switch)
@@ -233,10 +238,10 @@ bool DOS_NewPSP(Bit16u segment, Bit16u size) {
 	return true;
 }
 
-bool DOS_ChildPSP(Bit16u segment, Bit16u size) {
+bool DOS_ChildPSP(uint16_t segment, uint16_t size) {
 	DOS_PSP psp(segment);
 	psp.MakeNew(size);
-	Bit16u parent_psp_seg = psp.GetParent();
+	uint16_t parent_psp_seg = psp.GetParent();
 	DOS_PSP psp_parent(parent_psp_seg);
 	psp.CopyFileTable(&psp_parent,true);
 	psp.SetCommandTail(RealMake(parent_psp_seg,0x80));
@@ -251,11 +256,11 @@ bool DOS_ChildPSP(Bit16u segment, Bit16u size) {
 	return true;
 }
 
-static void SetupPSP(Bit16u pspseg,Bit16u memsize,Bit16u envseg) {
+static void SetupPSP(uint16_t pspseg,uint16_t memsize,uint16_t envseg) {
 	/* Fix the PSP for psp and environment MCB's */
-	DOS_MCB mcb((Bit16u)(pspseg-1));
+	DOS_MCB mcb((uint16_t)(pspseg-1));
 	mcb.SetPSPSeg(pspseg);
-	mcb.SetPt((Bit16u)(envseg-1));
+	mcb.SetPt((uint16_t)(envseg-1));
 	mcb.SetPSPSeg(pspseg);
 
 	DOS_PSP psp(pspseg);
@@ -268,7 +273,7 @@ static void SetupPSP(Bit16u pspseg,Bit16u memsize,Bit16u envseg) {
 
 }
 
-static void SetupCMDLine(Bit16u pspseg,DOS_ParamBlock & block) {
+static void SetupCMDLine(uint16_t pspseg, const DOS_ParamBlock& block) {
 	DOS_PSP psp(pspseg);
 	// if cmdtail==0 it will inited as empty in SetCommandTail
 	psp.SetCommandTail(block.exec.cmdtail);
@@ -281,13 +286,13 @@ static void SetupCMDLine(Bit16u pspseg,DOS_ParamBlock & block) {
  *        shell without any error message. The least we could do is return
  *        an error code so that the INT 21h EXEC call can print an informative
  *        error message! --J.C. */
-bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
+bool DOS_Execute(const char* name, PhysPt block_pt, uint8_t flags) {
 	EXE_Header head;Bitu i;
-	Bit16u fhandle;Bit16u len;Bit32u pos;
-	Bit16u pspseg,envseg,loadseg,memsize=0xffff,readsize;
-	Bit16u minsize,maxsize,maxfree=0xffff;
+	uint16_t fhandle;uint16_t len;uint32_t pos;
+	uint16_t pspseg,envseg,loadseg,memsize=0xffff,readsize;
+	uint16_t maxsize,maxfree=0xffff;
 	PhysPt loadaddress;RealPt relocpt;
-	Bitu headersize=0,imagesize=0;
+    uint32_t headersize = 0, imagesize = 0;
 	DOS_ParamBlock block(block_pt);
 
 	block.LoadData();
@@ -302,11 +307,20 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 	/* Check for EXE or COM File */
 	bool iscom=false;
 	if (!DOS_OpenFile(name,OPEN_READ,&fhandle)) {
-		DOS_SetError(DOSERR_FILE_NOT_FOUND);
-		return false;
+        int16_t fLen = (int16_t)strlen(name);
+        bool shellcom =(!strcasecmp(name+fLen-8, "4DOS.COM") && (fLen == 8 || *(name+fLen-9)=='\\')) || (!strcasecmp(name+fLen-11, "COMMAND.COM") && (fLen == 11 || *(name+fLen-12)=='\\')); // Trap 4DOS.COM and COMMAND.COM
+        char z4dos[]="Z:\\4DOS.COM", zcmd[]="Z:\\COMMAND.COM";
+        if (ZDRIVE_NUM!=25) {
+            z4dos[0]='A'+ZDRIVE_NUM;
+            zcmd[0]='A'+ZDRIVE_NUM;
+        }
+        if (!shellcom || !DOS_OpenFile(!strcasecmp(name+fLen-8, "4DOS.COM")?z4dos:zcmd,OPEN_READ,&fhandle)) {
+            DOS_SetError(DOSERR_FILE_NOT_FOUND);
+            return false;
+        }
 	}
 	len=sizeof(EXE_Header);
-	if (!DOS_ReadFile(fhandle,(Bit8u *)&head,&len)) {
+	if (!DOS_ReadFile(fhandle,(uint8_t *)&head,&len)) {
 		DOS_CloseFile(fhandle);
 		return false;
 	}
@@ -323,7 +337,7 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 		/* Convert the header to correct endian, i hope this works */
 		HostPt endian=(HostPt)&head;
 		for (i=0;i<sizeof(EXE_Header)/2;i++) {
-			*((Bit16u *)endian)=host_readw(endian);
+			*((uint16_t *)endian)=host_readw(endian);
 			endian+=2;
 		}
 		if ((head.signature!=MAGIC1) && (head.signature!=MAGIC2)) iscom=true;
@@ -336,14 +350,16 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 			if (imagesize+headersize<512u) imagesize = 512u-headersize;
 		}
 	}
-	Bit8u * loadbuf=(Bit8u *)new Bit8u[0x10000u];
+	uint8_t * loadbuf=(uint8_t *)new uint8_t[0x10000u];
 	if (flags!=OVERLAY) {
 		/* Create an environment block */
 		envseg=block.exec.envseg;
 		if (!MakeEnv(name,&envseg)) {
 			DOS_CloseFile(fhandle);
+			delete [] loadbuf;
 			return false;
 		}
+		uint16_t minsize;
 		/* Get Memory */		
 		DOS_AllocateMemory(&pspseg,&maxfree);
 		if (iscom) {
@@ -351,7 +367,7 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 			if (machine==MCH_PCJR) {
 				/* try to load file into memory below 96k */ 
 				pos=0;DOS_SeekFile(fhandle,&pos,DOS_SEEK_SET);	
-				Bit16u dataread=0x1800;
+				uint16_t dataread=0x1800;
 				DOS_ReadFile(fhandle,loadbuf,&dataread);
 				if (dataread<0x1800) maxsize=dataread;
 				if (minsize>maxsize) minsize=maxsize;
@@ -372,7 +388,7 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 			if (iscom) {
 				/* Reduce minimum of needed memory size to filesize */
 				pos=0;DOS_SeekFile(fhandle,&pos,DOS_SEEK_SET);	
-				Bit16u dataread=0xf800;
+				uint16_t dataread=0xf800;
 				DOS_ReadFile(fhandle,loadbuf,&dataread);
 				if (dataread<0xf800) minsize=((dataread+0x10)>>4)+0x20;
 			}
@@ -390,14 +406,6 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 			maxsize=0xffff;
 			/* resize to full extent of memory block */
 			DOS_ResizeMemory(pspseg,&maxsize);
-			/* now try to lock out memory above segment 0x2000 */
-			if ((real_readb(0x2000,0)==0x5a) && (real_readw(0x2000,1)==0) && (real_readw(0x2000,3)==0x7ffe)) {
-				/* MCB after PCJr graphics memory region is still free */
-				if (pspseg+maxsize==0x17ff) {
-					DOS_MCB cmcb((Bit16u)(pspseg-1));
-					cmcb.SetType(0x5a);		// last block
-				}
-			}
 		}
 		loadseg=pspseg+16;
 		if (!iscom) {
@@ -435,17 +443,17 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 			loadaddress+=0x8000;imagesize-=0x8000;
 		}
 		if (imagesize>0) {
-			readsize=(Bit16u)imagesize;DOS_ReadFile(fhandle,loadbuf,&readsize);
+			readsize=(uint16_t)imagesize;DOS_ReadFile(fhandle,loadbuf,&readsize);
 			MEM_BlockWrite(loadaddress,loadbuf,readsize);
 //			if (readsize!=imagesize) LOG(LOG_EXEC,LOG_NORMAL)("Illegal header");
 		}
 		/* Relocate the exe image */
-		Bit16u relocate;
+		uint16_t relocate;
 		if (flags==OVERLAY) relocate=block.overlay.relocation;
 		else relocate=loadseg;
 		pos=head.reloctable;DOS_SeekFile(fhandle,&pos,0);
 		for (i=0;i<head.relocations;i++) {
-			readsize=4;DOS_ReadFile(fhandle,(Bit8u *)&relocpt,&readsize);
+			readsize=4;DOS_ReadFile(fhandle,(uint8_t *)&relocpt,&readsize);
 			relocpt=host_readd((HostPt)&relocpt);		//Endianize
 			PhysPt address=PhysMake(RealSeg(relocpt)+loadseg,RealOff(relocpt));
 			mem_writew(address,mem_readw(address)+relocate);
@@ -459,7 +467,7 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 		// Create psp after closing exe, to avoid dead file handle of exe in copied psp
 		SetupPSP(pspseg,memsize,envseg);
 		SetupCMDLine(pspseg,block);
-	};
+	}
 	CALLBACK_SCF(false);		/* Carry flag cleared for caller if successfull */
 	if (flags==OVERLAY) return true;			/* Everything done for overlays */
 	RealPt csip,sssp;
@@ -479,7 +487,7 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 
 		csip=RealMake(pspseg,0x100);
 		sssp=RealMake(pspseg,stack_sp);
-		mem_writew(PhysMake(pspseg,stack_sp),0);
+		mem_writew(Real2Phys(sssp),0);
 	} else {
 		/* FIXME: I've heard of EXE files with entry points like FFFF:0100 or something (COM images turned EXE if I recall).
 		 *        Does this check validate those too? */
@@ -490,26 +498,8 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 		if (head.initSP<4) LOG(LOG_EXEC,LOG_ERROR)("stack underflow/wrap at EXEC SS:SP=%04x:%04x",head.initSS,head.initSP);
 	}
 
-	if (flags==LOAD) {
-		SaveRegisters();
-		DOS_PSP callpsp(dos.psp());
-		/* Save the SS:SP on the PSP of calling program */
-		callpsp.SetStack(RealMakeSeg(ss,reg_sp));
-		reg_sp+=18;
-		/* Switch the psp's */
-		dos.psp(pspseg);
-		DOS_PSP newpsp(dos.psp());
-		dos.dta(RealMake(newpsp.GetSegment(),0x80));
-		/* First word on the stack is the value ax should contain on startup */
-		real_writew(RealSeg(sssp-2),RealOff(sssp-2),0xffff);
-		block.exec.initsssp = sssp-2;
-		block.exec.initcsip = csip;
-		block.SaveData();
-		return true;
-	}
 
-	if (flags==LOADNGO) {
-		if ((reg_sp>0xfffe) || (reg_sp<18)) LOG(LOG_EXEC,LOG_ERROR)("stack underflow/wrap at EXEC SS:SP=%04x:%04x",SegValue(ss),reg_sp);
+	if ((flags == LOAD) || (flags == LOADNGO)) {
 		/* Get Caller's program CS:IP of the stack and set termination address to that */
 		RealSetVec(0x22,RealMake(mem_readw(SegPhys(ss)+reg_sp+2),mem_readw(SegPhys(ss)+reg_sp)));
 		SaveRegisters();
@@ -525,31 +515,19 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 		/* copy fcbs */
 		newpsp.SetFCB1(block.exec.fcb1);
 		newpsp.SetFCB2(block.exec.fcb2);
-        /* Save the SS:SP on the PSP of new program */
-        newpsp.SetStack(RealMakeSeg(ss,reg_sp));
-        /* Set the stack for new program */
-		SegSet16(ss,RealSeg(sssp));reg_sp=RealOff(sssp);
-		/* Add some flags and CS:IP on the stack for the IRET */
-		CPU_Push16(RealSeg(csip));
-		CPU_Push16(RealOff(csip));
-		/* DOS starts programs with a RETF, so critical flags
-		 * should not be modified (IOPL in v86 mode);
-		 * interrupt flag is set explicitly, test flags cleared */
-		reg_flags=(reg_flags&(~FMASK_TEST))|FLAG_IF;
-		//Jump to retf so that we only need to store cs:ip on the stack
-		reg_ip++;
-		/* Setup the rest of the registers */
-		reg_ax=reg_bx=0;reg_cx=0xff;
-		reg_dx=pspseg;
-		reg_si=RealOff(csip);
-		reg_di=RealOff(sssp);
-		reg_bp=0x91c;	/* DOS internal stack begin relict */
-		SegSet16(ds,pspseg);SegSet16(es,pspseg);
-#if C_DEBUG		
-		/* Started from debug.com, then set breakpoint at start */
-		DEBUG_CheckExecuteBreakpoint(RealSeg(csip),RealOff(csip));
-#endif
-		/* Add the filename to PSP and environment MCB's */
+		
+		/* Save the SS:SP on the PSP of new program */
+		newpsp.SetStack(RealMakeSeg(ss,reg_sp));
+
+		/* Setup bx, contains a 0xff in bl and bh if the drive in the fcb is not valid */
+		DOS_FCB fcb1(RealSeg(block.exec.fcb1),RealOff(block.exec.fcb1));
+		DOS_FCB fcb2(RealSeg(block.exec.fcb2),RealOff(block.exec.fcb2));
+		uint8_t d1 = fcb1.GetDrive(); //depends on 0 giving the dos.default drive
+		if ( (d1>=DOS_DRIVES) || !Drives[d1] ) reg_bl = 0xFF; else reg_bl = 0;
+		uint8_t d2 = fcb2.GetDrive();
+		if ( (d2>=DOS_DRIVES) || !Drives[d2] ) reg_bh = 0xFF; else reg_bh = 0;
+
+		/* Write filename in new program MCB */
 		char stripname[8]= { 0 };Bitu index=0;
 		while (char chr=*name++) {
 			switch (chr) {
@@ -567,6 +545,48 @@ bool DOS_Execute(char * name,PhysPt block_pt,Bit8u flags) {
 		DOS_MCB pspmcb(dos.psp()-1);
 		pspmcb.SetFileName(stripname);
 		DOS_UpdatePSPName();
+	}
+
+	if (flags==LOAD) {
+		/* First word on the stack is the value ax should contain on startup */
+		real_writew(RealSeg(sssp-2),RealOff(sssp-2),reg_bx);
+		/* Write initial CS:IP and SS:SP in param block */
+		block.exec.initsssp = sssp-2;
+		block.exec.initcsip = csip;
+		block.SaveData();
+		/* Changed registers */
+		reg_sp+=18;
+		reg_ax=RealOff(csip);
+		reg_bx=memsize;
+		reg_dx=0;
+		return true;
+	}
+
+	if (flags==LOADNGO) {
+		if ((reg_sp>0xfffe) || (reg_sp<18)) LOG(LOG_EXEC,LOG_ERROR)("stack underflow/wrap at EXEC");
+		/* Set the stack for new program */
+		SegSet16(ss,RealSeg(sssp));reg_sp=RealOff(sssp);
+		/* Add some flags and CS:IP on the stack for the IRET */
+		CPU_Push16(RealSeg(csip));
+		CPU_Push16(RealOff(csip));
+		/* DOS starts programs with a RETF, so critical flags
+		 * should not be modified (IOPL in v86 mode);
+		 * interrupt flag is set explicitly, test flags cleared */
+		reg_flags=(reg_flags&(~FMASK_TEST))|FLAG_IF;
+		//Jump to retf so that we only need to store cs:ip on the stack
+		reg_ip++;
+		/* Setup the rest of the registers */
+		reg_ax = reg_bx;
+		reg_cx=0xff;
+		reg_dx=pspseg;
+		reg_si=RealOff(csip);
+		reg_di=RealOff(sssp);
+		reg_bp=0x91c;	/* DOS internal stack begin relict */
+		SegSet16(ds,pspseg);SegSet16(es,pspseg);
+#if C_DEBUG		
+		/* Started from debug.com, then set breakpoint at start */
+		DEBUG_CheckExecuteBreakpoint(RealSeg(csip),RealOff(csip));
+#endif
 		return true;
 	}
 	return false;

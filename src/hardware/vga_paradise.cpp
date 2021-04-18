@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -23,7 +23,7 @@
 #include "inout.h"
 #include "mem.h"
 
-typedef struct {
+typedef struct SVGA_PVGA1A_DATA_t {
 	Bitu PR0A;
 	Bitu PR0B;
 	Bitu PR1;
@@ -52,7 +52,7 @@ static void bank_setup_pvga1a() {
 		// TODO: Requirements are not compatible with vga_memory implementation.
 	} else {
 		// Single bank config is straightforward
-		vga.svga.bank_read = vga.svga.bank_write = pvga1a.PR0A;
+		vga.svga.bank_read = vga.svga.bank_write = (uint8_t)pvga1a.PR0A;
 		vga.svga.bank_size = 4*1024;
 		VGA_SetupHandlers();
 	}
@@ -149,7 +149,7 @@ void FinishSetMode_PVGA1A(Bitu /*crtc_base*/, VGA_ModeExtraData* modeData) {
 	IO_Write(0x3ce, 0x0a);
 	IO_Write(0x3cf, 0x00);
 	IO_Write(0x3ce, 0x0b);
-	Bit8u val = IO_Read(0x3cf);
+	uint8_t val = IO_Read(0x3cf);
 	IO_Write(0x3cf, val & ~0x08);
 	IO_Write(0x3ce, 0x0c);
 	IO_Write(0x3cf, 0x00);
@@ -158,7 +158,7 @@ void FinishSetMode_PVGA1A(Bitu /*crtc_base*/, VGA_ModeExtraData* modeData) {
 	IO_Write(0x3ce, 0x0e);
 	IO_Write(0x3cf, 0x00);
 	IO_Write(0x3ce, 0x0f);
-	IO_Write(0x3cf, oldlock);
+	IO_Write(0x3cf, (uint8_t)oldlock);
 
 	if (svga.determine_mode)
 		svga.determine_mode();
@@ -170,9 +170,6 @@ void FinishSetMode_PVGA1A(Bitu /*crtc_base*/, VGA_ModeExtraData* modeData) {
 		vga.config.compatible_chain4 = true;
 //		vga.vmemwrap = 256*1024;
 	}
-
-    // FIXME: What? Is this needed?
-	vga.config.compatible_chain4 = false;
 
 	VGA_SetupHandlers();
 }
@@ -245,3 +242,22 @@ void SVGA_Setup_ParadisePVGA1A(void) {
 	IO_Write(0x3cf, 0x05); // Enable!
 }
 
+// save state support
+void POD_Save_VGA_Paradise( std::ostream& stream )
+{
+	// static globals
+
+
+	// - pure struct data
+	WRITE_POD( &pvga1a, pvga1a );
+}
+
+
+void POD_Load_VGA_Paradise( std::istream& stream )
+{
+	// static globals
+
+
+	// - pure struct data
+	READ_POD( &pvga1a, pvga1a );
+}

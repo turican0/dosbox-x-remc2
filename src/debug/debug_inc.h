@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2020  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 /* Local Debug Function */
@@ -57,10 +57,10 @@ public:
 
         WINI_MAX_INDEX
     };
-    bool win_vis[WINI_MAX_INDEX];
+    bool win_vis[WINI_MAX_INDEX] = {};
     std::string win_title[WINI_MAX_INDEX];
-    unsigned char win_order[WINI_MAX_INDEX];
-    unsigned int win_height[WINI_MAX_INDEX];
+    unsigned char win_order[WINI_MAX_INDEX] = {};
+    unsigned int win_height[WINI_MAX_INDEX] = {};
 public:
 	DBGBlock() : win_main(NULL), win_reg(NULL), win_data(NULL), win_code(NULL),
 		win_var(NULL), win_out(NULL), win_inp(NULL), active_win(WINI_CODE), input_y(0), global_mask(0), data_view(0xFF) {
@@ -82,9 +82,9 @@ public:
 
     WINDOW * win_inp;                   /* Input window (not counted in tab enumeration) */
 
-    Bit32u active_win;					/* Current active window */
-	Bit32u input_y;
-	Bit32u global_mask;					/* Current msgmask */
+    uint32_t active_win;					/* Current active window */
+	uint32_t input_y;
+	uint32_t global_mask;					/* Current msgmask */
 
     unsigned char data_view;
 
@@ -98,25 +98,25 @@ public:
     int name_to_win(const char *name);
     WINDOW *get_active_win(void);
     int win_find_order(int wnd);
-    int win_prev_by_order(int ord);
-    int win_next_by_order(int ord);
+    int win_prev_by_order(int order);
+    int win_next_by_order(int order);
     void swap_order(int o1,int o2);
     void next_window(void);
 };
 
 
 struct DASMLine {
-	Bit32u pc;
+	uint32_t pc;
 	char dasm[80];
 	PhysPt ea;
-	Bit16u easeg;
-	Bit32u eaoff;
+	uint16_t easeg;
+	uint32_t eaoff;
 };
 
 extern DBGBlock dbg;
 
 /* Local Debug Stuff */
-Bitu DasmI386(char* buffer, PhysPt pc, Bitu cur_ip, bool bit32);
+Bitu DasmI386(char* buffer, PhysPt pc, uint32_t cur_ip, bool bit32);
 int  DasmLastOperandSize(void);
 #endif
 

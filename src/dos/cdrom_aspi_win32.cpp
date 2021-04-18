@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -32,10 +32,11 @@
 #include <ntddcdrm.h>			// Ioctl stuff
 #include <ntddscsi.h>
 #include <winioctl.h>			// Ioctl stuff
-#else 
-#ifdef __MINGW64_VERSION_MAJOR
-#include <winioctl.h>
-#endif
+#elif (defined __MINGW64_VERSION_MAJOR)
+#include <winioctl.h>			// Ioctl stuff
+#include <ntddcdrm.h>			// Ioctl stuff
+#include <ntddscsi.h>
+#else
 #include "ddk/ntddcdrm.h"		// Ioctl stuff
 #include "ddk/ntddscsi.h"
 #endif
@@ -724,7 +725,7 @@ bool CDROM_Interface_Aspi::ReadSectors(PhysPt buffer, bool raw, unsigned long se
 	memset(&s,0,sizeof(s));
 
 	Bitu   buflen	= raw?2352*num:2048*num;
-	Bit8u* bufdata	= new Bit8u[buflen];
+	uint8_t* bufdata	= new uint8_t[buflen];
 
 	s.execscsicmd.SRB_Cmd        = SC_EXEC_SCSI_CMD;
 	s.execscsicmd.SRB_HaId       = haId;

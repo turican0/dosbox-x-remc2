@@ -8,6 +8,10 @@
 aclocal.m4
 configure
 
+vs2015/sdlnet/Makefile.in
+vs2015/sdlnet/aclocal.m4
+vs2015/sdlnet/configure
+
 # User-specific files
 *.suo
 *.user
@@ -325,6 +329,14 @@ windows-installer/DOSBox-X-standalone-*
 windows-installer/DOSBox-X-setup-*.exe
 windows-installer/DOSBox-X-setup-*.zip
 
+make-rpm.sh
+contrib/linux/dosbox-x.spec
+contrib/linux/com.dosbox_x.DOSBox-X.metainfo.xml
+
+\!DosBox-X/*,ff8
+\!DosBox-X/CHANGELOG,fff
+\!DosBox-X/resources/*
+
 *.o
 *.a
 *.la
@@ -383,3 +395,4 @@ vs2015/libpng/linux-build/*
 /vs2015/libpdcurses/wincon/ozdemo.exe
 /vs2015/libpdcurses/wincon/firework.exe
 .vscode/settings.json
+vs2015/freetype/objs

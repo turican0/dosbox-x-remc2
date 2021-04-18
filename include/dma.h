@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -25,7 +25,13 @@ enum DMAEvent {
 	DMA_REACHED_TC,
 	DMA_MASKED,
 	DMA_UNMASKED,
-	DMA_TRANSFEREND
+//	DMA_TRANSFEREND, this shouldn't really be a signal
+};
+
+enum DMATransfer {
+    DMAT_VERIFY=0,
+    DMAT_WRITE=1,
+    DMAT_READ=2
 };
 
 class DmaChannel;
@@ -33,16 +39,17 @@ typedef void (* DMA_CallBack)(DmaChannel * chan,DMAEvent event);
 
 class DmaChannel {
 public:
-	Bit32u pagebase;
-	Bit16u baseaddr;
-	Bit32u curraddr;
-	Bit16u basecnt;
-	Bit16u currcnt;
-	Bit8u channum;
-	Bit8u pagenum;
-    Bit8u DMA16_PAGESHIFT;
-    Bit32u DMA16_ADDRMASK;
-	Bit8u DMA16;
+	uint32_t pagebase;
+	uint16_t baseaddr;
+	uint32_t curraddr;
+	uint16_t basecnt;
+	uint16_t currcnt;
+	uint8_t channum;
+	uint8_t pagenum;
+    uint8_t DMA16_PAGESHIFT;
+    uint32_t DMA16_ADDRMASK;
+	uint8_t DMA16;
+    uint8_t transfer_mode;
 	bool increment;
 	bool autoinit;
 	bool masked;
@@ -50,7 +57,41 @@ public:
 	bool request;
 	DMA_CallBack callback;
 
-	DmaChannel(Bit8u num, bool dma16);
+    // additional PC-98 proprietary feature:
+    //  auto "bank" increment on DMA wraparound.
+    //
+    //  I/O port 29h:
+    //    bits [7:4] = 0
+    //    bits [3:2] = increment mode   0=64KB wraparound (no incr)  1=1MB boundary wrap   2=invalid   3=16MB boundary wrap
+    //    bits [1:0] = which DMA channel to set
+    //
+    //  This value is set by:
+    //    0 = 0x00
+    //    1 = 0x0F
+    //    2 = 0xF0 (probably why it's invalid)
+    //    3 = 0xFF
+    //
+    // TODO: Does this setting stick or does it reset after normal legacy programming?
+    // TODO: When the bank auto increments does it increment the actual register or just
+    //       an internal copy?
+    uint8_t page_bank_increment_wraparound = 0u;
+
+    void page_bank_increment(void) { // to be called on DMA wraparound
+        if (page_bank_increment_wraparound != 0u) {
+            // FIXME: Improve this.
+            // Currently this code assumes that the auto increment in PC-98 modifies the
+            // register value (and therefore visible to the guest). Change this code if
+            // that model is wrong.
+            const uint8_t add =
+                increment ? 0x01u : 0xFFu;
+            const uint8_t nv =
+                ( pagenum        & (~page_bank_increment_wraparound)) +
+                ((pagenum + add) & ( page_bank_increment_wraparound));
+            SetPage(nv);
+        }
+    }
+
+	DmaChannel(uint8_t num, bool dma16);
 	void DoCallBack(DMAEvent event) {
 		if (callback)	(*callback)(this,event);
 	}
@@ -78,9 +119,9 @@ public:
 		tcount=true;
 		DoCallBack(DMA_REACHED_TC);
 	}
-	void SetPage(Bit8u val) {
+	void SetPage(uint8_t val) {
 		pagenum=val;
-		pagebase=(Bitu)((Bitu)(pagenum >> DMA16_PAGESHIFT) << (Bitu)(16u + DMA16_PAGESHIFT));
+		pagebase=(uint32_t)(pagenum >> DMA16_PAGESHIFT) << (uint32_t)((uint8_t)16u + DMA16_PAGESHIFT);
 	}
 	void Raise_Request(void) {
 		request=true;
@@ -88,8 +129,8 @@ public:
 	void Clear_Request(void) {
 		request=false;
 	}
-	Bitu Read(Bitu size, Bit8u * buffer);
-	Bitu Write(Bitu size, Bit8u * buffer);
+	Bitu Read(Bitu want, uint8_t * buffer);
+	Bitu Write(Bitu want, uint8_t * buffer);
 
 	void SaveState( std::ostream& stream );
 	void LoadState( std::istream& stream );
@@ -97,25 +138,25 @@ public:
 
 class DmaController {
 private:
-	Bit8u ctrlnum;
+	uint8_t ctrlnum;
 	bool flipflop;
-	DmaChannel *DmaChannels[4];
+    DmaChannel* DmaChannels[4] = {};
 public:
-	IO_ReadHandleObject DMA_ReadHandler[0x11];
-	IO_WriteHandleObject DMA_WriteHandler[0x11];
-	DmaController(Bit8u num) {
+	IO_ReadHandleObject DMA_ReadHandler[0x15];
+	IO_WriteHandleObject DMA_WriteHandler[0x15];
+	DmaController(uint8_t num) {
 		flipflop = false;
 		ctrlnum = num;		/* first or second DMA controller */
-		for(Bit8u i=0;i<4;i++) {
+		for(uint8_t i=0;i<4;i++) {
 			DmaChannels[i] = new DmaChannel(i+ctrlnum*4,ctrlnum==1);
 		}
 	}
 	~DmaController(void) {
-		for(Bit8u i=0;i<4;i++) {
+		for(uint8_t i=0;i<4;i++) {
 			delete DmaChannels[i];
 		}
 	}
-	DmaChannel * GetChannel(Bit8u chan) {
+	DmaChannel * GetChannel(uint8_t chan) {
 		if (chan<4) return DmaChannels[chan];
 		else return NULL;
 	}
@@ -126,11 +167,11 @@ public:
 	void LoadState( std::istream& stream );
 };
 
-DmaChannel * GetDMAChannel(Bit8u chan);
+DmaChannel * GetDMAChannel(uint8_t chan);
 
 void CloseSecondDMAController(void);
 bool SecondDMAControllerAvailable(void);
 
-void DMA_SetWrapping(Bitu wrap);
+void DMA_SetWrapping(uint32_t wrap);
 
 #endif

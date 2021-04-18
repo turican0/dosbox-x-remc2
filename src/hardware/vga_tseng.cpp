@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -31,12 +31,12 @@ extern bool vga_sierra_lock_565;
 
 // Tseng ET4K data
 typedef struct {
-    Bit8u extensionsEnabled;
+    uint8_t extensionsEnabled;
 
 // Current DAC mode
-    Bit8u hicolorDACcmdmode;
+    uint8_t hicolorDACcmdmode;
 // HiColor DAC control register. See comments below. Only bits 5-7 are emulated, close to SC11485 version.
-    Bit8u hicolorDACcommand;
+    uint8_t hicolorDACcommand;
 
 // Stored exact values of some registers. Documentation only specifies some bits but hardware checks may
 // expect other bits to be preserved.
@@ -114,7 +114,7 @@ void write_p3d5_et4k(Bitu reg,Bitu val,Bitu iolen) {
     // TODO: Bit 6 may have effect on emulation
     STORE_ET4K(3d4, 34);
 
-    case 0x35: 
+    case 0x35:
     /*
     3d4h index 35h (R/W): Overflow High
     bit    0  Vertical Blank Start Bit 10 (3d4h index 15h).
@@ -131,7 +131,7 @@ void write_p3d5_et4k(Bitu reg,Bitu val,Bitu iolen) {
         vga.config.line_compare = (vga.config.line_compare & 0x3ff) | ((val&0x10)<<6);
     // Abusing s3 ex_ver_overflow field. This is to be cleaned up later.
         {
-            Bit8u s3val =
+            uint8_t s3val =
                 ((val & 0x01) << 2) | // vbstart
                 ((val & 0x02) >> 1) | // vtotal
                 ((val & 0x04) >> 1) | // vdispend
@@ -350,14 +350,14 @@ void FinishSetMode_ET4K(Bitu crtc_base, VGA_ModeExtraData* modeData) {
     // Reinterpret hor_overflow. Curiously, three bits out of four are
     // in the same places. Input has hdispend (not supported), output
     // has CRTC offset (also not supported)
-    Bit8u et4k_hor_overflow = 
+    uint8_t et4k_hor_overflow =
         (modeData->hor_overflow & 0x01) |
         (modeData->hor_overflow & 0x04) |
         (modeData->hor_overflow & 0x10);
     IO_Write(crtc_base,0x3f);IO_Write(crtc_base+1,et4k_hor_overflow);
 
     // Reinterpret ver_overflow
-    Bit8u et4k_ver_overflow =
+    uint8_t et4k_ver_overflow =
         ((modeData->ver_overflow & 0x01) << 1) | // vtotal10
         ((modeData->ver_overflow & 0x02) << 1) | // vdispend10
         ((modeData->ver_overflow & 0x04) >> 2) | // vbstart10
@@ -381,11 +381,11 @@ void FinishSetMode_ET4K(Bitu crtc_base, VGA_ModeExtraData* modeData) {
 
     // Select SVGA clock to get close to 60Hz (not particularly clean implementation)
     if (modeData->modeNo > 0x13) {
-        Bitu target = modeData->vtotal*8*modeData->htotal*60;
+        Bits target = static_cast<Bits>(modeData->vtotal * 8 * modeData->htotal * 60);
         Bitu best = 1;
-        Bits dist = 100000000;
-        for (Bitu i=0; i<16; i++) {
-            Bits cdiff=abs((Bits)(target-et4k.clockFreq[i]));
+        int dist = 100000000;
+        for (Bitu i = 0; i < 16; i++) {
+            int cdiff = abs( static_cast<int>(target - static_cast<Bits>(et4k.clockFreq[i])) );
             if (cdiff < dist) {
                 best = i;
                 dist = cdiff;
@@ -418,7 +418,21 @@ void DetermineMode_ET4K() {
     // until I figure a way to either distinguish M_VGA and M_LIN8 or
     // merge them.
     if (vga.attr.mode_control & 1) {
-        if (vga.gfx.mode & 0x40) VGA_SetMode((et4k.biosMode<=0x13)?M_VGA:M_LIN8); // Ugly...
+        if (vga.gfx.mode & 0x40) {
+            // NTS: According to a register dump of a real Tseng ET4000, and
+            //      the datasheet, mode 0x2E (640x480 256-color) can be differentiated
+            //      from 320x200 256-color mode by whether the 8BIT bit is set
+            //      in the "mode control" register of the Attribute Controller.
+            //      If it is set, we're in standard VGA mode. If not set, but the
+            //      256-color bit is set in the Graphics Controller, then we're in
+            //      the SVGA modes.
+            if (vga.attr.mode_control & 0x40) {
+                VGA_SetMode((et4k.biosMode<=0x13)?M_VGA:M_LIN8); // Ugly...
+            }
+            else {
+                VGA_SetMode(M_LIN8);
+            }
+        }
         else if (vga.gfx.mode & 0x20) VGA_SetMode(M_CGA4);
         else if ((vga.gfx.miscellaneous & 0x0c)==0x0c) VGA_SetMode(M_CGA2);
         else VGA_SetMode((et4k.biosMode<=0x13)?M_EGA:M_LIN4);
@@ -482,7 +496,7 @@ void write_p3c6_et4k(Bitu port,Bitu val,Bitu iolen) {
     if (et4k.hicolorDACcmdmode <= 3) {
         write_p3c6(port, val, iolen);
     } else {
-        Bit8u command = val & 0xe0;
+        uint8_t command = val & 0xe0;
         if (command != et4k.hicolorDACcommand) {
             et4k.hicolorDACcommand = command;
             DetermineMode_ET4K();
@@ -536,12 +550,12 @@ void SetupDAC_ET4K() {
 }
 
 // BIOS extensions for HiColor-enabled cards
-bool INT10_SetVideoMode(Bit16u mode);
+bool INT10_SetVideoMode(uint16_t mode);
 
 void INT10Extensions_ET4K() {
     switch (reg_ax) {
     case 0x10F0: /* ET4000: SET HiColor GRAPHICS MODE */
-        if (INT10_SetVideoMode(0x200 | Bit16u(reg_bl))) {
+        if (INT10_SetVideoMode(0x200 | uint16_t(reg_bl))) {
             reg_ax = 0x0010;
         }
         break;
@@ -559,7 +573,7 @@ void INT10Extensions_ET4K() {
             break;
         case 1: case 2:
             {
-                Bit8u val = (reg_bl == 1) ? 0xa0 : 0xe0;
+                uint8_t val = (reg_bl == 1) ? 0xa0 : 0xe0;
                 if (val != et4k.hicolorDACcommand) {
                     et4k.hicolorDACcommand = val;
                     DetermineMode_ET4K();
@@ -581,6 +595,8 @@ void INT10Extensions_ET4K() {
         }
     }
 }
+
+extern bool VGA_BIOS_use_rom;
 
 void SVGA_Setup_TsengET4K(void) {
     svga.write_p3d5 = &write_p3d5_et4k;
@@ -630,8 +646,10 @@ void SVGA_Setup_TsengET4K(void) {
     else
         vga.mem.memsize = 1024*1024;
 
-    // Tseng ROM signature
-    phys_writes(PhysMake(0xc000,0)+0x0075, " Tseng ", 8);
+    if (!VGA_BIOS_use_rom) {
+        // Tseng ROM signature
+        phys_writes(PhysMake(0xc000,0)+0x0075, " Tseng ", 8);
+    }
 }
 
 
@@ -732,7 +750,7 @@ void write_p3d5_et3k(Bitu reg,Bitu val,Bitu iolen) {
         vga.config.line_compare = (vga.config.line_compare & 0x3ff) | ((val&0x10)<<6);
     // Abusing s3 ex_ver_overflow field. This is to be cleaned up later.
         {
-            Bit8u s3val =
+            uint8_t s3val =
                 ((val & 0x01) << 2) | // vbstart
                 ((val & 0x02) >> 1) | // vtotal
                 ((val & 0x04) >> 1) | // vdispend
@@ -875,7 +893,7 @@ void FinishSetMode_ET3K(Bitu crtc_base, VGA_ModeExtraData* modeData) {
 
     // Tseng ET3K does not have horizontal overflow bits
     // Reinterpret ver_overflow
-    Bit8u et4k_ver_overflow =
+    uint8_t et4k_ver_overflow =
         ((modeData->ver_overflow & 0x01) << 1) | // vtotal10
         ((modeData->ver_overflow & 0x02) << 1) | // vdispend10
         ((modeData->ver_overflow & 0x04) >> 2) | // vbstart10
@@ -884,7 +902,7 @@ void FinishSetMode_ET3K(Bitu crtc_base, VGA_ModeExtraData* modeData) {
     IO_Write(crtc_base,0x25);IO_Write(crtc_base+1,et4k_ver_overflow);
 
     // Clear remaining ext CRTC registers
-    for (Bitu i=0x16; i<=0x21; i++) {
+    for (uint8_t i=0x16; i<=0x21; i++) {
         IO_Write(crtc_base,i);
         IO_Write(crtc_base+1,0);
     }
@@ -900,11 +918,11 @@ void FinishSetMode_ET3K(Bitu crtc_base, VGA_ModeExtraData* modeData) {
 
     // Select SVGA clock to get close to 60Hz (not particularly clean implementation)
     if (modeData->modeNo > 0x13) {
-        Bitu target = modeData->vtotal*8*modeData->htotal*60;
+        Bits target = static_cast<Bits>(modeData->vtotal * 8 * modeData->htotal * 60);
         Bitu best = 1;
-        Bits dist = 100000000;
-        for (Bitu i=0; i<8; i++) {
-            Bits cdiff = abs((Bits)(target-et3k.clockFreq[i]));
+        int dist = 100000000;
+        for (Bitu i = 0; i < 8; i++) {
+            int cdiff = abs( static_cast<int32_t>(target - static_cast<Bits>(et3k.clockFreq[i])) );
             if (cdiff < dist) {
                 best = i;
                 dist = cdiff;
@@ -990,3 +1008,24 @@ void SVGA_Setup_TsengET3K(void) {
     phys_writeb(rom_base+0x007b,' ');
 }
 
+// save state support
+void POD_Save_VGA_Tseng( std::ostream& stream )
+{
+	// static globals
+
+
+	// - pure struct data
+	WRITE_POD( &et4k, et4k );
+	WRITE_POD( &et3k, et3k );
+}
+
+
+void POD_Load_VGA_Tseng( std::istream& stream )
+{
+	// static globals
+
+
+	// - pure struct data
+	READ_POD( &et4k, et4k );
+	READ_POD( &et3k, et3k );
+}

@@ -5,7 +5,7 @@
 #  include <endian.h>
 
 /* MinGW implements some MSVC idioms, so always test for MinGW first. */
-# elif defined(__MINGW32__)
+# elif defined(__MINGW32__) || defined(__riscos__)
 
 # if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 
@@ -115,11 +115,11 @@
 #define _BSD_SOURCE
 #include <endian.h>
 
-#elif defined(__OpenBSD__)
+#elif defined(__NetBSD__) || defined(__OpenBSD__)
 
 #include <sys/endian.h>
 
-#elif defined(__NetBSD__) || defined(__FreeBSD__) || defined(__DragonFly__)
+#elif defined(__FreeBSD__) || defined(__DragonFly__)
 
 #include <sys/endian.h>
 
@@ -131,6 +131,10 @@
 
 #define be64toh(x) betoh64(x)
 #define le64toh(x) letoh64(x)
+
+#elif defined(__HAIKU__)
+
+#include <endian.h>
 
 #endif
 

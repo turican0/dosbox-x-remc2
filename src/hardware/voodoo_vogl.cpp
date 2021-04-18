@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,11 +11,15 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+// Tell Mac OS X to shut up about deprecated OpenGL calls
+#ifndef GL_SILENCE_DEPRECATION
+#define GL_SILENCE_DEPRECATION
+#endif
 
 #include <stdlib.h>
 #include <math.h>
@@ -30,9 +34,9 @@
 
 /* NTS: This causes errors in Linux because MesaGL already defines these */
 #ifdef WIN32
-PFNGLMULTITEXCOORD4FVARBPROC glMultiTexCoord4fvARB = NULL;
-PFNGLMULTITEXCOORD4FARBPROC glMultiTexCoord4fARB = NULL;
-PFNGLACTIVETEXTUREARBPROC glActiveTextureARB = NULL;
+PFNGLMULTITEXCOORD4FVARBPROC __glMultiTexCoord4fvARB = NULL;
+PFNGLMULTITEXCOORD4FARBPROC __glMultiTexCoord4fARB = NULL;
+PFNGLACTIVETEXTUREARBPROC __glActiveTextureARB = NULL;
 #endif
 
 PFNGLCREATESHADEROBJECTARBPROC glCreateShaderObjectARB = NULL;
@@ -58,7 +62,7 @@ PFNGLGETATTRIBLOCATIONARBPROC glGetAttribLocationARB = NULL;
 PFNGLVERTEXATTRIB1FARBPROC glVertexAttrib1fARB = NULL;
 
 
-static Bit32s opengl_version = -1;
+static int32_t opengl_version = -1;
 
 static bool has_shaders = false;
 static bool has_stencil = false;
@@ -67,14 +71,14 @@ static bool has_alpha = false;
 
 static INT32 current_begin_mode = -1;
 
-static Bit32s current_depth_mode = -1;
-static Bit32s current_depth_func = -1;
+static int32_t current_depth_mode = -1;
+static int32_t current_depth_func = -1;
 
-static Bit32s current_alpha_enabled = -1;
-static Bit32s current_src_rgb_fac = -1;
-static Bit32s current_dst_rgb_fac = -1;
-static Bit32s current_src_alpha_fac = -1;
-static Bit32s current_dst_alpha_fac = -1;
+static int32_t current_alpha_enabled = -1;
+static int32_t current_src_rgb_fac = -1;
+static int32_t current_dst_rgb_fac = -1;
+static int32_t current_src_alpha_fac = -1;
+static int32_t current_dst_alpha_fac = -1;
 
 static bool depth_masked = false;
 static bool color_masked = false;
@@ -169,20 +173,20 @@ bool VOGL_Initialize(void) {
 	VOGL_InitVersion();
 
 #ifdef WIN32
-	glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glActiveTextureARB"));
-	if (!glActiveTextureARB) {
+	__glActiveTextureARB = (PFNGLACTIVETEXTUREARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glActiveTextureARB"));
+	if (!__glActiveTextureARB) {
 		LOG_MSG("opengl: glActiveTextureARB extension not supported");
 		return false;
 	}
 
-	glMultiTexCoord4fARB = (PFNGLMULTITEXCOORD4FARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glMultiTexCoord4fARB"));
-	if (!glMultiTexCoord4fARB) {
+	__glMultiTexCoord4fARB = (PFNGLMULTITEXCOORD4FARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glMultiTexCoord4fARB"));
+	if (!__glMultiTexCoord4fARB) {
 		LOG_MSG("opengl: glMultiTexCoord4fARB extension not supported");
 		return false;
 	}
 
-	glMultiTexCoord4fvARB = (PFNGLMULTITEXCOORD4FVARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glMultiTexCoord4fvARB"));
-	if (!glMultiTexCoord4fvARB) {
+	__glMultiTexCoord4fvARB = (PFNGLMULTITEXCOORD4FVARBPROC)((uintptr_t)SDL_GL_GetProcAddress("glMultiTexCoord4fvARB"));
+	if (!__glMultiTexCoord4fvARB) {
 		LOG_MSG("opengl: glMultiTexCoord4fvARB extension not supported");
 		return false;
 	}
@@ -282,7 +286,7 @@ bool VOGL_Initialize(void) {
 }
 
 
-bool VOGL_CheckFeature(Bit32u feat) {
+bool VOGL_CheckFeature(uint32_t feat) {
 	switch (feat) {
 		case VOGL_ATLEAST_V20:
 			if (opengl_version >= 200) return true;
@@ -310,7 +314,7 @@ bool VOGL_CheckFeature(Bit32u feat) {
 	return false;
 }
 
-void VOGL_FlagFeature(Bit32u feat) {
+void VOGL_FlagFeature(uint32_t feat) {
 	switch (feat) {
 		case VOGL_HAS_SHADERS:
 			has_shaders = true;
@@ -351,7 +355,7 @@ void VOGL_ClearBeginMode(void) {
 }
 
 
-void VOGL_SetDepthMode(Bit32s mode, Bit32s func) {
+void VOGL_SetDepthMode(int32_t mode, int32_t func) {
 	if (current_depth_mode!=mode) {
 		if (mode!=0) {
 			VOGL_ClearBeginMode();
@@ -376,20 +380,20 @@ void VOGL_SetDepthMode(Bit32s mode, Bit32s func) {
 }
 
 
-void VOGL_SetAlphaMode(Bit32s enabled_mode,GLuint src_rgb_fac,GLuint dst_rgb_fac,
+void VOGL_SetAlphaMode(int32_t enabled_mode,GLuint src_rgb_fac,GLuint dst_rgb_fac,
 											GLuint src_alpha_fac,GLuint dst_alpha_fac) {
 	if (current_alpha_enabled!=enabled_mode) {
 		VOGL_ClearBeginMode();
 		if (enabled_mode!=0) {
 			glEnable(GL_BLEND);
 			current_alpha_enabled=1;
-			if ((current_src_rgb_fac!=(Bit32s)src_rgb_fac) || (current_dst_rgb_fac!=(Bit32s)dst_rgb_fac) ||
-				(current_src_alpha_fac!=(Bit32s)src_alpha_fac) || (current_dst_alpha_fac!=(Bit32s)dst_alpha_fac)) {
+			if ((current_src_rgb_fac!=(int32_t)src_rgb_fac) || (current_dst_rgb_fac!=(int32_t)dst_rgb_fac) ||
+				(current_src_alpha_fac!=(int32_t)src_alpha_fac) || (current_dst_alpha_fac!=(int32_t)dst_alpha_fac)) {
 				glBlendFuncSeparateEXT(src_rgb_fac, dst_rgb_fac, src_alpha_fac, dst_alpha_fac);
-				current_src_rgb_fac=(Bit32s)src_rgb_fac;
-				current_dst_rgb_fac=(Bit32s)dst_rgb_fac;
-				current_src_alpha_fac=(Bit32s)src_alpha_fac;
-				current_dst_alpha_fac=(Bit32s)dst_alpha_fac;
+				current_src_rgb_fac=(int32_t)src_rgb_fac;
+				current_dst_rgb_fac=(int32_t)dst_rgb_fac;
+				current_src_alpha_fac=(int32_t)src_alpha_fac;
+				current_dst_alpha_fac=(int32_t)dst_alpha_fac;
 			}
 		} else {
 			glDisable(GL_BLEND);
@@ -397,14 +401,14 @@ void VOGL_SetAlphaMode(Bit32s enabled_mode,GLuint src_rgb_fac,GLuint dst_rgb_fac
 		}
 	} else {
 		if (current_alpha_enabled!=0) {
-			if ((current_src_rgb_fac!=(Bit32s)src_rgb_fac) || (current_dst_rgb_fac!=(Bit32s)dst_rgb_fac) ||
-				(current_src_alpha_fac!=(Bit32s)src_alpha_fac) || (current_dst_alpha_fac!=(Bit32s)dst_alpha_fac)) {
+			if ((current_src_rgb_fac!=(int32_t)src_rgb_fac) || (current_dst_rgb_fac!=(int32_t)dst_rgb_fac) ||
+				(current_src_alpha_fac!=(int32_t)src_alpha_fac) || (current_dst_alpha_fac!=(int32_t)dst_alpha_fac)) {
 				VOGL_ClearBeginMode();
 				glBlendFuncSeparateEXT(src_rgb_fac, dst_rgb_fac, src_alpha_fac, dst_alpha_fac);
-				current_src_rgb_fac=(Bit32s)src_rgb_fac;
-				current_dst_rgb_fac=(Bit32s)dst_rgb_fac;
-				current_src_alpha_fac=(Bit32s)src_alpha_fac;
-				current_dst_alpha_fac=(Bit32s)dst_alpha_fac;
+				current_src_rgb_fac=(int32_t)src_rgb_fac;
+				current_dst_rgb_fac=(int32_t)dst_rgb_fac;
+				current_src_alpha_fac=(int32_t)src_alpha_fac;
+				current_dst_alpha_fac=(int32_t)dst_alpha_fac;
 			}
 		}
 	}

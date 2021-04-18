@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2015  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -32,12 +32,12 @@
 FPU_rec fpu;
 
 void FPU_FLDCW(PhysPt addr){
-	Bit16u temp = mem_readw(addr);
+	uint16_t temp = mem_readw(addr);
 	FPU_SetCW(temp);
 }
 
-Bit16u FPU_GetTag(void){
-	Bit16u tag=0;
+uint16_t FPU_GetTag(void){
+	uint16_t tag=0;
 
 	for (Bitu i=0;i<8;i++)
 		tag |= (fpu.tags[i]&3) << (2*i);
@@ -45,7 +45,13 @@ Bit16u FPU_GetTag(void){
 	return tag;
 }
 
+#if C_FPU_X86
+#include "fpu_instructions_x86.h"
+#elif defined(HAS_LONG_DOUBLE)
+#include "fpu_instructions_longdouble.h"
+#else
 #include "fpu_instructions.h"
+#endif
 
 /* WATCHIT : ALWAYS UPDATE REGISTERS BEFORE AND AFTER USING THEM 
 			STATUS WORD =>	FPU_SET_TOP(TOP) BEFORE a read
@@ -138,7 +144,7 @@ void FPU_ESC1_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_F32(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -368,7 +374,7 @@ void FPU_ESC3_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_I32(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -393,7 +399,7 @@ void FPU_ESC3_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_F80(addr);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -513,7 +519,7 @@ void FPU_ESC5_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_F64(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -628,7 +634,7 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 	Bitu group=(rm >> 3) & 7;
 	Bitu sub=(rm & 7);
 	switch(group){
-	case 0x00:  /* FILD Bit16s */
+	case 0x00:  /* FILD int16_t */
 		{
 			unsigned char old_TOP = TOP;
 
@@ -636,7 +642,7 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_I16(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -646,10 +652,10 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 	case 0x01:
 		LOG(LOG_FPU,LOG_WARN)("ESC 7 EA:Unhandled group %d subfunction %d",(int)group,(int)sub);
 		break;
-	case 0x02:   /* FIST Bit16s */
+	case 0x02:   /* FIST int16_t */
 		FPU_FST_I16(addr);
 		break;
-	case 0x03:	/* FISTP Bit16s */
+	case 0x03:	/* FISTP int16_t */
 		FPU_FST_I16(addr);
 		FPU_FPOP();
 		break;
@@ -661,14 +667,14 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FBLD(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
 			}
 		}
 		break;
-	case 0x05:  /* FILD Bit64s */
+	case 0x05:  /* FILD int64_t */
 		{
 			unsigned char old_TOP = TOP;
 
@@ -676,7 +682,7 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 				FPU_PREP_PUSH();
 				FPU_FLD_I64(addr,TOP);
 			}
-			catch (GuestPageFaultException &pf) {
+            catch (const GuestPageFaultException& pf) {
 				(void)pf;
 				TOP = old_TOP;
 				throw;
@@ -687,7 +693,7 @@ void FPU_ESC7_EA(Bitu rm,PhysPt addr) {
 		FPU_FBST(addr);
 		FPU_FPOP();
 		break;
-	case 0x07:  /* FISTP Bit64s */
+	case 0x07:  /* FISTP int64_t */
 		FPU_FST_I64(addr);
 		FPU_FPOP();
 		break;
@@ -1012,6 +1018,14 @@ void FPU_Selftest() {
 	}
 #endif
 
+#if C_FPU_X86
+    LOG(LOG_FPU,LOG_NORMAL)("FPU core: x86 FPU");
+#elif defined(HAS_LONG_DOUBLE)
+    LOG(LOG_FPU,LOG_NORMAL)("FPU core: long double FPU");
+#else
+    LOG(LOG_FPU,LOG_NORMAL)("FPU core: double FPU (caution: possible precision errors)");
+#endif
+
 	FPU_Selftest_32();
 	FPU_Selftest_64();
 	FPU_Selftest_80();
@@ -1026,3 +1040,15 @@ void FPU_Init() {
 
 #endif
 
+//save state support
+namespace
+{
+class SerializeFpu : public SerializeGlobalPOD
+{
+public:
+    SerializeFpu() : SerializeGlobalPOD("FPU")
+    {
+        registerPOD(fpu);
+    }
+} dummy;
+}

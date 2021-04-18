@@ -13,8 +13,6 @@ struct SDL_xBRZ sdl_xbrz;
 
 void xBRZ_Initialize()
 {
-    memset(&sdl_xbrz, 0, sizeof(sdl_xbrz));
-
     Section_prop* section = static_cast<Section_prop *>(control->GetSection("render"));
 
     LOG(LOG_MISC, LOG_DEBUG)("Early init (renderer): xBRZ options");
@@ -69,7 +67,7 @@ bool xBRZ_SetScaleParameters(int srcWidth, int srcHeight, int dstWidth, int dstH
     return sdl_xbrz.scale_on;
 }
 
-void xBRZ_Render(const uint32_t* renderBuf, uint32_t* xbrzBuf, const Bit16u *changedLines, const int srcWidth, const int srcHeight, int scalingFactor)
+void xBRZ_Render(const uint32_t* renderBuf, uint32_t* xbrzBuf, const uint16_t *changedLines, const int srcWidth, const int srcHeight, int scalingFactor)
 {
 #ifdef XBRZ_PPL
     if (changedLines) // perf: in worst case similar to full input scaling
@@ -84,8 +82,8 @@ void xBRZ_Render(const uint32_t* renderBuf, uint32_t* xbrzBuf, const Bit16u *cha
                 y += changedLines[index];
             else
             {
-                const int sliceFirst = y;
-                const int sliceLast = y + changedLines[index];
+                const int sliceFirst = (int)y;
+                const int sliceLast = (int)y + changedLines[index];
                 y += changedLines[index];
 
                 int yFirst = max(yLast, sliceFirst - 2); // we need to update two adjacent lines as well since they are analyzed by xBRZ!
@@ -127,20 +125,20 @@ void xBRZ_Render(const uint32_t* renderBuf, uint32_t* xbrzBuf, const Bit16u *cha
                 y += changedLines[index];
             else
             {
-                const int sliceFirst = y;
-                const int sliceLast = y + changedLines[index];
+                const int sliceFirst = int(y);
+                const int sliceLast = int(y + changedLines[index]);
                 y += changedLines[index];
 
                 int yFirst = max(yLast, sliceFirst - 2); // we need to update two adjacent lines as well since they are analyzed by xBRZ!
                 yLast = min(srcHeight, sliceLast + 2);  // (and make sure to not overlap with last slice!)
-                xbrz::scale(scalingFactor, renderBuf, xbrzBuf, srcWidth, srcHeight, xbrz::ColorFormat::RGB, xbrz::ScalerCfg(), yFirst, yLast);
+                xbrz::scale((size_t)scalingFactor, renderBuf, xbrzBuf, srcWidth, srcHeight, xbrz::ColorFormat::RGB, xbrz::ScalerCfg(), yFirst, yLast);
             }
             index++;
         }
     }
     else // process complete input image
     {
-        xbrz::scale(scalingFactor, renderBuf, xbrzBuf, srcWidth, srcHeight, xbrz::ColorFormat::RGB, xbrz::ScalerCfg(), 0, srcHeight);
+        xbrz::scale((size_t)scalingFactor, renderBuf, xbrzBuf, srcWidth, srcHeight, xbrz::ColorFormat::RGB, xbrz::ScalerCfg(), 0, srcHeight);
     }
 #endif /*XBRZ_PPL*/
 }
@@ -153,6 +151,8 @@ void xBRZ_PostScale(const uint32_t* src, const int srcWidth, const int srcHeight
                     uint32_t* tgt, const int tgtWidth, const int tgtHeight, const int tgtPitch, 
                     const bool bilinear, const int task_granularity)
 {
+    (void)task_granularity;
+
 # if defined(XBRZ_PPL)
     if (bilinear) {
         concurrency::task_group tg;

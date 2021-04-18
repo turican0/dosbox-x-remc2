@@ -795,38 +795,31 @@ static SDL_bool X11_WindowPosition(_THIS, int *x, int *y, int w, int h)
 	return SDL_FALSE;
 }
 
+/* NTS: This code ALSO used to position the window, but that apparently breaks
+ *      with XFCE 4.14. The breakage manifests itself as a window that is always
+ *      given it's original size from ConfigureNotify no matter what size the
+ *      host application is trying to size it. Removing the XMoveWindow() call
+ *      here fixes that. --J.C. */
 static void X11_SetSizeHints(_THIS, int w, int h, Uint32 flags)
 {
 	XSizeHints *hints;
 
-	hints = XAllocSizeHints();
-	if ( hints ) {
-		if (!(flags & SDL_RESIZABLE)) {
-			hints->min_width = hints->max_width = w;
-			hints->min_height = hints->max_height = h;
-			hints->flags = PMaxSize | PMinSize;
-		}
-		if ( flags & SDL_FULLSCREEN ) {
-			hints->x = 0;
-			hints->y = 0;
-			hints->flags |= USPosition;
-		} else
-		/* Center it, if desired */
-		if ( X11_WindowPosition(this, &hints->x, &hints->y, w, h) ) {
-			hints->flags |= USPosition;
-
-			/* Hints must be set before moving the window, otherwise an
-			   unwanted ConfigureNotify event will be issued */
-			XSetWMNormalHints(SDL_Display, WMwindow, hints);
-
-			XMoveWindow(SDL_Display, WMwindow, hints->x, hints->y);
-
-			/* Flush the resize event so we don't catch it later */
-			XSync(SDL_Display, True);
-		}
-		XSetWMNormalHints(SDL_Display, WMwindow, hints);
-		XFree(hints);
-	}
+    hints = XAllocSizeHints();
+    if ( hints ) {
+        if ( flags & SDL_FULLSCREEN ) {
+            hints->x = 0;
+            hints->y = 0;
+            hints->flags |= USPosition;
+        } else {
+            if (!(flags & SDL_RESIZABLE)) {
+                hints->min_width = hints->max_width = w;
+                hints->min_height = hints->max_height = h;
+                hints->flags = PMaxSize | PMinSize;
+            }
+        }
+        XSetWMNormalHints(SDL_Display, WMwindow, hints);
+        XFree(hints);
+    }
 
 	/* Respect the window caption style */
 	if ( flags & SDL_NOFRAME ) {
@@ -1050,10 +1043,20 @@ static int X11_CreateWindow(_THIS, SDL_Surface *screen,
 
 	/* resize the (possibly new) window manager window */
 	if( !SDL_windowid ) {
-	        X11_SetSizeHints(this, w, h, flags);
+		int x = -999,y = -999;
+
+		X11_SetSizeHints(this, w, h, flags);
 		window_w = w;
 		window_h = h;
-		XResizeWindow(SDL_Display, WMwindow, w, h);
+
+		/* Center it, if desired */
+		if (!X11_WindowPosition(this, &x, &y, w, h))
+			x = y = -999;
+
+		if (x > -999 && y > -999)
+			XMoveResizeWindow(SDL_Display, WMwindow, x, y, w, h);
+		else
+			XResizeWindow(SDL_Display, WMwindow, w, h);
 	}
 
 	/* Create (or use) the X11 display window */
@@ -1156,12 +1159,29 @@ static int X11_CreateWindow(_THIS, SDL_Surface *screen,
 static int X11_ResizeWindow(_THIS,
 			SDL_Surface *screen, int w, int h, Uint32 flags)
 {
+	int x = -999,y = -999;
+
 	if ( ! SDL_windowid ) {
 		/* Resize the window manager window */
 		X11_SetSizeHints(this, w, h, flags);
 		window_w = w;
 		window_h = h;
-		XResizeWindow(SDL_Display, WMwindow, w, h);
+
+		/* Center it, if desired */
+		if (!X11_WindowPosition(this, &x, &y, w, h))
+			x = y = -999;
+
+		if (x > -999 && y > -999)
+			XMoveResizeWindow(SDL_Display, WMwindow, x, y, w, h);
+		else
+			XResizeWindow(SDL_Display, WMwindow, w, h);
+
+		if ((flags & SDL_HAX_NORESIZEWINDOW) && (flags & SDL_FULLSCREEN) == 0 && (screen->flags & SDL_FULLSCREEN) == 0) {
+			/* do nothing */
+		}
+		else {
+			XResizeWindow(SDL_Display, WMwindow, w, h);
+		}
 
 		/* Resize the fullscreen and display windows */
 		if ( flags & SDL_FULLSCREEN ) {
@@ -1206,7 +1226,7 @@ SDL_Surface *X11_SetVideoMode(_THIS, SDL_Surface *current,
 	if ( (SDL_Window) && ((saved_flags&SDL_OPENGL) == (flags&SDL_OPENGL))
 	      && (bpp == current->format->BitsPerPixel)
           && ((saved_flags&SDL_NOFRAME) == (flags&SDL_NOFRAME)) ) {
-		if (X11_ResizeWindow(this, current, width, height, flags) < 0) {
+        if (X11_ResizeWindow(this, current, width, height, flags) < 0) {
 			current = NULL;
 			goto done;
 		}

@@ -1,5 +1,5 @@
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #include <math.h>
@@ -25,8 +25,11 @@
 #include "setup.h"
 #include "pic.h"
 #include "dma.h"
-#include "sn76496.h"
+#include "mame/emu.h"
+#include "mame/sn76496.h"
 #include "control.h"
+
+// FIXME: MAME updates broke this code!
 
 extern bool PS1AudioCard;
 #define DAC_CLOCK 1000000
@@ -64,33 +67,35 @@ struct PS1AUDIO
 	Bitu last_writeSN;
 	int SampleRate;
 
+#if 0
 	// SN76496.
 	struct SN76496 sn;
+#endif
 
 	// "DAC".
-	Bit8u FIFO[FIFOSIZE];
-	Bit16u FIFO_RDIndex;
-	Bit16u FIFO_WRIndex;
+	uint8_t FIFO[FIFOSIZE];
+	uint16_t FIFO_RDIndex;
+	uint16_t FIFO_WRIndex;
 	bool Playing;
 	bool CanTriggerIRQ;
-	Bit32u Rate;
+	uint32_t Rate;
 	Bitu RDIndexHi;			// FIFO_RDIndex << FRAC_SHIFT
 	Bitu Adder;				// Step << FRAC_SHIFT
 	Bitu Pending;			// Bytes to go << FRAC_SHIFT
 
 	// Regs.
-	Bit8u Status;		// 0202 RD
-	Bit8u Command;		// 0202 WR / 0200 RD
-	Bit8u Data;			// 0200 WR
-	Bit8u Divisor;		// 0203 WR
-	Bit8u Unknown;		// 0204 WR (Reset?)
+	uint8_t Status;		// 0202 RD
+	uint8_t Command;		// 0202 WR / 0200 RD
+	uint8_t Data;			// 0200 WR
+	uint8_t Divisor;		// 0203 WR
+	uint8_t Unknown;		// 0204 WR (Reset?)
 };
 
 static struct PS1AUDIO ps1;
 
-static Bit8u PS1SOUND_CalcStatus(void)
+static uint8_t PS1SOUND_CalcStatus(void)
 {
-	Bit8u Status = ps1.Status & FIFO_IRQ;
+	uint8_t Status = ps1.Status & FIFO_IRQ;
 	if( !ps1.Pending ) {
 		Status |= FIFO_EMPTY;
 	}
@@ -155,11 +160,11 @@ static void PS1SOUNDWrite(Bitu port,Bitu data,Bitu iolen) {
 	{
 		case 0x0200:
 			// Data - insert into FIFO.
-			ps1.Data = data;
+			ps1.Data = (uint8_t)data;
 			ps1.Status = PS1SOUND_CalcStatus();
 			if( !( ps1.Status & FIFO_FULL ) )
 			{
-				ps1.FIFO[ ps1.FIFO_WRIndex++ ]=data;
+				ps1.FIFO[ ps1.FIFO_WRIndex++ ]=(uint8_t)data;
 				ps1.FIFO_WRIndex &= FIFOSIZE_MASK;
 				ps1.Pending += ( 1 << FRAC_SHIFT );
 				if( ps1.Pending > ( FIFOSIZE << FRAC_SHIFT ) ) {
@@ -169,7 +174,7 @@ static void PS1SOUNDWrite(Bitu port,Bitu data,Bitu iolen) {
 			break;
 		case 0x0202:
 			// Command.
-			ps1.Command = data;
+			ps1.Command = (uint8_t)data;
 			if( data & 3 ) ps1.CanTriggerIRQ = true;
 //			switch( data & 3 )
 //			{
@@ -181,8 +186,8 @@ static void PS1SOUNDWrite(Bitu port,Bitu data,Bitu iolen) {
 		case 0x0203:
 			{
 				// Clock divisor (maybe trigger first IRQ here).
-				ps1.Divisor = data;
-				ps1.Rate = ( DAC_CLOCK / ( data + 1 ) );
+				ps1.Divisor = (uint8_t)data;
+				ps1.Rate = (uint32_t)( DAC_CLOCK / ( data + 1 ) );
 				// 22050 << FRAC_SHIFT / 22050 = 1 << FRAC_SHIFT
 				ps1.Adder = ( ps1.Rate << FRAC_SHIFT ) / (unsigned int)ps1.SampleRate;
 				if( ps1.Rate > 22050 )
@@ -206,12 +211,14 @@ static void PS1SOUNDWrite(Bitu port,Bitu data,Bitu iolen) {
 			break;
 		case 0x0204:
 			// Reset? (PS1MIC01 sets it to 08 for playback...)
-			ps1.Unknown = data;
+			ps1.Unknown = (uint8_t)data;
 			if( !data )
 				PS1DAC_Reset(true);
 			break;
 		case 0x0205:
+#if 0
 			SN76496Write(&ps1.sn,port,data);
+#endif
 			break;
 		default:break;
 	}
@@ -238,7 +245,7 @@ static Bitu PS1SOUNDRead(Bitu port,Bitu iolen) {
 //				LOG_MSG("PS1 RD %04X (%04X:%08X)",port,SegValue(cs),reg_eip);
 
 				// Read status / clear IRQ?.
-				Bit8u Status = ps1.Status = PS1SOUND_CalcStatus();
+				uint8_t Status = ps1.Status = PS1SOUND_CalcStatus();
 // Don't do this until we have some better way of detecting the triggering and ending of an IRQ.
 //				ps1.Status &= ~FIFO_IRQ;
 				return Status;
@@ -263,7 +270,7 @@ static void PS1SOUNDUpdate(Bitu length)
 		// Excessive?
 		PS1DAC_Reset(false);
 	}
-	Bit8u * buffer=(Bit8u *)MixTemp;
+	uint8_t * buffer=(uint8_t *)MixTemp;
 
 	Bits pending = 0;
 	Bitu add = 0;
@@ -310,7 +317,7 @@ static void PS1SOUNDUpdate(Bitu length)
 	// Update positions and see if we can clear the FIFO_FULL flag.
 	ps1.RDIndexHi = pos;
 //	if( ps1.FIFO_RDIndex != ( pos >> FRAC_SHIFT ) ) ps1.Status &= ~FIFO_FULL;
-	ps1.FIFO_RDIndex = pos >> FRAC_SHIFT;
+	ps1.FIFO_RDIndex = (uint16_t)(pos >> FRAC_SHIFT);
 	if( pending < 0 ) pending = 0;
 	ps1.Pending = (Bitu)pending;
 
@@ -324,9 +331,11 @@ static void PS1SN76496Update(Bitu length)
 		ps1.chanSN->Enable(false);
 	}
 
-	Bit16s * buffer=(Bit16s *)MixTemp;
+	//int16_t * buffer=(int16_t *)MixTemp;
+#if 0
 	SN76496Update(&ps1.sn,buffer,length);
-	ps1.chanSN->AddSamples_m16(length,(Bit16s *)MixTemp);
+#endif
+	ps1.chanSN->AddSamples_m16(length,(int16_t *)MixTemp);
 }
 
 #include "regs.h"
@@ -359,7 +368,7 @@ public:
 		WriteHandler[0].Install(0x200,PS1SOUNDWrite,IO_MB);
 		WriteHandler[1].Install(0x202,PS1SOUNDWrite,IO_MB,4);
 
-		Bit32u sample_rate = (Bit32u)section->Get_int("ps1audiorate");
+		uint32_t sample_rate = (uint32_t)section->Get_int("ps1audiorate");
 		ps1.chanDAC=MixerChanDAC.Install(&PS1SOUNDUpdate,sample_rate,"PS1 DAC");
 		ps1.chanSN=MixerChanSN.Install(&PS1SN76496Update,sample_rate,"PS1 SN76496");
 
@@ -383,7 +392,9 @@ public:
 //
 // NTS: I do not have anything to test this change! --J.C.
 //		SN76496Reset( &ps1.sn, 3579545, sample_rate );
-		SN76496Reset( &ps1.sn, 4000000, sample_rate );
+#if 0
+        SN76496Reset( &ps1.sn, 4000000, sample_rate );
+#endif
 	}
 	~PS1SOUND(){ }
 };

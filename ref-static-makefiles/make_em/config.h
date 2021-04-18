@@ -3,7 +3,7 @@
 
 
 /*
- *  Copyright (C) 2002-2013  The DOSBox Team
+ *  Copyright (C) 2002-2021  The DOSBox Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -15,9 +15,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Library General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 
@@ -92,8 +92,11 @@
 /* Define to 1 to enable MT32 emulation (x86/x86_64 only) */
 /* #undef C_MT32 */
 
-/* Define to 1 to enable NE2000 ethernet passthrough, requires libpcap */
-/* #undef C_NE2000 */
+/* Define to 1 to enable ethernet passthrough, requires libpcap */
+/* #undef C_PCAP */
+
+/* Define to 1 to enable userspace TCP/IP emulation, requires libslirp */
+/* #undef C_SLIRP */
 
 /* Define to 1 to use opengl display output support */
 //#define C_OPENGL 1
@@ -200,16 +203,16 @@
 #define PACKAGE_NAME "dosbox-x"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "dosbox-x 0.82.10"
+#define PACKAGE_STRING "dosbox-x 0.82.22"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "dosbox-x"
 
 /* Define to the home page for this package. */
-#define PACKAGE_URL "http://dosbox-x.software"
+#define PACKAGE_URL "https://dosbox-x.com"
 
 /* Define to the version of this package. */
-#define PACKAGE_VERSION "0.82.10"
+#define PACKAGE_VERSION "0.82.22"
 
 /* The size of `int *', as computed by sizeof. */
 #define SIZEOF_INT_P 4
@@ -236,7 +239,7 @@
 /* #undef TM_IN_SYS_TIME */
 
 /* Version number of package */
-#define VERSION "0.82.10"
+#define VERSION "0.82.22"
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

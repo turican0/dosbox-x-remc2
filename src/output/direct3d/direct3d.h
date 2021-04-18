@@ -11,9 +11,9 @@
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef __DIRECT3D_H_
@@ -80,21 +80,21 @@ private:
     IDirect3D9*			pD3D9 = NULL;
     IDirect3DDevice9*		pD3DDevice9 = NULL;
 
-    D3DPRESENT_PARAMETERS 	d3dpp;			// Present parameters
-    D3DLOCKED_RECT		d3dlr;			// Texture lock rectangle
+    D3DPRESENT_PARAMETERS 	d3dpp = {};			// Present parameters
+    D3DLOCKED_RECT		d3dlr = {};			// Texture lock rectangle
 
-    HWND hwnd;						// DOSBow window
-    DWORD dwX,dwY;					// X,Y position
+    HWND hwnd = NULL;						// DOSBox window
+    DWORD dwX = 0, dwY = 0;					// X,Y position
     DWORD dwWidth, dwHeight;                            // DOSBox framebuffer size
-    DWORD dwScaledWidth, dwScaledHeight;                // D3D backbuffer size
-    const Bit16u* changedLines;
+    DWORD dwScaledWidth = 0, dwScaledHeight = 0;                // D3D backbuffer size
+    const uint16_t* changedLines = NULL;
 
-	int					backbuffer_clear_countdown;
+	int					backbuffer_clear_countdown = 0;
 
     // display modes
     D3DDISPLAYMODE*		modes;
-    unsigned int		iMode;
-    DWORD			dwNumModes;
+    unsigned int		iMode = 0;
+    DWORD			dwNumModes = 0;
 
     bool			deviceLost;
 
@@ -119,7 +119,7 @@ private:
     D3DXMATRIX			m_matPreWorld;
 
     // Pixel shader
-    char			pshader[30];
+    std::string         pshader;
     ScalingEffect*		psEffect;
     LPDIRECT3DTEXTURE9		lpWorkTexture1;
     LPDIRECT3DTEXTURE9		lpWorkTexture2;
@@ -160,7 +160,7 @@ private:
 
     volatile enum D3D_state { D3D_IDLE = 0, D3D_LOADPS, D3D_LOCK, D3D_UNLOCK } thread_command;
     volatile bool thread_run, wait;
-    volatile HRESULT thread_hr;
+    volatile HRESULT thread_hr = 0;
 #if LOG_D3D
     void EnterLOGCriticalSection(LPCRITICAL_SECTION lpCriticalSection, int);
 #endif
@@ -175,10 +175,10 @@ private:
 public:
 
     // texture stuff
-    DWORD	dwTexHeight, dwTexWidth;
+    DWORD	dwTexHeight = 0, dwTexWidth = 0;
 
-    bool 	square, pow2, dynamic, bpp16;		// Texture limitations
-    Bit8s 	aspect, autofit;
+    bool 	square = false, pow2 = false, dynamic = false, bpp16;		// Texture limitations
+    int8_t 	aspect, autofit = 0;
 
     // Pixel shader status
     bool 	psActive;
@@ -187,10 +187,10 @@ public:
     HRESULT InitializeDX(HWND, bool);
     HRESULT LoadPixelShader(const char*, double, double, bool forced=false);
     HRESULT Resize3DEnvironment(Bitu, Bitu, Bitu, Bitu, Bitu, Bitu, Bitu, Bitu, bool fullscreen=false);
-    bool LockTexture(Bit8u * & pixels,Bitu & pitch);
-    bool UnlockTexture(const Bit16u *changed);
+    bool LockTexture(uint8_t * & pixels,Bitu & pitch);
+    bool UnlockTexture(const uint16_t *changed);
 
-    CDirect3D(Bitu width = 640, Bitu height = 400):dwWidth(width),dwHeight(height) {
+    CDirect3D(uint32_t width = 640, uint32_t height = 400):dwWidth(width),dwHeight(height) {
 	mhmodDX9 = NULL;
 	pD3D9 = NULL;
 	pD3DDevice9 = NULL;
@@ -214,7 +214,7 @@ public:
 #if LOG_D3D
 	lpDebugTexture = NULL;
 #endif
-	strcpy(pshader, "shaders\\");
+    pshader.clear();
 	psEffect = NULL;
 #endif
 

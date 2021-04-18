@@ -518,15 +518,15 @@ local ZPOS64_T zip64local_SearchCentralDir(const zlib_filefunc64_32_def* pzlib_f
     if (ZREAD64(*pzlib_filefunc_def,filestream,buf,uReadSize)!=uReadSize)
       break;
 
-    for (i=(int)uReadSize-3; (i--)>0;)
+    for (i=(int)uReadSize-3; (i--)>0;) {
       if (((*(buf+i))==0x50) && ((*(buf+i+1))==0x4b) &&
         ((*(buf+i+2))==0x05) && ((*(buf+i+3))==0x06))
       {
         uPosFound = uReadPos+i;
         break;
       }
-
-      if (uPosFound!=0)
+    }
+    if (uPosFound!=0)
         break;
   }
   TRYFREE(buf);
@@ -1411,7 +1411,7 @@ extern int ZEXPORT zipWriteInFileInZip (zipFile file,const void* buf,unsigned in
     if (zi->in_opened_file_inzip == 0)
         return ZIP_PARAMERROR;
 
-    zi->ci.crc32 = crc32(zi->ci.crc32,buf,(uInt)len);
+    zi->ci.crc32 = crc32(zi->ci.crc32,(const unsigned char*)buf,(uInt)len);
 
 #ifdef HAVE_BZIP2
     if(zi->ci.method == Z_BZIP2ED && (!zi->ci.raw))
