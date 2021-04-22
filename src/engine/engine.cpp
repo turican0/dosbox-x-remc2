@@ -32,7 +32,7 @@
 #include "engine_support.h"
 
 
-#define TEST_NETWORK
+//#define TEST_NETWORK
 
 
 //#include "sub_160_26DB3A.h"
@@ -1135,13 +1135,13 @@ void enginestep() {
         }
 
 #ifdef TEST_NETWORK
-#endif //TEST_NETWORK
         if (reg_eip == 0x25d36d) {
             mem_writeb(0x3be31, 0x0);
         }
         if (reg_eip == 0x23c8d4) {
             mem_writeb(0x134c38, 0x1);
         }
+#endif //TEST_NETWORK
 #ifdef MOVE_PLAYER
         if (reg_eip == 0x238b2f) {//move player
             if (debugcounter_238b2f == 10) {
