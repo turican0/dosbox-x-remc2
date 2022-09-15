@@ -128,7 +128,7 @@ Bit32u writeseq_D41A0count2[300];
 //Bit32u writesequencedataadress3 = 0;
 char findnamex[300];
 //#define TEST_REGRESSIONS
-int test_regression_level = 21;
+int test_regression_level = 0;
 
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
@@ -374,9 +374,9 @@ void enginestep() {
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
             //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
             //addprocedurestop(0x265b80, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
-        addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+        //addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
         //writeseqall(0x228583);
-        //writeseqall(0x2285ff);
+        //writeseqall(0x22b268);
         /*writeseqall(0x233d56);
         writeseqall(0x237B05);
         writeseqall(0x237B55);
@@ -413,7 +413,8 @@ void enginestep() {
         //addprocedurestop(0x238cf3, 0x348, true, true, 0x356038 + 0x13de2, 0x12345678);
 
 
-        //addprocedurestop(0x22a543, 0x12, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x238A8A, 0x5ef, true, true, 0x12345678, 0x12345678);
+        addprocedurestop(0x1fad60, 0x0, true, true, 0x12345678, 0x12345678);
         #else
         //addprocedurestop(0x23c8d4, 0x0, true, true, 0x134c38, 0x12345678);//0xd8
         //addprocedurestop(0x2541e7, 0x0, true, true, 0x3c850, 0x12345678);//0xd8
@@ -902,7 +903,7 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x260cb0, 0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x22f180, 0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -1233,7 +1234,7 @@ void enginestep() {
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2[ii]++;
                     #ifdef TEST_REGRESSIONS
-                        if (writesequencecount2[ii] > 20)exit(0);
+                        //if (writesequencecount2[ii] > 20)exit(0);
                     #endif
                 }
             }
