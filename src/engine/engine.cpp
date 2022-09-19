@@ -901,9 +901,9 @@ void enginestep() {
 
 //addprocedurestop(0x238A8A, 0x1371, true, true, 0x12345678, 0x12345678);
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
-//addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-addprocedurestop(0x22f180, 0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
