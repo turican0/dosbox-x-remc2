@@ -352,8 +352,8 @@ int debugcounter_258350 = 0;
 int debugcounter_1fb7a0 = 0;
 
 void writeseqall(Bit32u adress, Bit32u skip=0) {
-    writesequence(adress, 0x10000, 0x70000, 0x2dc4e0, skip);
-    writesequence(adress, 0x10000, 0x36e16, 0x356038, skip);
+    writesequence(adress, 0x10000, 0x70000, 0x28A1E0, skip);
+    writesequence(adress, 0x10000, 0x36e16, 0x1F690, skip);
     writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4, skip);
     writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
     writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
@@ -626,7 +626,7 @@ void enginestep() {
         //writeseqall(0x1f3504);
         //writeseqall(0x1F3783);
         //writeseqall(0x238A8A);
-        //writeseqall(0x22b268);
+        writeseqall(0x2117A1);
 
 
         
@@ -903,6 +903,7 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
+//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
 addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
