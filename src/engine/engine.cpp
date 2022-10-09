@@ -164,6 +164,8 @@ void savesequence(int index,long actsize, Bit32u dataadress) {
 
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
+    //while(fseq[index] == nullptr)
+    //    fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
     for (long i = 0; i < actsize; i++) {
@@ -176,6 +178,8 @@ void savesequence(int index,long actsize, Bit32u dataadress) {
 void saveseq_D41A0(int index) {
     sprintf(findnamex, "seq_D41A0-%08X.bin", writeseq_D41A0codeadress[index]);
     fopen_s(&fseq[index], findnamex, "ab+");
+    //while(fseq[index] == nullptr)
+    //    fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
     for (int ea = 0; ea < 0x3E9; ea++)
     {
@@ -353,7 +357,7 @@ int debugcounter_1fb7a0 = 0;
 
 void writeseqall(Bit32u adress, Bit32u skip=0) {
     writesequence(adress, 0x10000, 0x70000, 0x28A1E0, skip);
-    writesequence(adress, 0x10000, 0x36e16, 0x1F690, skip);
+    writesequence(adress, 0x10000, 232713, 0x1F690, skip);
     writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4, skip);
     writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
     writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
@@ -623,13 +627,22 @@ void enginestep() {
         //writeseqall(0x237BB0);
         //writeseqall(0x237BC7);
         //writeseqall(0x1fad63);
-        //writeseqall(0x1f3504);
-        //writeseqall(0x1F3783);
-        //writeseqall(0x238A8A);
-        writeseqall(0x2117A1);
 
 
-        
+        //writeseqall(0x21183F);
+        //writeseqall(0x21181F);
+        //writeseqall(0x2117FA);
+        //writeseqall(0x2117A1);
+
+        //writeseqall(0x202B31);
+
+//writeseqall(0x202AF1);
+//writeseqall(0x202AF7);
+//writeseqall(0x202AFF);
+
+//writeseqall(0x243613);
+//writeseqall(0x243632);
+      
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
         writesequence(0x0022A3D7, 0x3000, 320 * 200, 0x3aa0a4);
@@ -903,8 +916,8 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x243613, 0xd00, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -1021,8 +1034,8 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);
             //v1 = 1;
         }
         #endif
-        if (reg_eip == 0x26508d) {//fix computer speed
-                mem_writeb(0x35522c, 0x5);
+        if (reg_eip == 0x1ea486) {//fix computer speed
+                mem_writeb(0x24e084, 0x5);
         }
         /*if (reg_eip == 0x22857e) {//test mouse
             if (mousetest >= 1)
