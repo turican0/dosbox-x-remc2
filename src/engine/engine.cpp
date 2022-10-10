@@ -523,106 +523,6 @@ void enginestep() {
 
         writeseqall(0x228323);*/
         //writesequence(0x2285ff, 0x50,320*200, 0x3aa0a4, 0, 0);
-        //writesequence(0x2285ff, 0x50, 0x1b50, 0x2aa51c, 0, 0);//x_BYTE_D951C
-        //writesequence(0x2285ff, 0x50, 0x14600, 0x2cbee0, 0, 0);
-        //writesequence(0x2285ff, 0x50, 0x14600, 0x2c7ee0, 0, 0);
-        //writesequence(0x2285ff, 0x50, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285d1, 0x50, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2387d9, 10000, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x238a3d, 0x3e8*2, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285ff, 20, 0x36e16, 0x356038, 0, 0);
-        //writesequence(0x2285ff, 0x20*0xb0, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x2285ff, 0x20 * 0xc4e, 0xc4e, 0x2b3a74, 0, 0);
-        //writesequence(0x2685a7, 200, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x2285ff, 2000, 0xc4e, 0x2b3a74, 0, 0);
-
-        //writesequence(0x222bd3, 0x500, 0x28*4, 0x2c3c20, 0, 0);
-
-        //writesequence(0x2285ff, 0x10, 0x14600, 0x2c7ee0, 0, 0);//x_BYTE_F6EE0_tablesx
-        //writesequence(0x2285ff, 0x10, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
-        //writesequence(0x2285ff, 0x10000, 0x28, 0x2c3c20, 0, 0);//x_DWORD_F2C20ar
-
-        //writesequence(0x2285ff, 0x20, 0x10000, 0x2dc4e0, 0, 0);//x_BYTE_10B4E0
-        //writesequence(0x2285ff, 0x20, 0x10000, 0x2fc4e0, 0, 0);//x_BYTE_12B4E0
-        //writesequence(0x2285ff, 0x20, 0x10000, 0x30c4e0, 0, 0);//x_BYTE_13B4E0
-
-        //writesequence(0x269450, 0x300, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x269450, 0x300, 0xc4e, 0x2b3a74, 0, 0);
-
-        //writesequence(0x2694bc, 0x300, 0xb0, 0x3514b0, 0, 0);
-        //writesequence(0x2694bc, 0x300, 0xc4e, 0x2b3a74, 0, 0);
-
-        //writesequence(0x0021f360, 0x3000, 0x36e16, 0x356038);
-        
-      /*writesequence(0x0022860F, 0x3000, 0x70000, 0x2dc4e0);
-        writesequence(0x0022860F, 0x3000, 0x36e16, 0x356038);
-        writesequence(0x0022860F, 0x3000, 320*200, 0x3aa0a4);
-        writesequence(0x0022860F, 0x3000, 0xab, 0x3514b0);
-        writesequence(0x0022860F, 0x3000, 0xc4e, 0x2b3a74);
-        writesequence(0x0022860F, 0x3000, 0x2, 0x34c4e0);*/
-
-        /*writeseqall(0x237B05);
-        writeseqall(0x237B55);
-        writeseqall(0x237BB0);
-        writeseqall(0x237BB9);
-        writeseqall(0x237BC7);
-        writeseqall(0x237BF0);
-        writeseqall(0x22A280);
-        writeseqall(0x22A288);
-
-        writeseqall(0x228323);*/
-
-        /*writeseqall(0x22A280);
-        writeseqall(0x22A288);
-
-        writeseqall(0x22A388);
-
-        writeseqall(0x238734);
-
-        writeseqall(0x238756);*/
-
-        //writeseqall(0x22A2E3);
-
-        //writeseqall(0x249c1b);
-        //writeseqall(0x265b84);
-
-        //writeseqall(0x203e64);
-        
-
-        //writeseqall(0x238fa3);
-
-        //writeseqall(0x24b5c4);
-        //writeseqall(0x22860F);
-        /*writeseqall(0x203e64);
-        writeseqall(0x218244);
-
-        writeseqall(0x21b8b4);
-        writeseqall(0x233d56);
-        writeseqall(0x23d954);
-
-        writeseqall(0x247754);*/
-
-        //add_index(0x203e64);
-        /*writeseqall(0x237B05);
-        writeseqall(0x237B55);
-        writeseqall(0x237BB0);
-        writeseqall(0x237BB9);
-        writeseqall(0x237Bc7);
-        writeseqall(0x237Bf0);*/
-
-        /*writeseqall(0x22A383);
-        writeseqall(0x22A388);
-        writeseqall(0x22A3D7);
-        writeseqall(0x22A422);
-        writeseqall(0x22A427);
-        writeseqall(0x22A4D6);
-        writeseqall(0x22A52C);*/
-
-        //add_index(0x00238A8A);
-        //writeseqall(0x22A977);
-        //writeseqall(0x212f04);
-        //writeseqall(0x237BF0);
-        //writeseqall(0x237BB9);
 
         //writeseqall(0x237BB0);
         //writeseqall(0x237BC7);
@@ -634,14 +534,28 @@ void enginestep() {
         //writeseqall(0x2117FA);
         //writeseqall(0x2117A1);
 
-        //writeseqall(0x202B31);
-
+//writeseqall(0x202B31);
 //writeseqall(0x202AF1);
 //writeseqall(0x202AF7);
 //writeseqall(0x202AFF);
 
 //writeseqall(0x243613);
 //writeseqall(0x243632);
+
+//writeseqall(0x21181F);
+//writeseqall(0x211817);
+
+/*writeseqall(0x202B31);
+writeseqall(0x202B47);
+writeseqall(0x202B4D);
+writeseqall(0x202B62);
+writeseqall(0x202B71);
+writeseqall(0x202B77);
+writeseqall(0x202B90);
+writeseqall(0x202B98);
+writeseqall(0x202B9D);
+writeseqall(0x202BA2);
+writeseqall(0x202BA7);*/
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
@@ -916,7 +830,7 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x243613, 0xd00, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x2081C0, 0x0, true, true, 0x12345678, 0x12345678);
 addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
