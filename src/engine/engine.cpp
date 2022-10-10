@@ -556,6 +556,9 @@ writeseqall(0x202B98);
 writeseqall(0x202B9D);
 writeseqall(0x202BA2);
 writeseqall(0x202BA7);*/
+
+//writeseqall(0x211817);
+//writeseqall(0x21181F);
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
@@ -830,7 +833,7 @@ writeseqall(0x202BA7);*/
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x2081C0, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x203560, 0x0, true, true, 0x12345678, 0x12345678);
 addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
