@@ -559,6 +559,14 @@ writeseqall(0x202BA7);*/
 
 //writeseqall(0x211817);
 //writeseqall(0x21181F);
+
+/*
+writeseqall(0x21183F);
+writeseqall(0x21186B);
+writeseqall(0x21187D);
+writeseqall(0x2118C4);
+writeseqall(0x2118CA);*/
+//writeseqall(0x20745E);
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
