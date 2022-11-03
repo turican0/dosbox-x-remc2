@@ -343,7 +343,7 @@ long xcounter = 0;
 long xcounter2 = 0;
 
 bool killmouse = false;
-bool killmouse2 = false;
+bool killmouse2 = true;
 int mousetest = 0;
 
 bool firstrunx = true;
@@ -551,22 +551,21 @@ writeseqall(0x202B4D);
 writeseqall(0x202B62);
 writeseqall(0x202B71);
 writeseqall(0x202B77);
-writeseqall(0x202B90);
-writeseqall(0x202B98);
-writeseqall(0x202B9D);
-writeseqall(0x202BA2);
-writeseqall(0x202BA7);*/
+writeseqall(0x202B90);*/
+//writeseqall(0x2055C1);
+//writeseqall(0x2055C6);
+//writeseqall(0x2055DE);
+//writeseqall(0x2055F4);
 
 //writeseqall(0x211817);
-//writeseqall(0x21181F);
+//writeseqall(0x2076e4);
 
-/*
-writeseqall(0x21183F);
-writeseqall(0x21186B);
-writeseqall(0x21187D);
-writeseqall(0x2118C4);
-writeseqall(0x2118CA);*/
-//writeseqall(0x20745E);
+//writeseqall(0x215EAB);
+//writeseqall(0x215EC6);
+//writeseqall(0x216003);
+//writeseqall(0x2161E7);
+
+//writeseqall(0x21A304);
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
@@ -841,8 +840,8 @@ writeseqall(0x2118CA);*/
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x203560, 0x0, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
+addprocedurestop(0x205367, 0x0, true, true, 0x26C454, 0x12345678);
+//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -969,8 +968,10 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
             }
             mousetest++;
         }*/
+
+        /*
         if (reg_eip == 0x228560) {//find game state
-            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+            if ((debugafterload == 1) && (count_begin == 1))
                 debugcounter_47560++;
         }
         if ((reg_eip == 0x22a9d8) ||
@@ -978,7 +979,7 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
             (reg_eip == 0x238a8a))
         {
             stage__4A190_0x6E8E++;
-        }
+        }*/
         /*if (reg_eip == 0x258350) {//find game state
             if (debugcounter_47560 > 0) {
                 debugcounter_258350++;
@@ -989,11 +990,11 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
                 findvaradr = 0x3aa0a4 + 0x7da0;
             }
         }*/
-        if (reg_eip == 0x237a30) {//kill mouses
+        /*if(reg_eip == 0x237a30) {//kill mouses
             killmouse = true;
             killmouse2 = true;
-        }
-        if((debugafterload) && (count_begin == 1))
+        }*/
+        /*if((debugafterload) && (count_begin == 1))
         if (reg_eip == oneadress) {//kill mouses
             FILE* indexfile;
             indexfile=fopen("index.txt","wt");
@@ -1007,7 +1008,7 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 
         if (reg_eip == 0x2368e4) {//fix load            
             mem_writed(0x3965c7, 0x35cf6e);
-        }
+        }*/
 
         /*if (reg_eip == 0x237bb0) {//setobjective
             mem_writeb(0x356038 + 0x3659C + 0 + 3, 2);
@@ -1030,9 +1031,9 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
             //reg_eip = 0x26dd26;
         }*/
 
-        
+        /*
         if (reg_eip == 0x1fb7a3) {//fix mouse special
-            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+            if ((debugafterload == 1) && (count_begin == 1))
             {
                 if(debugcounter_1fb7a0<1000) {
                     //mem_writew(0x356038 + 0x36dec, 0x128);
@@ -1042,16 +1043,18 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
                 }
                 debugcounter_1fb7a0++;
             }
-        }
+        }*/
         
-        if ((reg_eip == 0x1f806b)&&killmouse2) {//rotate off2
-            reg_edx = 0x140;
-            reg_ecx = 0xc8;
+        if ((reg_eip == 0x1E79E1)&&killmouse2) {//rotate off2
+            mem_writeb(0x26c408 + 0x0, 320);//fix same run after load
+            mem_writeb(0x26c408 + 0x1, 200);//fix same run after load
+            //reg_edx = 0x140;
+            //reg_ecx = 0xc8;
             //DEBUG_EnableDebugger();
             //=Segs.phys[eip] = 0;
             //reg_eip = 0x26dd26;
         }
-        if (reg_eip == 0x1f8190) {//exit pause
+        /*if(reg_eip == 0x1f8190) {//exit pause
             if (debugcounter_47560 == 5)
                 mem_writeb(0x38cf50 + 24, mem_readb(0x38cf50 + 24) & 0xfe);
         }
@@ -1072,7 +1075,7 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
         }//rotate
         if (reg_eip == 0x238682) {//saveload fix
             mem_writed(0x38c684 + 0xa, 0x0);
-        }
+        }*/
 
 #ifdef TEST_NETWORK
         if (reg_eip == 0x25d36d) {
@@ -1137,10 +1140,12 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
         /*if (reg_eip == 0x236FE1) {//skipscreen
             mem_writeb(0x2a51ad,1);
         }*/
+        /*
         if ((reg_eip == 0x2285ff)&&(firstrunx)) {
             //DEBUG_EnableDebugger();
             firstrunx = false;
-        }
+        }*/
+        /*
         if (reg_eip == 0x229935) {//fix sub_48930
             mem_writew(reg_ebp-0xc, 0);
             mem_writew(reg_ebp-0x4, 0);
@@ -1148,7 +1153,7 @@ addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
         if (reg_eip == 0x215540) {
             //DEBUG_EnableDebugger();
             debugafter_215540 = true;
-        }
+        }*/
         if (reg_eip == addprocedurecounteradress) {
             sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
             fopen_s(&fptestepcc, findnamecc, "a+");
