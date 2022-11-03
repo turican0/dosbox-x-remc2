@@ -565,7 +565,7 @@ writeseqall(0x202B90);*/
 //writeseqall(0x216003);
 //writeseqall(0x2161E7);
 
-//writeseqall(0x21A304);
+writeseqall(0x212A70);
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
@@ -840,7 +840,10 @@ writeseqall(0x202B90);*/
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-addprocedurestop(0x205367, 0x0, true, true, 0x26C454, 0x12345678);
+//addprocedurestop(0x2165D0, 0, true, true, 0x26aa6, 0x12345678);
+addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
+//addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
+//addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678);
 //addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -1046,8 +1049,8 @@ addprocedurestop(0x205367, 0x0, true, true, 0x26C454, 0x12345678);
         }*/
         
         if ((reg_eip == 0x1E79E1)&&killmouse2) {//rotate off2
-            mem_writeb(0x26c408 + 0x0, 320);//fix same run after load
-            mem_writeb(0x26c408 + 0x1, 200);//fix same run after load
+            mem_writew(0x258d90 + 0x0, 320);//fix same run after load
+            mem_writew(0x258d90 + 0x2, 200);//fix same run after load
             //reg_edx = 0x140;
             //reg_ecx = 0xc8;
             //DEBUG_EnableDebugger();
