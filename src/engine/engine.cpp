@@ -358,7 +358,7 @@ int debugcounter_1fb7a0 = 0;
 void writeseqall(Bit32u adress, Bit32u skip=0) {
     writesequence(adress, 0x10000, 0x70000, 0x28A1E0, skip);
     writesequence(adress, 0x10000, 232713, 0x1F690, skip);
-    writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4, skip);
+    writesequence(adress, 0x10000, 320 * 200, 0x6D080, skip);
     writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
     writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
     writesequence(adress, 0x10000, 0x2, 0x34c4e0, skip);
@@ -560,12 +560,14 @@ writeseqall(0x202B90);*/
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
 
-//writeseqall(0x215EAB);
-//writeseqall(0x215EC6);
-//writeseqall(0x216003);
-//writeseqall(0x2161E7);
+//writeseqall(0x2055C1);
+//writeseqall(0x2055C6);
+//writeseqall(0x2055DE);
+//writeseqall(0x2055F4);
 
-writeseqall(0x212A70);
+//writeseqall(0x2055C6);
+//writeseqall(0x2055DE);
+writeseqall(0x202AF1);
       
         /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
         writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
@@ -840,8 +842,13 @@ writeseqall(0x212A70);
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x2165D0, 0, true, true, 0x26aa6, 0x12345678);
-addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
+//205460_ - 2ECFF4
+//215730_ - 2ECFF4 ->6D080
+//22D084 094E50
+//addprocedurestop(0x2114f0, 0, true, true, 0x2ECFF4, 0x12345678);//0x2F0B80
+//addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678);
+//addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678);
+//addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
 //addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
 //addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678);
 //addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
