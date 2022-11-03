@@ -844,7 +844,9 @@ writeseqall(0x202B90);*/
 
 //205460_ - 2ECFF4
 //215730_ - 2ECFF4 ->6D080
-addprocedurestop(0x1F1FB0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
+
+addprocedurestop(0x2114f0, 0, true, true, 0x251ACC, 0x12345678);//0x2F0B80
+//addprocedurestop(0x1F1FB0, 0, true, true, 0x6D080, 0x12345678);//0x2F0B80
 //addprocedurestop(0x2114f0, 0, true, true, 0x2ECFF4, 0x12345678);//0x2F0B80
 //addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678);
 //addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678);
