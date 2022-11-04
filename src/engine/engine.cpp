@@ -119,6 +119,7 @@ long writesequencesize[300];
 long writesequencecount2[300];
 Bit32u writesequencedataadress[300];
 Bit32u writesequencesavefrom[300];
+bool writesequencepointer[300];
 
 int lastwriteindexseq_D41A0 = 0;
 Bit32u writeseq_D41A0codeadress[300];
@@ -130,13 +131,14 @@ char findnamex[300];
 //#define TEST_REGRESSIONS
 int test_regression_level = 0;
 
-void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0, bool pointer = false) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
     writesequencesize[lastwriteindexsequence] = size;
     writesequencedataadress[lastwriteindexsequence] = dataadress;
     writesequencecount2[lastwriteindexsequence] = 0;
     writesequencesavefrom[lastwriteindexsequence] = savefrom;
+    writesequencepointer[lastwriteindexsequence] = pointer;
     //writesequencedataadress2 = dataadress2;
     //writesequencedataadress3 = dataadress3;
     sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
@@ -155,9 +157,14 @@ void writeseq_D41A0(Bit32u codeadress, int count) {
     lastwriteindexseq_D41A0++;
 }
 
-void savesequence(int index,long actsize, Bit32u dataadress) {
-
-    Bit32u dataadress2 = dataadress;
+void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer) {
+    Bit32u dataadress2;
+    if(isPointer)
+    {
+        dataadress2 = mem_readd(dataadress);
+    }
+    else
+        dataadress2 = dataadress;
     if (dataadress == 0xffffff01)dataadress2 = reg_esi;
     if (dataadress == 0xffffff02)dataadress2 = reg_edi;
     if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
@@ -197,6 +204,7 @@ void saveseq_D41A0(int index) {
 
 //call stop
 Bit32u addprocedurestopadress = 0;
+Bit32u addprocedurestoppointer = 0;
 Bit32u addprocedurestopfindvaradr = 0;
 int addprocedurestopcount = -1;
 bool addprocedurestopforce = false;
@@ -204,13 +212,14 @@ bool addprocedurestoponmemchange = false;
 bool stoponmemchange = false;
 Bit32u addprocedurecounteradress = 0;
 Bit32u addprocedurecount = 0;
-void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress, Bit32u counteradress) {
+void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress, Bit32u counteradress, Bit32u mempointer) {
     addprocedurestopadress = adress;
     addprocedurestopcount = count;
     addprocedurestopforce = force;
     addprocedurestoponmemchange = memchange;
     addprocedurestopfindvaradr = memadress;
     addprocedurecounteradress = counteradress;
+    addprocedurestoppointer = mempointer;
 }
 //call stop
 
@@ -358,7 +367,8 @@ int debugcounter_1fb7a0 = 0;
 void writeseqall(Bit32u adress, Bit32u skip=0) {
     writesequence(adress, 0x10000, 0x70000, 0x28A1E0, skip);
     writesequence(adress, 0x10000, 232713, 0x1F690, skip);
-    writesequence(adress, 0x10000, 320 * 200, 0x6D080, skip);
+    //writesequence(adress, 0x10000, 320 * 200, 0x6D080, skip);
+    writesequence(adress, 0x10000, 320 * 200, 0x2ECFF4, skip, true);
     writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
     writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
     writesequence(adress, 0x10000, 0x2, 0x34c4e0, skip);
@@ -845,15 +855,17 @@ writeseqall(0x202B90);*/
 //205460_ - 2ECFF4
 //215730_ - 2ECFF4 ->6D080
 
-addprocedurestop(0x2114f0, 0, true, true, 0x251ACC, 0x12345678);//0x2F0B80
-//addprocedurestop(0x1F1FB0, 0, true, true, 0x6D080, 0x12345678);//0x2F0B80
-//addprocedurestop(0x2114f0, 0, true, true, 0x2ECFF4, 0x12345678);//0x2F0B80
-//addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678);
-//addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678);
-//addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
-//addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678);
-//addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678);
-//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678);//0x2F0B80
+addprocedurestop(0x2114f0, 0, true, true, 0x271EA0+12, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x201730, 0, true, true, 0x4, 0x12345678, 0x2ECFF4);//0x2F0B80
+//addprocedurestop(0x2114f0, 0, true, true, 0x251ACC, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x1F1FB0, 0, true, true, 0x6D080, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x2114f0, 0, true, true, 0x2ECFF4, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678,0);
+//addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678,0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
+//addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
+//addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678,0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -878,7 +890,10 @@ addprocedurestop(0x2114f0, 0, true, true, 0x251ACC, 0x12345678);//0x2F0B80
                         DEBUG_EnableDebugger();
                     if (addprocedurestoponmemchange) {
                         stoponmemchange = true;
-                        findvaradr = addprocedurestopfindvaradr;
+                        if(addprocedurestoppointer>0)//for pointers to adress
+                            findvaradr = mem_readd(addprocedurestoppointer)+ addprocedurestopfindvaradr;
+                        else
+                            findvaradr = addprocedurestopfindvaradr;
                         /*if (0x20eaa0 == addprocedurestopadress)
                         {
                             addprocedurestopadress = 0x20ef1f;
@@ -1183,7 +1198,7 @@ addprocedurestop(0x2114f0, 0, true, true, 0x251ACC, 0x12345678);//0x2F0B80
                 {
                     if (writesequencesavefrom[ii] <= writesequencecount2[ii])
                     {
-                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii]);
+                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii], writesequencepointer[ii]);
                        //DEBUG_EnableDebugger();
                     }
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
