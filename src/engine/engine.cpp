@@ -39,6 +39,8 @@
 //#include "sub_main.h"
 //#include "test-engine.h"
 
+#define autostart
+
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
@@ -169,6 +171,8 @@ void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer) {
     if (dataadress == 0xffffff02)dataadress2 = reg_edi;
     if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
 
+    if (dataadress == 0xfffffff4)dataadress2 = reg_eax;
+
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //while(fseq[index] == nullptr)
@@ -176,7 +180,10 @@ void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer) {
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
     for (long i = 0; i < actsize; i++) {
-        buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
+        if((dataadress >= 0xfffffff0) && (dataadress < 0xffffffff))
+            buffer[0] = *((uint8_t*)&dataadress2+i);
+        else
+            buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
         fwrite(buffer, 1, 1, fseq[index]);
     }
     fclose(fseq[index]);    
@@ -544,29 +551,6 @@ void enginestep() {
         //writeseqall(0x2117FA);
         //writeseqall(0x2117A1);
 
-//writeseqall(0x202B31);
-//writeseqall(0x202AF1);
-//writeseqall(0x202AF7);
-//writeseqall(0x202AFF);
-
-//writeseqall(0x243613);
-//writeseqall(0x243632);
-
-//writeseqall(0x21181F);
-//writeseqall(0x211817);
-
-/*writeseqall(0x202B31);
-writeseqall(0x202B47);
-writeseqall(0x202B4D);
-writeseqall(0x202B62);
-writeseqall(0x202B71);
-writeseqall(0x202B77);
-writeseqall(0x202B90);*/
-//writeseqall(0x2055C1);
-//writeseqall(0x2055C6);
-//writeseqall(0x2055DE);
-//writeseqall(0x2055F4);
-
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
 
@@ -575,288 +559,15 @@ writeseqall(0x202B90);*/
 //writeseqall(0x2055DE);
 //writeseqall(0x2055F4);
 
-//writeseqall(0x2055C6);
-//writeseqall(0x212A70);
-//writeseqall(0x2055DE);
-      
-        /*writesequence(0x0022A3D7, 0x3000, 0x70000, 0x2dc4e0);
-        writesequence(0x0022A3D7, 0x3000, 0x36e16, 0x356038);
-        writesequence(0x0022A3D7, 0x3000, 320 * 200, 0x3aa0a4);
-        writesequence(0x0022A3D7, 0x3000, 0xab, 0x3514b0);
-        writesequence(0x0022A3D7, 0x3000, 0xc4e, 0x2b3a74);
-        */
+//writeseqall(0x24629B);
+//writeseqall(0x245FFB);
+//writeseqall(0x2439A7);
+//writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-        /*writesequence(0x001FEDA0, 0x3000, 0x70000, 0x2dc4e0);
-        writesequence(0x001FEDA0, 0x3000, 0x36e16, 0x356038);
-        writesequence(0x001FEDA0, 0x3000, 320 * 200, 0x3aa0a4);
-        writesequence(0x001FEDA0, 0x3000, 0xab, 0x3514b0);
-        writesequence(0x001FEDA0, 0x3000, 0xc4e, 0x2b3a74);*/
-        //writeseq_D41A0(0x00238A3D, 0x3000);
-
-        
-        /*writesequence(0x00238A8A, 0x3000, 0x70000, 0x2dc4e0);
-        writesequence(0x00238A8A, 0x3000, 0x36e16, 0x356038);
-        writesequence(0x00238A8A, 0x3000, 320 * 200, 0x3aa0a4);
-        writesequence(0x00238A8A, 0x3000, 0xab, 0x3514b0);
-        writesequence(0x00238A8A, 0x3000, 0xc4e, 0x2b3a74);*/
-
-        //writesequence(0x00238A3D, 0x3000, 0x36e16, 0x356038);
-
-        //writesequence(0x001F1C80, 0x3000, 0x36e16, 0x356038);
-
-        //writesequence(0x002156d8, 0x3000, 0x20, 0x2c1200);
-
-
-        //writesequence(0x00260092, 0x3000, 640 * 480, 0x3aa0a4);
-
-        //writesequence(0x0021d080, 0x3000, 36916*2, 0x3f52a4);
-        //0x21d080
-        /*writesequence(0x0024128D, 0x3000, 0x70000, 0x2dc4e0);
-        writesequence(0x0024128D, 0x3000, 0x36e16, 0x356038);
-        writesequence(0x0024128D, 0x3000, 320 * 200, 0x3aa0a4);
-        writesequence(0x0024128D, 0x3000, 0xab, 0x3514b0);
-        writesequence(0x0024128D, 0x3000, 0xc4e, 0x2b3a74);*/
-
-        //writesequence(0x00236708, 2, 0x36e16, 0x356038);
-
-        //writesequence(0x00256200, 0x3000, 320 * 200, 0x3aa0a4);
-
-        /*writesequence(0x00218240, 0x1, 0x70000, 0x2dc4e0);
-        writesequence(0x00218240, 0x1, 0x36e16, 0x356038);
-        writesequence(0x00218240, 0x1, 320 * 200, 0x3aa0a4);*/
-
-        //writesequence(0x1f1130, 0x300, 700 * 4 * 2, 0x2b8ee0);
-
-        //writesequence(0x00268610, 0x300, 0xab, 0x3514b0);
-
-        //writesequence(0x00241F00, 0x30, 0x36e16, 0x356038);
-
-        //writesequence(0x001fc8c0, 0x3000, 0x36e16, 0x356038,0x2fab);
-        
-        //addprocedurestop(0x235a50, 0x0, true, true, 0x358ffc00 + 0x333);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x35932f);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x123456789, 0x123456789);
-
-        //addprocedurestop(0x1f11c0, 0x0, true, true, 0x2bac3000);
-
-        //addprocedurestop(0x1f11ff, 0x0, true, true, 0x2bac3000);
-
-        //next addprocedurestop(0x1f11c0, 0x0, true, true, 0xa5d57000);
-
-        //next addprocedurestop(0x1f1130, 0x0, true, true, 0xa5d57000);
-
-        //next addprocedurestop(0x238a3d, 0x79, true, true, 0xa5d57000);
-
-        //next addprocedurestop(0x236F70, 0x0, true, true, 0x363b0e + 0x4c);
-
-        //next addprocedurestop(0x238a3d, 0xa4, true, true, 0xa5d57000);
-
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2ea12b);
-
-        //addprocedurestop(0x228592, 0x0, true, true, 0x2c596200);
-
-
-        //addprocedurestop(0x244c90, 0x0, true, true, 0x363a6600 + 0xc);
-        //addprocedurestop(0x238a3d, 0x79, true, true, 0x363a6600 + 0xc);
-
-        //addprocedurestop(0x20f38d, 0x0, true, true, 0x3aa0a400 + 0x4ed);
-        //addprocedurestop(0x242cf9, 0xa3, true, true, 0x3aa0a400 + 0x1cde);
-        //addprocedurestop(0x244600, 0x0, true, true, 0x3aa0a4 + 0x59b);
-
-        //addprocedurestop(0x21ee85, 0x0, true, true, 0x2c3c3000);
-
-        //addprocedurestop(0x2221a0, 0x0, true, true, 0x2c3c3000);
-        //addprocedurestop(0x23354c, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x233d56, 0x2, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x1f8a00, 0x0, true, true, 0x35ce7600, 0x242cf9);
-
-        //addprocedurestop(0x228560, 0x0, true, true, 0x356038 + 0x7b, 0x242cf9);
-        //addprocedurestop(0x252930, 0x0, true, true, 0x35603800 + 0x7b, 0x242cf9);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c77f8, 0x25283c);
-        //addprocedurestop(0x25283c, 0x3, true, true, 0x2c76f000 + 0x78, 0x25283c00);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c657a, 0x2526c0);
-        //addprocedurestop(0x2526c0, 306, true, true, 0x2c657a, 0x2526c0);
-        //addprocedurestop(0x22b1e0, 0, true, true, 0x2c657a00, 0x2526c0);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2c657a, 0x22b21a);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x38cfcb, 0x242cf9);
-        //addprocedurestop(0x242cf9, 1130, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x22b21a, 306, true, true, 0x2c657a00, 0x22b21a0);
-
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x351560, 0x242cf9);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0xddd0);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x3aa0a4 + 0x51d,0x242cf9);
-        //addprocedurestop(0x242cf9, 0x46A, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x38cfcb,0x12345678);
-        //addprocedurestop(0x1f3330, 0x1, true, true, 0x35603800 + 0x365fc + 8);
-        //addprocedurestop(0x1f3100, 0x0, true, true, 0x35603800 + 0x365fc + 8);
-        //addprocedurestop(0x22b268, 0x16, true, true, 0x35603800 + 0x2f7d);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x356038 + 0x8f7e, 0x242cf9);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x356038 + 0x8f97, 0x242cf9);
-        //addprocedurestop(0x249bf0, 0x0, true, true, 0x35603800 + 0x8f97, 0x242cf9);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x396553 + 4, 0x242cf9);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0xd886, 0x242cf9);
-        //addprocedurestop(0x238a3d, 0x71, true, true, 0x356038 + 0xd886, 0x242cf9);
-
-        //addprocedurestop(0x228560, 0x2, true, true, 0x356038 + 0x36df6, 0x242cf9);
-        //addprocedurestop(0x236250, 0x0, true, true, 0x35603800 + 0x36df6, 0x242cf9);
-        //addprocedurestop(0x228560, 0x2, true, true, 0x3aa0a4 + 0x9b6e, 0x242cf9);
-
-        //addprocedurestop(0x242a00, 0x1, true, true, 0x35603800 + 0x2f7d);
-
-        //addprocedurestop(0x1f3100, 0x0, true, true, 0x35603800 + 0x2f7d);
-
-        //addprocedurestop(0x2342d2, 0x0, true, true, 0x3aa0a400 + 0x51d);
-
-        //addprocedurestop(0x232bb0, 0x0, true, true, 0x3aa0a400 + 0x51d, 0x242cf9);
-
-        //addprocedurestop(0x22f320, 0x9, true, true, 0x2c3c3000);
-        //addprocedurestop(0x211fe8, 0x12, true, true, 0x2c3c3000);
-        //addprocedurestop(0x211fd8, 0x12, true, true, 0x3622c6+0x14);
-        //addprocedurestop(0x21eb44, 0x0, true, true, 0x2c3c3000);
-
-        //addprocedurestop(0x222bd3, 0x0, true, true, 0x3aa0a400 + 0x8f09);
-
-        //addprocedurestop(0x244c90, 0x0, true, true, 0x3aa0a400 + 0x26c0);
-
-
-        //addprocedurestop(0x228560, 0x0, true, true, 0x362026+0x14, 0x211fd8);
-        //addprocedurestop(0x238f20, 0x9, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x228560, 0x2, true, true, 0x362026 + 0x14, 0x211fd8);
-        //addprocedurestop(0x211fd8, 32, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x2387d9, 0, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x228560, 0x2, true, true, 0x3aa0a4 + 0x1f71, 0x242cf9);
-        //addprocedurestop(0x2454f0, 0x0, true, true, 0x3aa0a400 + 0x1f71, 0x242cf9);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x38cfcb, 0x12345678);
-        //addprocedurestop(0x20ce30, 0x0, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x228560, 0x07, true, true, 0x356038 + 0x9022, 0x12345678);
-        //addprocedurestop(0x26a5d0, 0x0, true, true, 0x3aa0a400 + 0x9b6e, 0x242cf9);
-        //addprocedurestop(0x228760, 0x0, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x238f20, 0x2, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x238756, 0xc2e, true, true, 0x35603800 + 0x12aa, 0x242cf9);
-        //addprocedurestop(0x238a3d, 0x1f6a, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x228760, 0x0, true, true, 0x3aa0a400 + 0x1f71, 0x242cf9);
-        //addprocedurestop(0x1fc8c0, 0x0, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x238a3d, 0x1b83, true, true, 0x35603800 + 0x9022, 0x242cf9);
-        //addprocedurestop(0x268610, 0x0, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x268580, 0x1, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x268090, 0x0, true, true, 0x38cfcb00, 0x12345678);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x2b3a74 + 0x21f, 0x12345678);
-        //addprocedurestop(0x269b20, 0x0, true, true, 0x2b3a74 + 0x88d, 0x12345678);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x2b3a74 + 0x22, 0x12345678);
-        //addprocedurestop(0x269450, 0x1, true, true, 0x2b3a7400 + 0x22, 0x12345678);
-        //addprocedurestop(0x268b70, 0x1, true, true, 0x2b3a7400 + 0x22, 0x12345678);
-        //addprocedurestop(0x2285e0, 0x0, true, true, 0x2b43b6 + 2, 0x12345678);
-        //addprocedurestop(0x228560, 0x41, true, true, 0x3aa0a4 + 0x1e29, 0x12345678);
-        //addprocedurestop(0x29e550, 0x0, true, true, 0x3514b000 + 0x8e, 0x12345678);
-        //addprocedurestop(0x2459c3, 0x0, true, true, 0x3514b000 + 0x8e, 0x12345678);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x3514b0 + 0, 0x268610);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x35153e, 0x268610);
-
-
-        //addprocedurestop(0x268610, 0x73, true, true, 0x3514b000 + 0, 0x12345678);
-        //addprocedurestop(0x268610, 0x50, true, true, 0x3514b000 + 0, 0x12345678);
-        //addprocedurestop(0x2681f0, 0x0, true, true, 0x35153e00, 0x268610);
-        //addprocedurestop(0x269450, 0x4, true, true, 0x3514b0, 0x268610);
-        //addprocedurestop(0x269450, 0x4, true, true, 0x3514ccd00 , 0x268610);
-        //addprocedurestop(0x228320, 0x0, true, true, 0x3aa0a4 +0x2168, 0x268610);
-        //addprocedurestop(0x20fcc0, 0x0, true, true, 0x34eb5400, 0x268610);
-        //addprocedurestop(0x21f370, 0x92, true, true, 0x2bc3a800, 0x268610);
-        //addprocedurestop(0x236F70, 0x0, true, true, 0x3655f6+0x1c, 0x268610);
-        //addprocedurestop(0x246f60, 0x0, true, true, 0x3655f6 + 0x1c, 0x268610);
-        //addprocedurestop(0x249226, 0x9, true, true, 0x3655f600 + 0x1c, 0x268610);
-        //addprocedurestop(0x1f1780, 0x0, true, true, 0x3655f600 + 0x1c, 0x268610);
-        //addprocedurestop(0x240a70, 0x0, true, true, 0x240a7000, 0x268610);
-        //addprocedurestop(0x242a00, 0x7, true, true, 0x356038 + 0x1154e, 0x268610);
-        //addprocedurestop(0x228560, 0x0, true, true, 0x35603800 + 0x1153e + 0x45, 0x268610);
-        //addprocedurestop(0x2285ff, 0x7, true, true, 0x2dc4e0, 0x268610);
-        //addprocedurestop(0x2285ff, 0xb, true, true, 0x30c4e0 + 0x2, 0x2272a000);
-        //addprocedurestop(0x2285ff, 0x1a, true, true, 0x356038 + 0x1156c, 0x2272a000);
-        //addprocedurestop(0x2285ff, 0x0, true, true, 0x3aa0a4 + 0xe051el, 0x2272a000);
-        //addprocedurestop(0x222bd3, 0/*0x46c*/, true, true, 0x2c3c20 + 0x64, 0x2272a000);
-        //addprocedurestop(0x21f370, 0x5f, true, true, 0x400604, 0x2272a000);
-        //addprocedurestop(0x238b20, 0x0, true, true, 0x3aa0a400 + 0xe051el, 0x2272a000);
-        //addprocedurestop(0x20fcc0, 0x0, true, true, 0x35159c00, 0x2272a000);
-        //addprocedurestop(0x235a50, 0x0, true, true, 0x351660, 0x2272a000);
-        //addspy();
-
-    //addprocedurestop(0x22860f, 0x0, true, true, 0x32C4E0 + 0x18802, 0x12345678);
-
-    //addprocedurestop(0x238d01, 0x820, true, true, 0x12345678, 0x12345678);
-
-//addprocedurestop(0x1f3e72, 0x44, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x1f45c0, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x1f3e72, 0xb5, true, true, 0x356038 + 0x3964, 0x12345678);
-
-    //addprocedurestop(0x237f12, 0x1, true, true, 0x12345678, 0x12345678);
-    //addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x17732, 0x12345678);
-    //addprocedurestop(0x22860f, 0x117, true, true, 0x356038 + 0x194ba, 0x12345678);
-    //addprocedurestop(0x1f1c84, 0xec, true, true, 0x356038 + 0x70e4, 0x12345678);
-
-//addprocedurestop(0x259260, 0, true, true, 0x34ef04, 0x12345678);
-//addprocedurestop(0x2368e0, 0, true, true, 0x32c4e0 + 0x466e, 0x12345678);
-//addprocedurestop(0x236F70, 0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x279817, 0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x2368e2, 0, true, true, 0x32c4e0 + 0x1313a, 0x12345678);
-
-//addprocedurestop(0x22860f, 0x0, true, true, 0x356038 + 0x315a, 0x12345678);
-//addprocedurestop(0x20e710, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x1f69e0, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x23f310, 0x0, true, true, 0x32c4e0 + 0xebba, 0x12345678);
-//addprocedurestop(0x213420, 0x0, true, true, 0x356038 + 0x7e3a, 0x12345678);
-//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0x1a02c, 0x12345678);
-//addprocedurestop(0x2368e2, 0x0, true, true, 0x356038 + 0x77de, 0x12345678);
-//addprocedurestop(0x236F70, 0x0, true, true, 0x2dc4e0 + 0x66, 0x12345678);
-//addprocedurestop(0x22860F, 0x87, true, true, 0x3aa0a4 + 0x0, 0x12345678);
-//addprocedurestop(0x2225cb, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x25fae0, 0x0, true, true, 0x3aa0a4 + 0x85c, 0x12345678);
-//addprocedurestop(0x22a090, 0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x213880, 0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x239940, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x36552, 0x12345678);
-
-//  addprocedurestop(0x22b268, 0x1b0, true, true, 0x12345678, 0x12345678);
-
-//addprocedurestop(0x236F70, 0x0, true, true, 0x356038 + 0x16654, 0x12345678);
-//addprocedurestop(0x22860F, 0x18, true, true, 0x30c4e0 + 0xb97c, 0x12345678);
-//addprocedurestop(0x2423d0, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
-
-//addprocedurestop(0x246080, 0x0, true, true, 0x356038 + 0xa20a, 0x12345678);
-//addprocedurestop(0x1F69E4, 0x1, true, true, 0x356038 + 0x4aac, 0x12345678);
-//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0xdcdc, 0x12345678);
-
-//addprocedurestop(0x240a70, 0x0, true, true, 0x356038 + 0x35, 0x12345678);
-//addprocedurestop(0x227573, 0x184d, true, true, 0x002ec4e0 +  0x5db, 0x12345678);
-//addprocedurestop(0x22A977, 0x7a, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x237F12, 0x2551, true, true, 0x356038 + 0x35, 0x12345678);
-//addprocedurestop(0x2075a4, 0x2, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x00238A3D, 0x2, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x2368e2, 0x0, true, true, 0x32c4e0 + 0x6104, 0x12345678);
-
-//addprocedurestop(0x1f56f4, 0x50, true, true, 0x32c4e0 + 0x5d04, 0x12345678);
-//addprocedurestop(0x238A8A, 0x1b4, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x22A388, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x22860F, 0x7, true, true, 0x32c4e0 + 0x1c2a, 0x12345678);
-//addprocedurestop(0x22A388, 0, true, true, 0x356038 + 0x35, 0x12345678);
-//addprocedurestop(0x218389, 0x0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x22A977, 0xb8, true, true, 0x30c4e0+0xf36e, 0x12345678);
-//addprocedurestop(0x226dc4, 0x2551, true, true, 0x356038 + 0x6f3e, 0x12345678);
-//addprocedurestop(0x237B05, 0, true, true, 0x002ec4e0 + 0xf8, 0x12345678);
-//addprocedurestop(0x229B94, 0x00001C43, true, true, 0x002ec4e0 + 0xf8, 0x12345678);
-//addprocedurestop(0x229B94, 0x00001d5d, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x0022860F, 0x11, true, true, 0x356038 + 0x3c6e, 0x12345678);
-
-//addprocedurestop(0x238A8A, 0xc95, true, true, 0x356038 + 0xb382, 0x12345678);
-
-//addprocedurestop(0x238A8A, 0x1371, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
-//addprocedurestop(0x205b00, 0x0, true, true, 0x12345678, 0x12345678);
-
-//205460_ - 2ECFF4
-//215730_ - 2ECFF4 ->6D080
-
-addprocedurestop(0x201D90, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
-//addprocedurestop(0x2114f0, 0, true, true, 0x26c067, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x1FBFCB, 0x0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+addprocedurestop(0x2439A7, 0x5e3, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x1FB700, 0, true, true, 0x7716c, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x2114f0, 0, true, true, 0x251AE0, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x222480, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 //addprocedurestop(0x2055C6, 0, true, true, 0xa657, 0x12345678, 0x2ECFF4);//0x2F0B80
 //addprocedurestop(0x2114f0, 0, true, true, 0x63220, 0x12345678,0);//0x2F0B80
@@ -867,7 +578,7 @@ addprocedurestop(0x201D90, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
 //addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
 //addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x2114f0, 0, true, true, 0x24e2b4, 0x12345678,0);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -990,6 +701,16 @@ addprocedurestop(0x201D90, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
         if (reg_eip == 0x1ea486) {//fix computer speed
                 mem_writeb(0x24e084, 0x5);
         }
+#ifdef autostart
+        if(reg_eip == 0x21C3AF) {
+            mem_writeb(reg_esp+0x28, 0x1);
+            reg_esi = 1;
+        }
+        if(reg_eip == 0x21CF53) {
+            mem_writeb(0x2eaae4, 0x5);
+            mem_writeb(0x2eabc6, 0x1);
+        }
+#endif
         /*if (reg_eip == 0x22857e) {//test mouse
             if (mousetest >= 1)
             {
