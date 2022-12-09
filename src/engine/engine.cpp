@@ -41,6 +41,8 @@
 
 #define autostart
 
+#define MODIFY_SETTINGS
+
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
@@ -564,8 +566,8 @@ void enginestep() {
 //writeseqall(0x2439A7);
 //writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-//addprocedurestop(0x1FBFCB, 0x0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
-addprocedurestop(0x2439A7, 0x5e3, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x26C44C, 0x12345678, 0);
 //addprocedurestop(0x1FB700, 0, true, true, 0x7716c, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x2114f0, 0, true, true, 0x251AE0, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x222480, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
@@ -710,6 +712,12 @@ addprocedurestop(0x2439A7, 0x5e3, true, true, 0x12345678, 0x12345678, 0);//0x2F0
             mem_writeb(0x2eaae4, 0x5);
             mem_writeb(0x2eabc6, 0x1);
         }
+#endif
+#ifdef MODIFY_SETTINGS
+        if(reg_eip == 0x205610) {
+            mem_writeb(reg_esp + 0x28, 0x1);//fix
+        }
+        //str_AE400_AE3F0->reflections_8597 = 0;
 #endif
         /*if (reg_eip == 0x22857e) {//test mouse
             if (mousetest >= 1)
