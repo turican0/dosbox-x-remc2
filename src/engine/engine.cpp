@@ -545,13 +545,13 @@ void enginestep() {
 
         //writeseqall(0x237BB0);
         //writeseqall(0x237BC7);
-        //writeseqall(0x1fad63);
+        //writeseqall(0x2055DE);
 
 
         //writeseqall(0x21183F);
         //writeseqall(0x21181F);
         //writeseqall(0x2117FA);
-        //writeseqall(0x2117A1);
+        //writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
@@ -566,7 +566,14 @@ void enginestep() {
 //writeseqall(0x2439A7);
 //writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2023CD, 0x0, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x2055C6, 0x0, true, true, 0x3658, 0x12345678, 0x2ECFF4);
+//addprocedurestop(0x1FD1D8, 0x13, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x1FCCA5, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2439A3, 0x11, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x1FB700, 0, true, true, 0x77160 + 0x30, 0x12345678, 0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x77160 + 12, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x1FD010, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x26C44C, 0x12345678, 0);
 //addprocedurestop(0x1FB700, 0, true, true, 0x7716c, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x2114f0, 0, true, true, 0x251AE0, 0x12345678, 0);//0x2F0B80
@@ -715,7 +722,8 @@ void enginestep() {
 #endif
 #ifdef MODIFY_SETTINGS
         if(reg_eip == 0x205610) {
-            mem_writeb(reg_esp + 0x28, 0x1);//fix
+            Bit32u adress26c400 = mem_readd(0x26c400);
+            mem_writeb(adress26c400 + 8604, 0x1);//fix
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
 #endif
