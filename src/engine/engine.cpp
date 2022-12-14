@@ -42,7 +42,7 @@
 #define autostart
 
 #define MODIFY_SETTINGS
-bool modset_used = true;
+int modset_used_count = 0;
 int modset_key = 0x0;
 
 //#define MOVE_PLAYER
@@ -553,7 +553,7 @@ void enginestep() {
         //writeseqall(0x21183F);
         //writeseqall(0x21181F);
         //writeseqall(0x2117FA);
-        writeseqall(0x2055DE);
+        //writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
@@ -568,8 +568,11 @@ void enginestep() {
 //writeseqall(0x2439A7);
 //writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-//addprocedurestop(0x1F1FB4, 0x1, true, true, 0x24e710, 0x12345678, 0);
-addprocedurestop(0x1FB704, 0x0, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x2055C6, 0, true, true, 0, 0x12345678, 0x2ECFF4);//0x2F0B80
+//addprocedurestop(0x1FCCC4, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x24AA1B, 0x0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x202600, 0x0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x1FB704, 0x0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055C6, 0x0, true, true, 0, 0x12345678, 0x2ECFF4);
 //addprocedurestop(0x1FD1D8, 0x13, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FCCA5, 0, true, true, 0x12345678, 0x12345678, 0);
@@ -732,15 +735,15 @@ addprocedurestop(0x1FB704, 0x0, true, true, 0x12345678, 0x12345678, 0);
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            modset_used = false;
+            modset_used_count = 2;
             modset_key = 0x44;
         }
         if(reg_eip == 0x1E7B00) {
-            if(!modset_used)
+            if(modset_used_count)
             {
                 mem_writeb(0x2ecf70, modset_key);
                 //lastPressedKey_12EF70_12EF60 = modset_key;
-                modset_used = true;
+                modset_used_count--;
             }
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
