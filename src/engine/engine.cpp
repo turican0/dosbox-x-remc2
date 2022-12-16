@@ -568,7 +568,8 @@ void enginestep() {
 //writeseqall(0x2439A7);
 //writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-addprocedurestop(0x202022, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+//02ed02e
+addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x1FCCC4, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 //addprocedurestop(0x24AA1B, 0x0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x202600, 0x0, true, true, 0x12345678, 0x12345678, 0);
@@ -735,7 +736,7 @@ addprocedurestop(0x202022, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            modset_used_count = 2;
+            modset_used_count = 3;
             modset_key = 0x44;
         }
         if(reg_eip == 0x1E7B00) {
