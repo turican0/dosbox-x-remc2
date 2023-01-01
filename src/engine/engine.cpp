@@ -42,10 +42,8 @@
 #define autostart
 
 #define MODIFY_SETTINGS
-int modset_used_precount = 0;
 int modset_used_count = 0;
 int modset_key = 0x0;
-bool modset_key_alt = false;
 
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
@@ -128,7 +126,6 @@ long writesequencecount2[300];
 Bit32u writesequencedataadress[300];
 Bit32u writesequencesavefrom[300];
 bool writesequencepointer[300];
-Bit32u writesequencesaveadd[300];
 
 int lastwriteindexseq_D41A0 = 0;
 Bit32u writeseq_D41A0codeadress[300];
@@ -140,7 +137,7 @@ char findnamex[300];
 //#define TEST_REGRESSIONS
 int test_regression_level = 0;
 
-void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0, bool pointer = false, Bit32u saveadd = 0) {
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0, bool pointer = false) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
     writesequencesize[lastwriteindexsequence] = size;
@@ -148,7 +145,6 @@ void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bi
     writesequencecount2[lastwriteindexsequence] = 0;
     writesequencesavefrom[lastwriteindexsequence] = savefrom;
     writesequencepointer[lastwriteindexsequence] = pointer;
-    writesequencesaveadd[lastwriteindexsequence] = saveadd;
     //writesequencedataadress2 = dataadress2;
     //writesequencedataadress3 = dataadress3;
     sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
@@ -167,28 +163,20 @@ void writeseq_D41A0(Bit32u codeadress, int count) {
     lastwriteindexseq_D41A0++;
 }
 
-void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer, Bit32u saveadd) {
+void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer) {
     Bit32u dataadress2;
-    if (dataadress == 0xffffff01)dataadress2 = reg_esi;
-    else
-    if (dataadress == 0xffffff02)dataadress2 = reg_edi;
-    else
-    if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
-    else
-    if (dataadress == 0xfffffff4)dataadress2 = reg_eax;
-    else
-    if (dataadress == 0xfffffff5)dataadress2 = reg_edx;
-    else
-    if (dataadress == 0xfffffff6)dataadress2 = reg_ebx;
-    else
+    if(isPointer)
     {
-        if(isPointer)
-        {
-            dataadress2 = mem_readd(dataadress2);
-        }
-        else
-            dataadress2 = dataadress;
+        dataadress2 = mem_readd(dataadress);
     }
+    else
+        dataadress2 = dataadress;
+    if (dataadress == 0xffffff01)dataadress2 = reg_esi;
+    if (dataadress == 0xffffff02)dataadress2 = reg_edi;
+    if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
+
+    if (dataadress == 0xfffffff4)dataadress2 = reg_eax;
+
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //while(fseq[index] == nullptr)
@@ -197,12 +185,9 @@ void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer, Bit
     unsigned char buffer[1];
     for (long i = 0; i < actsize; i++) {
         if((dataadress >= 0xfffffff0) && (dataadress < 0xffffffff))
-            if(isPointer)
-                buffer[0] = (unsigned char)mem_readb(saveadd + i + dataadress2);
-            else
-                buffer[0] = *((uint8_t*)&dataadress2+i);
+            buffer[0] = *((uint8_t*)&dataadress2+i);
         else
-            buffer[0] = (unsigned char)mem_readb(saveadd + i+ dataadress2);
+            buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
         fwrite(buffer, 1, 1, fseq[index]);
     }
     fclose(fseq[index]);    
@@ -546,7 +531,7 @@ void enginestep() {
         //writeseqall(0x228583);
         //writeseqall(0x238734);
         //writeseqall(0x238756);
-        //writeseqall(0x205530);
+        //writeseqall(0x2285ff);
 
         /*writeseqall(0x237B05);
         writeseqall(0x237B55);
@@ -562,12 +547,12 @@ void enginestep() {
 
         //writeseqall(0x237BB0);
         //writeseqall(0x237BC7);
-        //writeseqall(0x20EC0E);
+        //writeseqall(0x2055DE);
 
 
-        //writeseqall(0x20F733);
-        //writeseqall(0x212A0A);
-        //writeseqall(0x212A70);
+        //writeseqall(0x21183F);
+        //writeseqall(0x21181F);
+        //writeseqall(0x2117FA);
         //writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
@@ -581,20 +566,9 @@ void enginestep() {
 //writeseqall(0x24629B);
 //writeseqall(0x245FFB);
 //writeseqall(0x2439A7);
-//writesequence(0x1e24d0, 0x10000, 8, 0xfffffff5,0, true);
-//writesequence(0x1E2DFF, 0x10000, 4, 0x2f9e7);
-//writesequence(0x212A70, 0x10000, 2, 0xfffffff6, 0, true,24);
+//writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
 
-//addprocedurestop(0x212A70, 0x0, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x212A70, 0x943, true, true, 0x3a11b, 0x12345678, 0);
-//addprocedurestop(0x1e24d4, 0x110, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x1E2410, 0, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x1E2DFF, 0x491, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x212A0A, 0x1180, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x2126B0, 0, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x212A70, 0x4e2, true, true, 0x257024, 0x12345678, 0);//0x2F0B80
-//addprocedurestop(0x212A70, 0x4e2, true, true, 0x3fe8b + 0x48 + 4, 0x12345678, 0);//0x2F0B80
-//addprocedurestop(0x212A70, 0x240c, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+addprocedurestop(0x202022, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x1FCCC4, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 //addprocedurestop(0x24AA1B, 0x0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x202600, 0x0, true, true, 0x12345678, 0x12345678, 0);
@@ -617,9 +591,9 @@ void enginestep() {
 //addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678,0);
 //addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678,0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678,0);
-//addprocedurestop(0x212780, 0, true, true, 0x12345678, 0x12345678,0);
-//addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
+//addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
+//addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678,0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x24e2b4, 0x12345678,0);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -761,25 +735,15 @@ addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678,0);
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            //modset_used_precount = 20 + 5;
-            modset_used_count = 1;
-            modset_key = 0x26;//load
-            //modset_key = 0x1f;//save
-            modset_key_alt = true;
+            modset_used_count = 2;
+            modset_key = 0x44;
         }
         if(reg_eip == 0x1E7B00) {
             if(modset_used_count)
             {
-                if(modset_used_precount)
-                    modset_used_precount--;
-                else
-                {
-                    mem_writeb(0x2ecf70, modset_key);
-                    if(modset_key_alt)
-                        mem_writeb(0x2ecef0 + 56, 1);
-                    //pressedKeys_12EEF0_12EEE0[56] = 1;
-                    modset_used_count--;
-                }
+                mem_writeb(0x2ecf70, modset_key);
+                //lastPressedKey_12EF70_12EF60 = modset_key;
+                modset_used_count--;
             }
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
@@ -994,7 +958,7 @@ addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678,0);
                 {
                     if (writesequencesavefrom[ii] <= writesequencecount2[ii])
                     {
-                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii], writesequencepointer[ii], writesequencesaveadd[ii]);
+                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii], writesequencepointer[ii]);
                        //DEBUG_EnableDebugger();
                     }
                     //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
