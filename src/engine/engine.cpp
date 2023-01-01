@@ -42,8 +42,10 @@
 #define autostart
 
 #define MODIFY_SETTINGS
+int modset_used_precount = 0;
 int modset_used_count = 0;
 int modset_key = 0x0;
+bool modset_key_alt = false;
 
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
@@ -64,11 +66,11 @@ Bit8u temp;
 //bool stopturnon = true;
 //int stopindex=0;
 
-Bit32u oldmem=-123456789;
+Bit32u oldmem = -123456789;
 long count = 0;
-FILE *fptestep;
-FILE *fptestepcc;
-unsigned long findvarseg=0x168;
+FILE* fptestep;
+FILE* fptestepcc;
+unsigned long findvarseg = 0x168;
 //unsigned long findvaradr= 0x2a51a4;
 //unsigned long findvaradr= 0x351660;
 //unsigned long findvaradr = 0xaaa355200;
@@ -102,7 +104,7 @@ unsigned long prelastesp;
 unsigned long lastsel;
 unsigned long lastoff;
 unsigned long lastesp;
-bool pause=false;
+bool pause = false;
 char findname[100];
 
 long callcount = 0;
@@ -126,6 +128,7 @@ long writesequencecount2[300];
 Bit32u writesequencedataadress[300];
 Bit32u writesequencesavefrom[300];
 bool writesequencepointer[300];
+Bit32u writesequencesaveadd[300];
 
 int lastwriteindexseq_D41A0 = 0;
 Bit32u writeseq_D41A0codeadress[300];
@@ -137,7 +140,7 @@ char findnamex[300];
 //#define TEST_REGRESSIONS
 int test_regression_level = 0;
 
-void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0, bool pointer = false) {
+void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom = 0, bool pointer = false, Bit32u saveadd = 0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
     writesequencesize[lastwriteindexsequence] = size;
@@ -145,6 +148,7 @@ void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bi
     writesequencecount2[lastwriteindexsequence] = 0;
     writesequencesavefrom[lastwriteindexsequence] = savefrom;
     writesequencepointer[lastwriteindexsequence] = pointer;
+    writesequencesaveadd[lastwriteindexsequence] = saveadd;
     //writesequencedataadress2 = dataadress2;
     //writesequencedataadress3 = dataadress3;
     sprintf(findnamex, "sequence-%08X-%08X.bin", codeadress, dataadress);
@@ -163,34 +167,45 @@ void writeseq_D41A0(Bit32u codeadress, int count) {
     lastwriteindexseq_D41A0++;
 }
 
-void savesequence(int index,long actsize, Bit32u dataadress, bool isPointer) {
+void savesequence(int index, long actsize, Bit32u dataadress, bool isPointer, Bit32u saveadd) {
     Bit32u dataadress2;
-    if(isPointer)
-    {
-        dataadress2 = mem_readd(dataadress);
-    }
+    if(dataadress == 0xffffff01)dataadress2 = reg_esi;
     else
-        dataadress2 = dataadress;
-    if (dataadress == 0xffffff01)dataadress2 = reg_esi;
-    if (dataadress == 0xffffff02)dataadress2 = reg_edi;
-    if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
-
-    if (dataadress == 0xfffffff4)dataadress2 = reg_eax;
-
+        if(dataadress == 0xffffff02)dataadress2 = reg_edi;
+        else
+            if(dataadress == 0xffffff03)dataadress2 = reg_ecx;
+            else
+                if(dataadress == 0xfffffff4)dataadress2 = reg_eax;
+                else
+                    if(dataadress == 0xfffffff5)dataadress2 = reg_edx;
+                    else
+                        if(dataadress == 0xfffffff6)dataadress2 = reg_ebx;
+                        else
+                        {
+                            if(isPointer)
+                            {
+                                dataadress2 = mem_readd(dataadress2);
+                            }
+                            else
+                                dataadress2 = dataadress;
+                        }
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //while(fseq[index] == nullptr)
     //    fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
-    for (long i = 0; i < actsize; i++) {
+    for(long i = 0; i < actsize; i++) {
         if((dataadress >= 0xfffffff0) && (dataadress < 0xffffffff))
-            buffer[0] = *((uint8_t*)&dataadress2+i);
+            if(isPointer)
+                buffer[0] = (unsigned char)mem_readb(saveadd + i + dataadress2);
+            else
+                buffer[0] = *((uint8_t*)&dataadress2 + i);
         else
-            buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
+            buffer[0] = (unsigned char)mem_readb(saveadd + i + dataadress2);
         fwrite(buffer, 1, 1, fseq[index]);
     }
-    fclose(fseq[index]);    
+    fclose(fseq[index]);
 };
 //write sequence
 void saveseq_D41A0(int index) {
@@ -199,12 +214,12 @@ void saveseq_D41A0(int index) {
     //while(fseq[index] == nullptr)
     //    fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
-    for (int ea = 0; ea < 0x3E9; ea++)
+    for(int ea = 0; ea < 0x3E9; ea++)
     {
-        Bit32u nextadress=mem_readd(0x2bb3e4+4*ea);
+        Bit32u nextadress = mem_readd(0x2bb3e4 + 4 * ea);
 
         unsigned char buffer[1];
-        for (long i = 0; i < 0xa8; i++) {
+        for(long i = 0; i < 0xa8; i++) {
             buffer[0] = (unsigned char)mem_readb(i + nextadress);
             fwrite(buffer, 1, 1, fseq[index]);
         }
@@ -223,7 +238,7 @@ bool addprocedurestoponmemchange = false;
 bool stoponmemchange = false;
 Bit32u addprocedurecounteradress = 0;
 Bit32u addprocedurecount = 0;
-void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress, Bit32u counteradress, Bit32u mempointer) {
+void addprocedurestop(Bit32u adress, int count, bool force, bool memchange, Bit32u memadress, Bit32u counteradress, Bit32u mempointer) {
     addprocedurestopadress = adress;
     addprocedurestopcount = count;
     addprocedurestopforce = force;
@@ -238,7 +253,7 @@ void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u 
 
 void writesubcall(char* text, int level) {
     fopen_s(&fptestepc, findnamec, "a+");
-    for (int i = 0;i<level;i++)fprintf(fptestepc, " ");
+    for(int i = 0; i < level; i++)fprintf(fptestepc, " ");
     fprintf(fptestepc, text);
     fclose(fptestepc);
 };
@@ -249,11 +264,11 @@ FILE* fptestepspy;
 
 void spywrite(int adress) {
     Bit32u actmem = mem_readd(SegPhys(ds) + adress);
-    fprintf(fptestepspy, "%08X:%08X |", adress, actmem);    
+    fprintf(fptestepspy, "%08X:%08X |", adress, actmem);
 }
 
 void spytest(int procedure) {
-    if (reg_eip == procedure)
+    if(reg_eip == procedure)
     {
         sprintf(findnamespy, "spy.txt");
         fopen_s(&fptestepspy, findnamespy, "a+");
@@ -281,16 +296,16 @@ void spytest(int procedure) {
         spywrite(0x3514ec);//adress
         fprintf(fptestepspy, "\n\n");
         spywrite(0x3514b0 + 0x80);//adress
-        spywrite(0x3514b0+0x84);//adress
-        spywrite(0x3514b0+0x88);//adress
-        spywrite(0x3514b0+0x8c);//adress
+        spywrite(0x3514b0 + 0x84);//adress
+        spywrite(0x3514b0 + 0x88);//adress
+        spywrite(0x3514b0 + 0x8c);//adress
         fprintf(fptestepspy, "\n");
         fclose(fptestepspy);
     }
 }
 
 void spytest_269497() {
-    if (reg_eip == 0x269497)
+    if(reg_eip == 0x269497)
     {
         sprintf(findnamespy, "spy.txt");
         fopen_s(&fptestepspy, findnamespy, "a+");
@@ -304,13 +319,13 @@ void spytest_269497() {
          eax   v2
          ebx   v0*/
 
-        
+
         fclose(fptestepspy);
     }
 }
 
 void spytest_268bbc() {
-    if (reg_eip == 0x268bbc)
+    if(reg_eip == 0x268bbc)
     {
         sprintf(findnamespy, "spy.txt");
         fopen_s(&fptestepspy, findnamespy, "a+");
@@ -330,8 +345,8 @@ void spytest_268bbc() {
 }
 
 void spyinspect() {
-    if (inspect_on)
-    {        
+    if(inspect_on)
+    {
         spytest(0x268610);//procedure
         //spytest(0x228560);//procedure
         spytest(0x269450);//procedure
@@ -375,7 +390,7 @@ int debugcounter_258350 = 0;
 
 int debugcounter_1fb7a0 = 0;
 
-void writeseqall(Bit32u adress, Bit32u skip=0) {
+void writeseqall(Bit32u adress, Bit32u skip = 0) {
     writesequence(adress, 0x10000, 0x70000, 0x28A1E0, skip);
     writesequence(adress, 0x10000, 232713, 0x1F690, skip);
     //writesequence(adress, 0x10000, 320 * 200, 0x6D080, skip);
@@ -385,7 +400,7 @@ void writeseqall(Bit32u adress, Bit32u skip=0) {
     writesequence(adress, 0x10000, 0x2, 0x34c4e0, skip);
 }
 
-int oneindex=0;
+int oneindex = 0;
 Bit32u oneadress;
 void add_index(Bit32u adress) {
     oneadress = adress;
@@ -393,54 +408,54 @@ void add_index(Bit32u adress) {
 
 
 void enginestep() {
-    
-    if (count == 0) {
-        #ifdef TEST_REGRESSIONS
-            //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
-            //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
-            //addprocedurestop(0x265b80, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
-        //addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
-        //writeseqall(0x228583);
-        //writeseqall(0x22b268);
-        /*writeseqall(0x233d56);
-        writeseqall(0x237B05);
-        writeseqall(0x237B55);
-        writeseqall(0x237BB0);
-        writeseqall(0x237BB9);
-        writeseqall(0x237BC7);
-        writeseqall(0x237BF0);
-        writeseqall(0x22A280);
-        writeseqall(0x22A288);
 
-        writeseqall(0x22A2E3);
-        writeseqall(0x22A383);
-        writeseqall(0x22A388);
-        writeseqall(0x22A3D7);
-        writeseqall(0x22A422);
-        writeseqall(0x22A427);
-        writeseqall(0x22A4D6);
-        writeseqall(0x22A52C);
-        writeseqall(0x22a545);
+    if(count == 0) {
+#ifdef TEST_REGRESSIONS
+        //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
+        //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
+        //addprocedurestop(0x265b80, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+    //addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+    //writeseqall(0x228583);
+    //writeseqall(0x22b268);
+    /*writeseqall(0x233d56);
+    writeseqall(0x237B05);
+    writeseqall(0x237B55);
+    writeseqall(0x237BB0);
+    writeseqall(0x237BB9);
+    writeseqall(0x237BC7);
+    writeseqall(0x237BF0);
+    writeseqall(0x22A280);
+    writeseqall(0x22A288);
 
-        
-        writeseqall(0x228583);
-        writeseqall(0x23d954);
-        writeseqall(0x238734);
-        writeseqall(0x2389f6);*/
-        //writeseqall(0x238a3d);
-        //writeseqall(0x238A8A);//*/
+    writeseqall(0x22A2E3);
+    writeseqall(0x22A383);
+    writeseqall(0x22A388);
+    writeseqall(0x22A3D7);
+    writeseqall(0x22A422);
+    writeseqall(0x22A427);
+    writeseqall(0x22A4D6);
+    writeseqall(0x22A52C);
+    writeseqall(0x22a545);
 
 
-        //writeseqall(0x228583);
-        //writeseqall(0x23d954);
+    writeseqall(0x228583);
+    writeseqall(0x23d954);
+    writeseqall(0x238734);
+    writeseqall(0x2389f6);*/
+    //writeseqall(0x238a3d);
+    //writeseqall(0x238A8A);//*/
 
-        //writeseqall(0x238cf3);
-        //addprocedurestop(0x238cf3, 0x348, true, true, 0x356038 + 0x13de2, 0x12345678);
+
+    //writeseqall(0x228583);
+    //writeseqall(0x23d954);
+
+    //writeseqall(0x238cf3);
+    //addprocedurestop(0x238cf3, 0x348, true, true, 0x356038 + 0x13de2, 0x12345678);
 
 
-        //addprocedurestop(0x238A8A, 0x5ef, true, true, 0x12345678, 0x12345678);
+    //addprocedurestop(0x238A8A, 0x5ef, true, true, 0x12345678, 0x12345678);
         addprocedurestop(0x1fad60, 0x0, true, true, 0x12345678, 0x12345678);
-        #else
+#else
         //addprocedurestop(0x23c8d4, 0x0, true, true, 0x134c38, 0x12345678);//0xd8
         //addprocedurestop(0x2541e7, 0x0, true, true, 0x3c850, 0x12345678);//0xd8
         //addprocedurestop(0x23c8d4, 0x0, true, true, 0x2b2276, 0x12345678);//0xd8
@@ -480,7 +495,7 @@ void enginestep() {
         //addprocedurestop(0x21d084, 0x0, true, true, 0x12345678, 0x12345678);
         //addprocedurestop(0x21de79, 0x0, true, true, 0x12345678, 0x12345678);
         //addprocedurestop(0x21e671, 0xf, true, true, 0x12345678, 0x12345678);
-        
+
         //end at 3e1e4
 
         //addprocedurestop(0x237214, 0, true, true, 0x2B226D, 0x12345678);
@@ -496,7 +511,7 @@ void enginestep() {
         writeseqall(0x297272);
 
         writeseqall(0x002285FF);*/
-        
+
         //esi edi ecx
 
         //addprocedurestop(0x220d64, 0xb1, true, true, 0x12345678, 0x12345678);
@@ -531,7 +546,7 @@ void enginestep() {
         //writeseqall(0x228583);
         //writeseqall(0x238734);
         //writeseqall(0x238756);
-        //writeseqall(0x2285ff);
+        //writeseqall(0x205530);
 
         /*writeseqall(0x237B05);
         writeseqall(0x237B55);
@@ -547,12 +562,12 @@ void enginestep() {
 
         //writeseqall(0x237BB0);
         //writeseqall(0x237BC7);
-        //writeseqall(0x2055DE);
+        //writeseqall(0x20EC0E);
 
 
-        //writeseqall(0x21183F);
-        //writeseqall(0x21181F);
-        //writeseqall(0x2117FA);
+        //writeseqall(0x20F733);
+        //writeseqall(0x212A0A);
+        //writeseqall(0x212A70);
         //writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
@@ -566,10 +581,20 @@ void enginestep() {
 //writeseqall(0x24629B);
 //writeseqall(0x245FFB);
 //writeseqall(0x2439A7);
-//writesequence(0x2439C2, 0x10000, 4, 0xfffffff4, 0);
+//writesequence(0x1e24d0, 0x10000, 8, 0xfffffff5,0, true);
+//writesequence(0x1E2DFF, 0x10000, 4, 0x2f9e7);
+//writesequence(0x212A70, 0x10000, 2, 0xfffffff6, 0, true,24);
 
-//02ed02e
-addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x212A70, 0x0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x943, true, true, 0x3a11b, 0x12345678, 0);
+//addprocedurestop(0x1e24d4, 0x110, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x1E2410, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x1E2DFF, 0x491, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A0A, 0x1180, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2126B0, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x4e2, true, true, 0x257024, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x212A70, 0x4e2, true, true, 0x3fe8b + 0x48 + 4, 0x12345678, 0);//0x2F0B80
+//addprocedurestop(0x212A70, 0x240c, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x1FCCC4, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 //addprocedurestop(0x24AA1B, 0x0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x202600, 0x0, true, true, 0x12345678, 0x12345678, 0);
@@ -592,9 +617,9 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 //addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678,0);
 //addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678,0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-//addprocedurestop(0x20D9D0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-//addprocedurestop(0x20EB27, 10, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-//addprocedurestop(0x2114f0, 0, true, true, 0x24e2b4, 0x12345678,0);//0x2F0B80
+        addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678, 0);
+        //addprocedurestop(0x212780, 0, true, true, 0x12345678, 0x12345678,0);
+        //addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -604,36 +629,36 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
         fopen_s(&fptestep, findname, "wt");
         fclose(fptestep);*/
     }
-    if (count > 10000)
+    if(count > 10000)
     {
         spyinspect();
-        if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
-        if (addprocedurestopcount != -1)
-        {
-            if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
-                //if(mem_readb(0x3aa0a4 + 0x1a4d)==0xb8)
-                if (addprocedurestopcount == 0)
-                {
-                    //saveactstate();
-                    //if (mem_readb(0x32c4e0 + 0xdcdc) == 0x02)
+        if((debugafterload == 1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+            if(addprocedurestopcount != -1)
+            {
+                if(addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
+                    //if(mem_readb(0x3aa0a4 + 0x1a4d)==0xb8)
+                    if(addprocedurestopcount == 0)
+                    {
+                        //saveactstate();
+                        //if (mem_readb(0x32c4e0 + 0xdcdc) == 0x02)
                         DEBUG_EnableDebugger();
-                    if (addprocedurestoponmemchange) {
-                        stoponmemchange = true;
-                        if(addprocedurestoppointer>0)//for pointers to adress
-                            findvaradr = mem_readd(addprocedurestoppointer)+ addprocedurestopfindvaradr;
-                        else
-                            findvaradr = addprocedurestopfindvaradr;
-                        /*if (0x20eaa0 == addprocedurestopadress)
-                        {
-                            addprocedurestopadress = 0x20ef1f;
-                            addprocedurestopcount = 0x3;
-                        }*/
+                        if(addprocedurestoponmemchange) {
+                            stoponmemchange = true;
+                            if(addprocedurestoppointer > 0)//for pointers to adress
+                                findvaradr = mem_readd(addprocedurestoppointer) + addprocedurestopfindvaradr;
+                            else
+                                findvaradr = addprocedurestopfindvaradr;
+                            /*if (0x20eaa0 == addprocedurestopadress)
+                            {
+                                addprocedurestopadress = 0x20ef1f;
+                                addprocedurestopcount = 0x3;
+                            }*/
+                        }
+                        xcounter2++;
                     }
-                    xcounter2++;
+                    else addprocedurestopcount--;
                 }
-                else addprocedurestopcount--;
             }
-        }
         /*
         if(debugafterload)
         if (reg_eip == 0x228388) {//mouse button
@@ -658,68 +683,68 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
             }
             mousetest++;
         }*/
-        #ifdef TEST_REGRESSIONS
-        if (reg_eip == 0x236FE1) {//skip intro
+#ifdef TEST_REGRESSIONS
+        if(reg_eip == 0x236FE1) {//skip intro
             mem_writeb(0x2A51AD, 1);
             // x_BYTE_D41AD_skip_screen = 1
         }
-        if (reg_eip == 0x25c254) {//skip to new game
+        if(reg_eip == 0x25c254) {//skip to new game
             //Bit32u str_E1BAC= mem_readd(0x2B2BAC);
             mem_writed(0x2B2BAC + 0, 0x258350);
             //str_E1BAC[0].dword_0 = 0x258350;
             mem_writew(0x2B2BAC + 8, 1);
             //str_E1BAC[0].word_8 = 1;
         }
-        if (reg_eip == 0x2585b8) {//258350 run level x
+        if(reg_eip == 0x2585b8) {//258350 run level x
             //unk_17DBA8str==0x34EBA8
             mem_writeb(0x34EB8E, 1);
             //x_DWORD_17DB70str.x_BYTE_17DB8E = 1;
-            Bit32u x_D41A0_BYTEARRAY_4_struct= mem_readd(0x2a51a4);
-            mem_writew(x_D41A0_BYTEARRAY_4_struct+43, test_regression_level);
+            Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+            mem_writew(x_D41A0_BYTEARRAY_4_struct + 43, test_regression_level);
             //x_D41A0_BYTEARRAY_4_struct.levelnumber_43w = test_regression_level;
 
             //0x2B2B82== x_WORD_E1964x[0x21E]== unk_E17CC_str_0x194[24].byte_18_act
-                if(mem_readb(0x2B2960+ test_regression_level*22+18)==1)
-                    mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545)|4u);
+            if(mem_readb(0x2B2960 + test_regression_level * 22 + 18) == 1)
+                mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 4u);
             //if (unk_E17CC_str_0x194[test_regression_level].byte_18_act == 1)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 4u;
 
-                int retval = -1;
-                int ri = 0;
-                //Bit32u x_WORD_E2970x = mem_readd(0x2b3970+0);
-                if (!mem_readb(0x2b3970 + 17 * ri+12))
-                    retval=0;
-                if (retval == -1)
+            int retval = -1;
+            int ri = 0;
+            //Bit32u x_WORD_E2970x = mem_readd(0x2b3970+0);
+            if(!mem_readb(0x2b3970 + 17 * ri + 12))
+                retval = 0;
+            if(retval == -1)
+            {
+                while(test_regression_level != mem_readw(0x2b3970 + 17 * ri + 4))
                 {
-                    while (test_regression_level != mem_readw(0x2b3970 + 17 * ri + 4))
-                    {
-                        ri++;
-                        if (!mem_readb(0x2b3970 + 17 * ri + 12))
-                            retval = 0;
-                    }
-                    if (retval == -1)
-                        retval= 0x2b3970 +17*ri;
+                    ri++;
+                    if(!mem_readb(0x2b3970 + 17 * ri + 12))
+                        retval = 0;
                 }
+                if(retval == -1)
+                    retval = 0x2b3970 + 17 * ri;
+            }
             //type_x_WORD_E2970* v46x = sub_824B0(x_D41A0_BYTEARRAY_4_struct.levelnumber_43w);
-            if((retval)&& mem_readb(retval + 12))
+            if((retval) && mem_readb(retval + 12))
                 mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 0x10u);
             //if (v46x && v46x->word_12 == 2)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x10u;
-            if(test_regression_level==24)
+            if(test_regression_level == 24)
                 mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 0x20u);
             //if (x_D41A0_BYTEARRAY_4_struct.levelnumber_43w == 24)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x20u;
-            
+
             reg_eax = 1;
             //v1 = 1;
         }
-        #endif
-        if (reg_eip == 0x1ea486) {//fix computer speed
-                mem_writeb(0x24e084, 0x5);
+#endif
+        if(reg_eip == 0x1ea486) {//fix computer speed
+            mem_writeb(0x24e084, 0x5);
         }
 #ifdef autostart
         if(reg_eip == 0x21C3AF) {
-            mem_writeb(reg_esp+0x28, 0x1);
+            mem_writeb(reg_esp + 0x28, 0x1);
             reg_esi = 1;
         }
         if(reg_eip == 0x21CF53) {
@@ -736,15 +761,25 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            modset_used_count = 3;
-            modset_key = 0x44;
+                //modset_used_precount = 20 + 5;
+            modset_used_count = 1;
+            modset_key = 0x26;//load
+            //modset_key = 0x1f;//save
+            modset_key_alt = true;
         }
         if(reg_eip == 0x1E7B00) {
             if(modset_used_count)
             {
-                mem_writeb(0x2ecf70, modset_key);
-                //lastPressedKey_12EF70_12EF60 = modset_key;
-                modset_used_count--;
+                if(modset_used_precount)
+                    modset_used_precount--;
+                else
+                {
+                    mem_writeb(0x2ecf70, modset_key);
+                    if(modset_key_alt)
+                        mem_writeb(0x2ecef0 + 56, 1);
+                    //pressedKeys_12EEF0_12EEE0[56] = 1;
+                    modset_used_count--;
+                }
             }
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
@@ -794,7 +829,7 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
 
         }
 
-        if (reg_eip == 0x2368e4) {//fix load            
+        if (reg_eip == 0x2368e4) {//fix load
             mem_writed(0x3965c7, 0x35cf6e);
         }*/
 
@@ -832,8 +867,8 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
                 debugcounter_1fb7a0++;
             }
         }*/
-        
-        if ((reg_eip == 0x1E79E1)&&killmouse2) {//rotate off2
+
+        if((reg_eip == 0x1E79E1) && killmouse2) {//rotate off2
             mem_writew(0x258d90 + 0x0, 320);//fix same run after load
             mem_writew(0x258d90 + 0x2, 200);//fix same run after load
             //reg_edx = 0x140;
@@ -866,16 +901,16 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
         }*/
 
 #ifdef TEST_NETWORK
-        if (reg_eip == 0x25d36d) {
+        if(reg_eip == 0x25d36d) {
             mem_writeb(0x3be31, 0x0);
         }
-        if (reg_eip == 0x23c8d4) {
+        if(reg_eip == 0x23c8d4) {
             mem_writeb(0x134c38, 0x1);
         }
 #endif //TEST_NETWORK
 #ifdef MOVE_PLAYER
-        if (reg_eip == 0x238b2f) {//move player
-            if (debugcounter_238b2f == 10) {
+        if(reg_eip == 0x238b2f) {//move player
+            if(debugcounter_238b2f == 10) {
                 mem_writew(reg_esi + 0x4c, 0x8c07);
                 mem_writew(reg_esi + 0x4e, 0xb427);
             }
@@ -883,9 +918,9 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
         }
 #endif //MOVE_PLAYER
 #ifdef SET_REFLECTION
-        if (reg_eip == 0x227834) {//set reflection
-                mem_writew(0x356038 + 0x218A, SET_REFLECTION);
-            }
+        if(reg_eip == 0x227834) {//set reflection
+            mem_writew(0x356038 + 0x218A, SET_REFLECTION);
+        }
 #endif //SET_REFLECTION
 #ifdef SET_SHADOWS
         if(reg_eip == 0x227834) {//set shadows
@@ -909,7 +944,7 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
                     mem_writew(reg_esi + 0x1c, mem_readw(reg_esi + 0x1c) - 0x10);
                     mem_writew(reg_esi + 130, 0x200);
                 }
-                
+
             debugcounter_238b2f++;
         }//rotate */
         /*if ((reg_eip == 0x1f8060) && killmouse) {//skipscreen
@@ -942,7 +977,7 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
             //DEBUG_EnableDebugger();
             debugafter_215540 = true;
         }*/
-        if (reg_eip == addprocedurecounteradress) {
+        if(reg_eip == addprocedurecounteradress) {
             sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
             fopen_s(&fptestepcc, findnamecc, "a+");
             fprintf(fptestepcc, "%d\n", addprocedurecount);
@@ -951,42 +986,42 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
         }
         //if (debugcounter_258350>0)
         if(debugafter_215540)
-        if ((debugafterload == 1)&&(count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
-        for(int ii=0;ii< lastwriteindexsequence;ii++)
-        if (writesequencecount[ii] != -1) {
-            if (reg_eip == writesequencecodeadress[ii]) {
-                if (writesequencecount2[ii] < writesequencecount[ii])
-                {
-                    if (writesequencesavefrom[ii] <= writesequencecount2[ii])
-                    {
-                        savesequence(ii, writesequencesize[ii], writesequencedataadress[ii], writesequencepointer[ii]);
-                       //DEBUG_EnableDebugger();
+            if((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+                for(int ii = 0; ii < lastwriteindexsequence; ii++)
+                    if(writesequencecount[ii] != -1) {
+                        if(reg_eip == writesequencecodeadress[ii]) {
+                            if(writesequencecount2[ii] < writesequencecount[ii])
+                            {
+                                if(writesequencesavefrom[ii] <= writesequencecount2[ii])
+                                {
+                                    savesequence(ii, writesequencesize[ii], writesequencedataadress[ii], writesequencepointer[ii], writesequencesaveadd[ii]);
+                                    //DEBUG_EnableDebugger();
+                                }
+                                //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
+                                //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
+                                writesequencecount2[ii]++;
+#ifdef TEST_REGRESSIONS
+                                //if (writesequencecount2[ii] > 20)exit(0);
+#endif
+                            }
+                        }
                     }
-                    //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
-                    //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
-                    writesequencecount2[ii]++;
-                    #ifdef TEST_REGRESSIONS
-                        //if (writesequencecount2[ii] > 20)exit(0);
-                    #endif
-                }
-            }
-        }
 
-        if (debugafter_215540)
-            if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
-        for (int ii = 0; ii < lastwriteindexseq_D41A0; ii++)
-            if (writeseq_D41A0count[ii] != -1) {
-                if (reg_eip == writeseq_D41A0codeadress[ii]) {
-                    if (writeseq_D41A0count2[ii] < writeseq_D41A0count[ii])
-                    {
-                            saveseq_D41A0(ii);
-                            //DEBUG_EnableDebugger();
-                        //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
-                        //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
-                        writesequencecount2[ii]++;
+        if(debugafter_215540)
+            if((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
+                for(int ii = 0; ii < lastwriteindexseq_D41A0; ii++)
+                    if(writeseq_D41A0count[ii] != -1) {
+                        if(reg_eip == writeseq_D41A0codeadress[ii]) {
+                            if(writeseq_D41A0count2[ii] < writeseq_D41A0count[ii])
+                            {
+                                saveseq_D41A0(ii);
+                                //DEBUG_EnableDebugger();
+                            //if(writesequencedataadress2>0)savesequence(writesequencesize, writesequencedataadress2);
+                            //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
+                                writesequencecount2[ii]++;
+                            }
+                        }
                     }
-                }
-            }
         /*
         if ((reg_eip==0x218240) && (SegValue(cs) == 0x160))
         {
@@ -996,10 +1031,10 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
             }
             xcounter++;
         }*/
-        if ((SegValue(ds) == findvarseg)&& (SegValue(cs) == 0x160))
+        if((SegValue(ds) == findvarseg) && (SegValue(cs) == 0x160))
         {
             Bit32u actmem = mem_readd(SegPhys(ds) + findvaradr);
-            if (oldmem != actmem)
+            if(oldmem != actmem)
             {
                 //if (findvarval == actmem)
                 //if (0x77 == actmem&0xff)
@@ -1016,13 +1051,13 @@ addprocedurestop(0x205C80, 0, true, true, 0x12345678, 0x12345678, 0);//0x2F0B80
                     pause = true;
                     fclose(fptestep);
                     sprintf(charbuffer, "NEW VALUE%04X:%08X - %04X,%04X\n", findvarseg, findvaradr, oldmem, actmem);
-                    writesubcall(charbuffer, 0);                    
+                    writesubcall(charbuffer, 0);
                 }
                 oldmem = actmem;
             }
         }
         if(pause)
-            if (SegValue(cs) == 0x160)
+            if(SegValue(cs) == 0x160)
             {
                 fopen_s(&fptestep, findname, "a+");
                 pause = false;
@@ -1042,19 +1077,19 @@ void saveactstate() {
     sprintf(name1, "engine-registers-%04X-%08X", SegValue(cs), reg_eip);
     char name2[1024];
     sprintf(name2, "engine-memory-%04X-%08X", SegValue(cs), reg_eip);
-    FILE *fptw1;
+    FILE* fptw1;
     fopen_s(&fptw1, name1, "wt");
     fprintf(fptw1, "%04X:%08X\n", SegValue(cs), reg_eip);
     fprintf(fptw1, "EAX:%08X,EBX:%08X,ECX:%08X,EDX:%08X\n", reg_eax, reg_ebx, reg_ecx, reg_edx);
     fprintf(fptw1, "ESI:%08X,EDI:%08X,EBP:%08X,ESP:%08X\n", reg_esi, reg_edi, reg_ebp, reg_esp);
     fprintf(fptw1, "CS:%04X,DS:%04X,ES:%04X,FS:%04X,GS:%04X,SS:%04X\n", SegValue(cs), SegValue(ds), SegValue(es), SegValue(fs), SegValue(gs), SegValue(ss));
-    fprintf(fptw1, "CF:%01X,ZF:%01X,SF:%01X,OF:%01X,AF:%01X,PS:%01X,IF:%01X\n", (get_CF()>0), (get_ZF()>0), (get_SF()>0), (get_OF()>0), (get_AF()>0), (get_PF()>0), GETFLAGBOOL(IF));
+    fprintf(fptw1, "CF:%01X,ZF:%01X,SF:%01X,OF:%01X,AF:%01X,PS:%01X,IF:%01X\n", (get_CF() > 0), (get_ZF() > 0), (get_SF() > 0), (get_OF() > 0), (get_AF() > 0), (get_PF() > 0), GETFLAGBOOL(IF));
 
     fclose(fptw1);
-    FILE *fptw;
+    FILE* fptw;
     fopen_s(&fptw, name2, "wb");
     unsigned char buffer[1];
-    for (long i = 0;i < 0x1000000;i++) {
+    for(long i = 0; i < 0x1000000; i++) {
         buffer[0] = (unsigned char)mem_readb(i);
         fwrite(buffer, 1, 1, fptw);
     }
@@ -1080,7 +1115,7 @@ int call_0x00000160_0x0026db3axxx(bool use32, Bitu selector, Bitu offset, Bitu o
 
     //push    ds
     reg_eip++;
-    Bit32u new_esp = (reg_esp&cpu.stack.notmask) | ((reg_esp - 4)&cpu.stack.mask);
+    Bit32u new_esp = (reg_esp & cpu.stack.notmask) | ((reg_esp - 4) & cpu.stack.mask);
     mem_writed(SegPhys(ss) + (new_esp & cpu.stack.mask), Segs.val[ds]);
     reg_esp = new_esp;
 
@@ -1094,32 +1129,32 @@ int call_0x00000160_0x0026db3axxx(bool use32, Bitu selector, Bitu offset, Bitu o
 
     //push    ebx
     reg_eip++;
-    new_esp = (reg_esp&cpu.stack.notmask) | ((reg_esp - 4)&cpu.stack.mask);
+    new_esp = (reg_esp & cpu.stack.notmask) | ((reg_esp - 4) & cpu.stack.mask);
     mem_writed(SegPhys(ss) + (new_esp & cpu.stack.mask), reg_bx);
     reg_esp = new_esp;
     //push    esi
     reg_eip++;
-    new_esp = (reg_esp&cpu.stack.notmask) | ((reg_esp - 4)&cpu.stack.mask);
+    new_esp = (reg_esp & cpu.stack.notmask) | ((reg_esp - 4) & cpu.stack.mask);
     mem_writed(SegPhys(ss) + (new_esp & cpu.stack.mask), reg_si);
     reg_esp = new_esp;
     //push    edi
     reg_eip++;
-    new_esp = (reg_esp&cpu.stack.notmask) | ((reg_esp - 4)&cpu.stack.mask);
+    new_esp = (reg_esp & cpu.stack.notmask) | ((reg_esp - 4) & cpu.stack.mask);
     mem_writed(SegPhys(ss) + (new_esp & cpu.stack.mask), reg_di);
     reg_esp = new_esp;
     //push    ebp
     reg_eip++;
-    new_esp = (reg_esp&cpu.stack.notmask) | ((reg_esp - 4)&cpu.stack.mask);
+    new_esp = (reg_esp & cpu.stack.notmask) | ((reg_esp - 4) & cpu.stack.mask);
     mem_writed(SegPhys(ss) + (new_esp & cpu.stack.mask), reg_bp);
     reg_esp = new_esp;
 
     printf("eip:%08x\n", reg_eip);
     printf("esp:%08x\n", reg_esp);
     printf("stack:");
-    for (int i = Segs.phys[ss] - 8;i < Segs.phys[ss] + 8;i++)
+    for(int i = Segs.phys[ss] - 8; i < Segs.phys[ss] + 8; i++)
     {
         printf("%02x", mem_readb(i));
-        if (i == Segs.phys[ss])printf("|");
+        if(i == Segs.phys[ss])printf("|");
     }
     printf("\n");
 
@@ -1224,7 +1259,7 @@ int32_t g351734 = 0x40040;
 void subx_27A51B(int32_t a1) {};
 
 int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
-//void sub_26DB3A(int32_t ecx) {
+    //void sub_26DB3A(int32_t ecx) {
     int32_t ecx;
     int32_t eax2;
     int32_t v3;
@@ -1264,7 +1299,7 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
     uint16_t actcs = Segs.val[cs];
     uint16_t actds = Segs.val[ds];
     uint32_t actebp = cpu_regs.regs[REGI_BP].dword[DW_INDEX];
-    eax2=mem_readw(actcs + 0x0027a11c);
+    eax2 = mem_readw(actcs + 0x0027a11c);
     /*
         27a374:	mov ds,[cs:0x27a11c]
         27a37c : ret
@@ -1272,18 +1307,18 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
 
     v3 = ecx;
     v4 = edx5;
-    uint32_t g2b4768= mem_readw(actds + 0x002b4768);
-    if (g2b4768 != 0) {
+    uint32_t g2b4768 = mem_readw(actds + 0x002b4768);
+    if(g2b4768 != 0) {
         g2b4767 = 1;
-        mem_writeb(actds + 0x002b4767,g2b4767);
+        mem_writeb(actds + 0x002b4767, g2b4767);
 
-        eax2 = mem_readd(actds + actebp-0xc);
+        eax2 = mem_readd(actds + actebp - 0xc);
 
         g351710 = eax2;
         mem_writeb(actds + 0x00351710, g351710);
         //g351660 = mem_readd(actds + 0x00351660);
 
-        v3= mem_readd(actds + actebp - 0x8);
+        v3 = mem_readd(actds + actebp - 0x8);
         v4 = mem_readd(actds + actebp - 0x8);
 
         eax8 = v3;
@@ -1293,18 +1328,18 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
         g2b4762 = eax8 & 0xffff;
         mem_writeb(actds + 0x002b4762, g2b4762);
 
-        if (g2b4760 > 0x27e) {
+        if(g2b4760 > 0x27e) {
             g2b4760 = 0x27e;
             mem_writeb(actds + 0x002b4760, g2b4760);
         }
-        if (g2b4762 > 0x1de) {
+        if(g2b4762 > 0x1de) {
             g2b4762 = 0x1de;
             mem_writeb(actds + 0x002b4762, g2b4762);
         }
         zf12 = (*(unsigned char*)(&g351710) & 2) == 0;
-        if (!zf12) {
-            if (g35174c == 0) {
-                if (g35173e <= 0) {
+        if(!zf12) {
+            if(g35174c == 0) {
+                if(g35173e <= 0) {
                     ax15 = g2b4764;
                     g35173e = ax15;
                 }
@@ -1313,7 +1348,7 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
                 }
             }
             zf16 = g35174c == 0;
-            if (!(!zf16 || (zf17 = g351746 == 0, !zf17))) {
+            if(!(!zf16 || (zf17 = g351746 == 0, !zf17))) {
                 g351746 = 1;
                 eax18 = v3;
                 g2b475c = *(int16_t*)(&eax18);
@@ -1323,12 +1358,12 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
             g35174c = 1;
         }
         zf20 = (*(unsigned char*)(&g351710) & 4) == 0;
-        if (!zf20) {
+        if(!zf20) {
             g35174c = 0;
         }
         zf21 = (*(unsigned char*)(&g351710) & 8) == 0;
-        if (!zf21) {
-            if (!((g35174a != 0) || (g351744 != 0))) {
+        if(!zf21) {
+            if(!((g35174a != 0) || (g351744 != 0))) {
                 g351744 = 1;
                 eax24 = v3;
                 g2b475c = *(int16_t*)(&eax24);
@@ -1338,12 +1373,12 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
             g35174a = 1;
         }
         zf26 = (*(unsigned char*)(&g351710) & 16) == 0;
-        if (!zf26) {
+        if(!zf26) {
             g35174a = 0;
         }
         zf27 = (*(unsigned char*)(&g351710) & 32) == 0;
-        if (!zf27) {
-            if (!((g351748 != 0) || (g351740 != 0))) {
+        if(!zf27) {
+            if(!((g351748 != 0) || (g351740 != 0))) {
                 g351740 = 1;
                 eax30 = v3;
                 g2b475c = *(int16_t*)(&eax30);
@@ -1353,19 +1388,19 @@ int call_0x00000160_0x0026DB3Addd(bool use32, Bitu selector, Bitu offset, Bitu o
             g351748 = 1;
         }
         zf32 = (*(unsigned char*)(&g351710) & 64) == 0;
-        if (!zf32) {
+        if(!zf32) {
             g351748 = 0;
         }
-/*        if ((g2b4758 == 0) && (ax34 = g2b4ba4, *(int16_t*)((int32_t)(&g351734) + 2) = ax34, sub_26D839(), sub_26D329(), (g351660 & 8) != 0)) {
-            eax36 = g351734;
-            sub_27A51B(eax36 >> 16);
-        }*/
+        /*        if ((g2b4758 == 0) && (ax34 = g2b4ba4, *(int16_t*)((int32_t)(&g351734) + 2) = ax34, sub_26D839(), sub_26D329(), (g351660 & 8) != 0)) {
+                    eax36 = g351734;
+                    sub_27A51B(eax36 >> 16);
+                }*/
     }
     //__asm__("retf ");
     return 1;
 }
 
-FILE *fptrcont;
+FILE* fptrcont;
 long callindex = 0;
 long callmax = 300;
 long calllevel = 0;
@@ -1380,7 +1415,7 @@ void end_write() {
 }
 
 void restart_calls() {
-    if (callindex > 10)
+    if(callindex > 10)
     {
         fprintf(fptrcont, "----------\n");
         callindex = 1;
@@ -1392,28 +1427,28 @@ void restart_calls() {
 
 void call_write(Bitu selector, Bitu offset)
 {
-    if (callindex < callmax)
+    if(callindex < callmax)
     {
-        for(long i=0;i<calllevel;i++)fprintf(fptrcont, " ");
+        for(long i = 0; i < calllevel; i++)fprintf(fptrcont, " ");
         fprintf(fptrcont, "%04X:%08X - %08X,%d\n", selector, offset, reg_esp, calllevel);
         callindex++;
         calllevel++;
     }
-    if (callindex == callmax)
+    if(callindex == callmax)
     {
         callindex++;
-    }    
+    }
 }
 
 void engine_ret(Bitu myreg_eip) {
-    if ((callindex < callmax)&& (callindex >1))
+    if((callindex < callmax) && (callindex > 1))
     {
         calllevel--;
     }
 };
 
 void pre_160_0026AB60() {};
-void post_160_0026AB60() {reg_eip = CPU_Pop32();};
+void post_160_0026AB60() { reg_eip = CPU_Pop32(); };
 
 /*void pre_160_00279D52() {
     //SegValue(cs), reg_eip
@@ -1424,10 +1459,10 @@ void post_160_0026AB60() {reg_eip = CPU_Pop32();};
     __FS__ = SegValue(fs);
     __GS__ = SegValue(gs);
 };*/
-void post_160_00279D52() {reg_eip = CPU_Pop32();};
+void post_160_00279D52() { reg_eip = CPU_Pop32(); };
 
 void pre_160_00054200() {};
-void post_160_00054200() {/* reg_eip = CPU_Pop32(); */};
+void post_160_00054200() {/* reg_eip = CPU_Pop32(); */ };
 
 void pre_160_0005B8D0() {};
 void post_160_0005B8D0() {/* reg_eip = CPU_Pop32(); */ };
@@ -1435,12 +1470,12 @@ void post_160_0005B8D0() {/* reg_eip = CPU_Pop32(); */ };
 class ENGPRG : public Program {
 public:
     void Run(void) {
-        WriteOut("Video refresh rate.\n\n");        
+        WriteOut("Video refresh rate.\n\n");
     }
 };
-ENGPRG* engprg=NULL;
+ENGPRG* engprg = NULL;
 /*void myWriteOut(const char * format, ...) {
-    DEBUG_ShowMsg(format);    
+    DEBUG_ShowMsg(format);
 }*/
 
 
@@ -1453,35 +1488,35 @@ ENGPRG* engprg=NULL;
 
 
 void writecall(Bitu selector, Bitu offset) {
-    if (callcount == 0) {
+    if(callcount == 0) {
         sprintf(findnamec, "call-all.txt");
         fopen_s(&fptestepc, findnamec, "wt");
         fclose(fptestepc);
     }
     else
     {
-        switch (selector) {
+        switch(selector) {
         case 0x00000160: {
-            switch (offset) {
-            //case 0x00236f70:writesubcall("main_0x00236f70\n", 0);break;
+            switch(offset) {
+                //case 0x00236f70:writesubcall("main_0x00236f70\n", 0);break;
 
-            case 0x237210:writesubcall("sub_56210_process_command_line_0x00237210\n", 0);break;
-            case 0x0023C8D0:writesubcall("sub_5B8D0_initialize_0x0023C8D0\n", 0);break;
-            case 0x00227830:writesubcall("sub_46830_main_loop_0x00227830\n", 0);break;
-            case 0x0023CC20:writesubcall("sub_5BC20_0x0023CC20\n", 0);break;
-            case 0x00237730:writesubcall("sub_56730_clean_memory_0x00237730\n", 0);break;
+            case 0x237210:writesubcall("sub_56210_process_command_line_0x00237210\n", 0); break;
+            case 0x0023C8D0:writesubcall("sub_5B8D0_initialize_0x0023C8D0\n", 0); break;
+            case 0x00227830:writesubcall("sub_46830_main_loop_0x00227830\n", 0); break;
+            case 0x0023CC20:writesubcall("sub_5BC20_0x0023CC20\n", 0); break;
+            case 0x00237730:writesubcall("sub_56730_clean_memory_0x00237730\n", 0); break;
 
-            case 0x00257930:writesubcall("sub_76930_menus_and_intros_0x00257930\n", 1);break;
+            case 0x00257930:writesubcall("sub_76930_menus_and_intros_0x00257930\n", 1); break;
 
-            case 0x00257A40:writesubcall("sub_76A40_lang_setting_0x00257A40\n", 2);break;
-            case 0x00257cf0:writesubcall("sub_76CF0_0x00257cf0\n", 2);break;
-            case 0x00257d00:writesubcall("_wcpp_1_unwind_leave__131_0x00257d00\n", 2);break;
-            case 0x00257d10:writesubcall("sub_76D10_intros_0x00257d10\n", 2);break;
-            case 0x00257fa0:writesubcall("sub_76FA0_0x00257fa0\n", 2);break;
-            case 0x002589e0:writesubcall("sub_779E0_lang_setting_loop_0x002589e0\n", 2);break;
+            case 0x00257A40:writesubcall("sub_76A40_lang_setting_0x00257A40\n", 2); break;
+            case 0x00257cf0:writesubcall("sub_76CF0_0x00257cf0\n", 2); break;
+            case 0x00257d00:writesubcall("_wcpp_1_unwind_leave__131_0x00257d00\n", 2); break;
+            case 0x00257d10:writesubcall("sub_76D10_intros_0x00257d10\n", 2); break;
+            case 0x00257fa0:writesubcall("sub_76FA0_0x00257fa0\n", 2); break;
+            case 0x002589e0:writesubcall("sub_779E0_lang_setting_loop_0x002589e0\n", 2); break;
 
-            case 0x00264850:writesubcall("sub_83850_show_welcome_screen_0x00264850\n", 3);break;
-            case 0x00257160:writesubcall("sub_76160_play_intro_0x00257160\n", 3);break;
+            case 0x00264850:writesubcall("sub_83850_show_welcome_screen_0x00264850\n", 3); break;
+            case 0x00257160:writesubcall("sub_76160_play_intro_0x00257160\n", 3); break;
             }
         }
         }
@@ -1492,25 +1527,25 @@ void writecall(Bitu selector, Bitu offset) {
 
 const int lastcallsstr_count = 500;
 Bitu lastcallsstr[lastcallsstr_count];
-long lastcallsindex=0;
-void savecalls(Bitu offset) {    
+long lastcallsindex = 0;
+void savecalls(Bitu offset) {
     lastcallsstr[lastcallsindex] = offset;
-    lastcallsstr[(lastcallsindex +1)% lastcallsstr_count] = 0;
+    lastcallsstr[(lastcallsindex + 1) % lastcallsstr_count] = 0;
     lastcallsindex++;
-    if (lastcallsindex >= lastcallsstr_count)
+    if(lastcallsindex >= lastcallsstr_count)
         lastcallsindex = 0;
 };
 
 char* writecallsfilename = "writecalls.txt";
 void writecalls() {
     long cbegin = lastcallsindex;
-    if (cbegin < 0)cbegin += lastcallsstr_count;
-    long cend= cbegin + lastcallsstr_count;
-    FILE *fptw;
+    if(cbegin < 0)cbegin += lastcallsstr_count;
+    long cend = cbegin + lastcallsstr_count;
+    FILE* fptw;
     fopen_s(&fptw, writecallsfilename, "wt");
     unsigned char buffer[1];
-    for (long i = cbegin;i < cend;i++) {
-        fprintf(fptw,"%04X-%08X\n", SegValue(ds), lastcallsstr[i%lastcallsstr_count]);
+    for(long i = cbegin; i < cend; i++) {
+        fprintf(fptw, "%04X-%08X\n", SegValue(ds), lastcallsstr[i % lastcallsstr_count]);
     }
     fclose(fptw);
 }
@@ -1519,12 +1554,12 @@ long testcount = 0;
 
 
 
-long callindex2=0;
+long callindex2 = 0;
 int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
-    if (callindex2 > 10000)
+    if(callindex2 > 10000)
     {
         //call_write(selector, offset);
-        if (selector == 0x160) {
+        if(selector == 0x160) {
             prepreprepreprelastsel = preprepreprelastsel;
             prepreprepreprelastoff = preprepreprelastoff;
             prepreprepreprelastesp = preprepreprelastesp;
@@ -1537,13 +1572,13 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
             prepreprelastoff = preprelastoff;
             prepreprelastesp = preprelastesp;
 
-            preprelastsel= prelastsel;
-            preprelastoff= prelastoff;
-            preprelastesp= prelastesp;
+            preprelastsel = prelastsel;
+            preprelastoff = prelastoff;
+            preprelastesp = prelastesp;
 
-            prelastsel= lastsel;
-            prelastoff= lastoff;
-            prelastesp= lastesp;
+            prelastsel = lastsel;
+            prelastoff = lastoff;
+            prelastesp = lastesp;
 
             lastsel = selector;
             lastoff = offset;
@@ -1551,7 +1586,7 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
         }
     }
     else callindex2++;
-    writecall(selector,offset);
+    writecall(selector, offset);
     //if (offset == 0x00055F70)
     /*if((mem_readw(Segs.phys[cs] + reg_eip)==0x000362cc)||
         (mem_readw(Segs.phys[cs] + reg_eip) == 0xc40c8d45)||
@@ -1560,100 +1595,100 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
         DEBUG_EnableDebugger();
     }*/
     //uint32_t mycs = Segs.val[cs];
-    switch (selector) {
-    /*case 0x00000080: {
-        DEBUG_EnableDebugger();
-        return 0;
-    }
-    case 0x00000070: {
-        DEBUG_EnableDebugger();
-        return 0;
-    }*/
-        
+    switch(selector) {
+        /*case 0x00000080: {
+            DEBUG_EnableDebugger();
+            return 0;
+        }
+        case 0x00000070: {
+            DEBUG_EnableDebugger();
+            return 0;
+        }*/
+
     case 0x00000160: {
         savecalls(offset);
-        if ((addprocedurestopadress == offset)&&(addprocedurestopcount!=-1)) {
-            if (addprocedurestopcount == 0);// DEBUG_EnableDebugger();
+        if((addprocedurestopadress == offset) && (addprocedurestopcount != -1)) {
+            if(addprocedurestopcount == 0);// DEBUG_EnableDebugger();
             else
-            addprocedurestopcount--;
+                addprocedurestopcount--;
         }
-        switch (offset) {
-            case 0x26E8000:{//181000 1A1000 rozdila a rozdil b//main
-                //saveactstate();
-                begin_write();
-                //callindex = 1;
-                //DEBUG_EnableDebugger();           
-                
-                /*char *argv[] = { "netherw.exe","-level","2", NULL };
-                int argc = (sizeof(argv) / sizeof(argv[0]))-1;
-                char *envp[] = {  NULL };
-                //char *envp[] = { "env=xx", NULL };
-                //ds:esi - cesta k nazvu
-                support_begin();
-                int retval=sub_main(argc,(char**)argv, (char**)envp);
-                support_end();*/
-                //saveactstate();
-                //DEBUG_EnableDebugger();
-                break;
-                    
-                }
-            case 0x236F70: {
-                //saveactstate();
-                //if(xcounter>1)
-                /*fopen_s(&fptestep, findname, "a+");
-                fprintf(fptestep, "PREPREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprepreprelastoff, prepreprepreprelastoff - 0x1E1000, prepreprepreprelastesp);
-                fprintf(fptestep, "PREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, preprepreprelastoff, preprepreprelastoff - 0x1E1000, preprepreprelastesp);
-                fprintf(fptestep, "PREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprelastoff, prepreprelastoff - 0x1E1000, prepreprelastesp);
-                fprintf(fptestep, "PREPRECALL%04X:%08X/%08X - %08X\n", lastsel, preprelastoff, preprelastoff - 0x1E1000, preprelastesp);
-                fprintf(fptestep, "PRECALL%04X:%08X/%08X - %08X\n", lastsel, prelastoff, prelastoff - 0x1E1000, prelastesp);
-                fprintf(fptestep, "CALL%04X:%08X/%08X - %08X\n", lastsel, lastoff, lastoff - 0x1E1000, lastesp);
-                fprintf(fptestep, "ADR%04X:%08X/%08X\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
-                fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
-                //DEBUG_EnableDebugger();
-                fclose(fptestep);*/
-                //myAddBreakpoint(SegValue(cs), 0x258350, false);
-                //myAddBreakpoint(SegValue(cs), 0x258351, false);
-                //myAddBreakpoint(SegValue(cs), 0x258352, false);
-                //myAddBreakpoint(SegValue(cs), 0x258353, false);
-                //myAddBreakpoint(SegValue(cs), 0x25b742, false);
-                //myAddBreakpoint(SegValue(cs), 0x25b747, false);
-                //myAddBreakpoint(SegValue(cs), 0x25b74a, false);
-                //25b742
-                //25b747
-                //25b74a
-                //25b751
-                //25b753
-                //DEBUG_EnableDebugger();
-                //xcounter++;
-                break;
-            }
-            case 0x22a8a0: {
-                //stopindex++;
-                //if(stopindex>=0x91)DEBUG_EnableDebugger();
-                //saveactstate();
-                //if(xcounter>1)
-                //oldmem = 0x12345678;
-                //if(xcounter>= 0x574)
-                {
-                    //DEBUG_EnableDebugger();
-                }
-                //xcounter++;
-                //DEBUG_EnableDebugger();
-                break;
-            }
-            case 0x22b190:{
-                //if (stopindex+1 >= 0x91)DEBUG_EnableDebugger();
-                //stopindex++;
-                //stopturnon = true;
+        switch(offset) {
+        case 0x26E8000: {//181000 1A1000 rozdila a rozdil b//main
+            //saveactstate();
+            begin_write();
+            //callindex = 1;
+            //DEBUG_EnableDebugger();           
 
-                break;
+            /*char *argv[] = { "netherw.exe","-level","2", NULL };
+            int argc = (sizeof(argv) / sizeof(argv[0]))-1;
+            char *envp[] = {  NULL };
+            //char *envp[] = { "env=xx", NULL };
+            //ds:esi - cesta k nazvu
+            support_begin();
+            int retval=sub_main(argc,(char**)argv, (char**)envp);
+            support_end();*/
+            //saveactstate();
+            //DEBUG_EnableDebugger();
+            break;
+
+        }
+        case 0x236F70: {
+            //saveactstate();
+            //if(xcounter>1)
+            /*fopen_s(&fptestep, findname, "a+");
+            fprintf(fptestep, "PREPREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprepreprelastoff, prepreprepreprelastoff - 0x1E1000, prepreprepreprelastesp);
+            fprintf(fptestep, "PREPREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, preprepreprelastoff, preprepreprelastoff - 0x1E1000, preprepreprelastesp);
+            fprintf(fptestep, "PREPREPRECALL%04X:%08X/%08X - %08X\n", lastsel, prepreprelastoff, prepreprelastoff - 0x1E1000, prepreprelastesp);
+            fprintf(fptestep, "PREPRECALL%04X:%08X/%08X - %08X\n", lastsel, preprelastoff, preprelastoff - 0x1E1000, preprelastesp);
+            fprintf(fptestep, "PRECALL%04X:%08X/%08X - %08X\n", lastsel, prelastoff, prelastoff - 0x1E1000, prelastesp);
+            fprintf(fptestep, "CALL%04X:%08X/%08X - %08X\n", lastsel, lastoff, lastoff - 0x1E1000, lastesp);
+            fprintf(fptestep, "ADR%04X:%08X/%08X\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
+            fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
+            //DEBUG_EnableDebugger();
+            fclose(fptestep);*/
+            //myAddBreakpoint(SegValue(cs), 0x258350, false);
+            //myAddBreakpoint(SegValue(cs), 0x258351, false);
+            //myAddBreakpoint(SegValue(cs), 0x258352, false);
+            //myAddBreakpoint(SegValue(cs), 0x258353, false);
+            //myAddBreakpoint(SegValue(cs), 0x25b742, false);
+            //myAddBreakpoint(SegValue(cs), 0x25b747, false);
+            //myAddBreakpoint(SegValue(cs), 0x25b74a, false);
+            //25b742
+            //25b747
+            //25b74a
+            //25b751
+            //25b753
+            //DEBUG_EnableDebugger();
+            //xcounter++;
+            break;
+        }
+        case 0x22a8a0: {
+            //stopindex++;
+            //if(stopindex>=0x91)DEBUG_EnableDebugger();
+            //saveactstate();
+            //if(xcounter>1)
+            //oldmem = 0x12345678;
+            //if(xcounter>= 0x574)
+            {
+                //DEBUG_EnableDebugger();
             }
-             
+            //xcounter++;
+            //DEBUG_EnableDebugger();
+            break;
+        }
+        case 0x22b190: {
+            //if (stopindex+1 >= 0x91)DEBUG_EnableDebugger();
+            //stopindex++;
+            //stopturnon = true;
+
+            break;
+        }
+
         }
         break;
     }
     }
-    
+
     return 0;
 }
 
