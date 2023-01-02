@@ -565,10 +565,10 @@ void enginestep() {
         //writeseqall(0x20EC0E);
 
 
-        //writeseqall(0x20F733);
+        //writeseqall(0x212790);
         //writeseqall(0x212A0A);
         //writeseqall(0x212A70);
-        //writeseqall(0x2055DE);
+        writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
@@ -586,7 +586,7 @@ void enginestep() {
 //writesequence(0x212A70, 0x10000, 2, 0xfffffff6, 0, true,24);
 
 //addprocedurestop(0x212A70, 0x0, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x212A70, 0x943, true, true, 0x3a11b, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x459, true, true, 0x3a11b, 0x12345678, 0);
 //addprocedurestop(0x1e24d4, 0x110, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1E2410, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1E2DFF, 0x491, true, true, 0x12345678, 0x12345678, 0);
@@ -617,7 +617,7 @@ void enginestep() {
 //addprocedurestop(0x205460, 0, true, true, 0x6D080 + 0x3658, 0x12345678,0);
 //addprocedurestop(0x205367, 0, true, true, 0x28A1E0 + 0x272f, 0x12345678,0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x1F690 + 0x385e, 0x12345678,0);
-        addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678, 0);
+        //addprocedurestop(0x212A70, 0x459, true, true, 0x12345678, 0x12345678, 0);
         //addprocedurestop(0x212780, 0, true, true, 0x12345678, 0x12345678,0);
         //addprocedurestop(0x2114f0, 0, true, true, 0x12345678, 0x12345678,0);//0x2F0B80
 #endif
@@ -761,10 +761,10 @@ void enginestep() {
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-                //modset_used_precount = 20 + 5;
+            modset_used_precount = 20 + 5 + 0x7;
             modset_used_count = 1;
-            modset_key = 0x26;//load
-            //modset_key = 0x1f;//save
+            //modset_key = 0x26;//load
+            modset_key = 0x1f;//save
             modset_key_alt = true;
         }
         if(reg_eip == 0x1E7B00) {
