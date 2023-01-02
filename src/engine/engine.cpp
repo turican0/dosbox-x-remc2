@@ -761,10 +761,10 @@ void enginestep() {
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            modset_used_precount = 20 + 5 + 0x7;
+            //modset_used_precount = 20 + 5 + 0x7;
             modset_used_count = 1;
-            //modset_key = 0x26;//load
-            modset_key = 0x1f;//save
+            modset_key = 0x26;//load
+            //modset_key = 0x1f;//save
             modset_key_alt = true;
         }
         if(reg_eip == 0x1E7B00) {
