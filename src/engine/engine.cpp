@@ -568,7 +568,7 @@ void enginestep() {
         //writeseqall(0x212790);
         //writeseqall(0x212A0A);
         //writeseqall(0x212A70);
-        writeseqall(0x2055DE);
+        //writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
@@ -585,7 +585,16 @@ void enginestep() {
 //writesequence(0x1E2DFF, 0x10000, 4, 0x2f9e7);
 //writesequence(0x212A70, 0x10000, 2, 0xfffffff6, 0, true,24);
 
-//addprocedurestop(0x212A70, 0x0, true, true, 0x12345678, 0x12345678, 0);
+//writesequence(0x212A70, 0x10000, 6, 0x3a1ef);
+//writesequence(0x212A70, 0x10000, 6, 0x3a23d);
+//writesequence(0x212A70, 0x10000, 6, 0x26c454);
+
+addprocedurestop(0x212A70, 0x458, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x108d, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x229B30, 0x0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x2114f0, 0, true, true, 0x30002e, 0x12345678, 0);
 //addprocedurestop(0x212A70, 0x459, true, true, 0x3a11b, 0x12345678, 0);
 //addprocedurestop(0x1e24d4, 0x110, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1E2410, 0, true, true, 0x12345678, 0x12345678, 0);
@@ -761,7 +770,7 @@ void enginestep() {
             /*Bit32u locadress = mem_readd(0x2ECFF4);
             for(int i = 0; i < 320 * 200; i++)
                 mem_writeb(locadress+i,0);*/
-            //modset_used_precount = 20 + 5 + 0x7;
+            //modset_used_precount = 20 + 5 + 0x7 + 5;
             modset_used_count = 1;
             modset_key = 0x26;//load
             //modset_key = 0x1f;//save
