@@ -41,7 +41,7 @@
 
 #define autostart
 
-#define MODIFY_SETTINGS
+//#define MODIFY_SETTINGS
 int modset_used_precount = 0;
 int modset_used_count = 0;
 int modset_key = 0x0;
@@ -184,7 +184,7 @@ void savesequence(int index, long actsize, Bit32u dataadress, bool isPointer, Bi
                         {
                             if(isPointer)
                             {
-                                dataadress2 = mem_readd(dataadress2);
+                                dataadress2 = mem_readd(dataadress);
                             }
                             else
                                 dataadress2 = dataadress;
@@ -568,7 +568,7 @@ void enginestep() {
         //writeseqall(0x212790);
         //writeseqall(0x212A0A);
         //writeseqall(0x212A70);
-        //writeseqall(0x2055DE);
+        writeseqall(0x2055DE);
 
 //writeseqall(0x211817);
 //writeseqall(0x2076e4);
@@ -589,7 +589,7 @@ void enginestep() {
 //writesequence(0x212A70, 0x10000, 6, 0x3a23d);
 //writesequence(0x212A70, 0x10000, 6, 0x26c454);
 
-addprocedurestop(0x212A70, 0x458, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x201730, 0x0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x212A70, 0x108d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
