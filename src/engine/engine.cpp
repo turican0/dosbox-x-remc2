@@ -597,8 +597,15 @@ void enginestep() {
 //writesequence(0x1FECBF, 0x10000, 1, 0xfffffff4,0);
 //writesequence(0x1FF64C, 0x10000, 40, 0xfffffff4, 0, true);
 //writesequence(0x233D40, 0x10000, 1, 0x259151, 0);
+//writesequence(0x233D40, 0x10000, 2, 0x25914C, 0);
+//writesequence(0x233D40, 0x10000, 2, 0x25914E, 0);
+//writesequence(0x233D40, 0x10000, 1, 0xfffffff4, 0);
+//writesequence(0x233D40, 0x10000, 0x10, 0xffffff01, 0,true);
+//writesequence(0x233D40, 0x10000, 0x10, 0x258FC0, 0);
 
-addprocedurestop(0x233D40, 0x23, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x233E1F, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x233DC3, 0, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x233D42, 0x46, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2344e0, 0, true, true, 0x2F0A8C, 0x12345678, 0);
 //addprocedurestop(0x233DC3, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x2F0A7C + 12, 0x12345678, 0);
