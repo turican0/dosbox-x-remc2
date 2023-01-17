@@ -196,7 +196,7 @@ void savesequence(int index, long actsize, Bit32u dataadress, bool isPointer, Bi
     //fwrite(&actcount, 4, 4, fseq);
     unsigned char buffer[1];
     for(long i = 0; i < actsize; i++) {
-        if((dataadress >= 0xfffffff0) && (dataadress < 0xffffffff))
+        if((dataadress >= 0xffffff00) && (dataadress < 0xffffffff))
             if(isPointer)
                 buffer[0] = (unsigned char)mem_readb(saveadd + i + dataadress2);
             else
@@ -602,10 +602,12 @@ void enginestep() {
 //writesequence(0x233D40, 0x10000, 1, 0xfffffff4, 0);
 //writesequence(0x233D40, 0x10000, 0x10, 0xffffff01, 0,true);
 //writesequence(0x233D40, 0x10000, 0x10, 0x258FC0, 0);
+//writesequence(0x233D40, 0x10000, 2, 0xffffff03, 0);
 
 //addprocedurestop(0x233E1F, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x233DC3, 0, true, true, 0x12345678, 0x12345678, 0);
-addprocedurestop(0x233D42, 0x37, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x233CFD, 0x2f, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x233D42, 0x41, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2344e0, 0, true, true, 0x2F0A8C, 0x12345678, 0);
 //addprocedurestop(0x233DC3, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2114f0, 0, true, true, 0x2F0A7C + 12, 0x12345678, 0);
