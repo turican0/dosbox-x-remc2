@@ -608,6 +608,7 @@ writesequence(0x233D42, 0x1000000, 2, 0xffffff03, 0);
 writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 */
 
+addprocedurestop(0x205241, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x233C6F, 2, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x229FB9, 7, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x20FEA3, 0x12, true, true, 0x12345678, 0x12345678, 0);
