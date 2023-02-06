@@ -579,7 +579,7 @@ void enginestep() {
 
 //writeseqall(0x2055C1);
 //writeseqall(0x2055C6);
-writeseqall(0x2055DE);
+//writeseqall(0x2055DE);
 //writeseqall(0x2055F4);
 
 //writeseqall(0x24629B);
@@ -614,6 +614,13 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 
 //writesequence(0x1FC68A, 0x1000000, 2, 0xfffffff6, 0, true, 0x24);
 
+//writesequence(0x20206F, 0x1000000, 320*200, 0x26C404, 0, true);
+//writesequence(0x202109, 0x1000000, 320*200, 0x251ACC, 0, true);
+//writesequence(0x202181, 0x1000000, 320 * 200, 0x251ACC, 0, true);
+//writesequence(0x2021CE, 0x1000000, 320 * 200, 0x251ACC, 0, true);
+writesequence(0x2021CE, 0x1000000, 320 * 200, 0x2ECFF4, 0, true);
+
+//addprocedurestop(0x202022, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FC68A, 0x603, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1E1D40, 0, true, true, 0x12345678, 0x12345678, 0);
@@ -646,7 +653,7 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 //addprocedurestop(0x1FD414, 0x67, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FECB4, 0x5d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FECB4, 0x1a, true, true, 0x12345678, 0x12345678, 0);
-//addprocedurestop(0x2055DE, 0x5b, true, true, 0xb22d, 0x12345678, 0x2ECFF4);
+//addprocedurestop(0x2055DE, 0x2, true, true, 0xa797, 0x12345678, 0x2ECFF4);
 
 //addprocedurestop(0x212A70, 0x2bb1, true, true, 0x12345678, 0x12345678, 0);
 
