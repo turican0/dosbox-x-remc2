@@ -625,7 +625,7 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 //writesequence(0x1FD414, 0x1000000, 4, 0x273CC8, 0);
 //writesequence(0x1FD414, 0x1000000, 4, 0x273CB4, 0);
 
-addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FD414, 0xe0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055DE, 1, true, true, 0xa656, 0x12345678, 0x26C404);
 //addprocedurestop(0x202022, 0, true, true, 0x12345678, 0x12345678, 0);
@@ -663,7 +663,7 @@ addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x1FECB4, 0x1a, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055DE, 0x2, true, true, 0xa797, 0x12345678, 0x2ECFF4);
 
-//addprocedurestop(0x212A70, 0x2bb1, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x212A70, 0x4eb, true, true, 0x12345678, 0x12345678, 0);
 
 //addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
@@ -853,9 +853,15 @@ addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
             modset_key_alt = true;
             */
 
+            /*
             //for 3D
             modset_used_count = 2;
             modset_key = 0x44;
+            */
+
+            //for move back
+            modset_used_count = 20;
+            modset_key = 0x50;
         }
         if(reg_eip == 0x1E7B00) {
             if(modset_used_count)
@@ -867,6 +873,8 @@ addprocedurestop(0x200170, 0, true, true, 0x12345678, 0x12345678, 0);
                     mem_writeb(0x2ecf70, modset_key);
                     if(modset_key_alt)
                         mem_writeb(0x2ecef0 + 56, 1);
+                    else
+                        mem_writeb(0x2ecef0 + (modset_key & 0x7F), modset_key);
                     //pressedKeys_12EEF0_12EEE0[56] = 1;
                     modset_used_count--;
                 }
