@@ -47,6 +47,11 @@ int modset_used_count = 0;
 int modset_key = 0x0;
 bool modset_key_alt = false;
 
+int modset_used_precount2 = 0;
+int modset_used_count2 = 0;
+int modset_key2 = 0x0;
+bool modset_key_alt2 = false;
+
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
@@ -663,7 +668,7 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 //addprocedurestop(0x1FECB4, 0x1a, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055DE, 0x2, true, true, 0xa797, 0x12345678, 0x2ECFF4);
 
-addprocedurestop(0x212A70, 0x4eb, true, true, 0x12345678, 0x12345678, 0);
+addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
 
 //addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
@@ -859,9 +864,11 @@ addprocedurestop(0x212A70, 0x4eb, true, true, 0x12345678, 0x12345678, 0);
             modset_key = 0x44;
             */
 
-            //for move back
-            modset_used_count = 20;
+            //for move back and front
+            modset_used_count = 1;
             modset_key = 0x50;
+            modset_used_count2 = 1;
+            modset_key2 = 0x48;
         }
         if(reg_eip == 0x1E7B00) {
             if(modset_used_count)
@@ -879,6 +886,21 @@ addprocedurestop(0x212A70, 0x4eb, true, true, 0x12345678, 0x12345678, 0);
                     modset_used_count--;
                 }
             }
+            else if(modset_used_count2)
+                {
+                    if(modset_used_precount2)
+                        modset_used_precount2--;
+                    else
+                    {
+                        mem_writeb(0x2ecf70, modset_key2);
+                        if(modset_key_alt2)
+                            mem_writeb(0x2ecef0 + 56, 1);
+                        else
+                            mem_writeb(0x2ecef0 + (modset_key2 & 0x7F), modset_key2);
+                        //pressedKeys_12EEF0_12EEE0[56] = 1;
+                        modset_used_count2--;
+                    }
+                }
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
 #endif
