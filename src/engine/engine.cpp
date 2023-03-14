@@ -39,9 +39,9 @@
 //#include "sub_main.h"
 //#include "test-engine.h"
 
-#define autostart
+//#define autostart
 
-#define MODIFY_SETTINGS
+//#define MODIFY_SETTINGS
 int modset_used_precount = 0;
 int modset_used_count = 0;
 int modset_key = 0x0;
@@ -668,7 +668,7 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 //addprocedurestop(0x1FECB4, 0x1a, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055DE, 0x2, true, true, 0xa797, 0x12345678, 0x2ECFF4);
 
-//addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x761, true, true, 0x12345678, 0x12345678, 0);
 
 //addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
