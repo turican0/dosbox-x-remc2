@@ -668,7 +668,7 @@ writesequence(0x233C6F, 0x1000000, 0x10, 0xffffff02, 0, true);
 //addprocedurestop(0x1FECB4, 0x1a, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2055DE, 0x2, true, true, 0xa797, 0x12345678, 0x2ECFF4);
 
-addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
+//addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
 
 //addprocedurestop(0x229B34, 0x2d, true, true, 0x12345678, 0x12345678, 0);
 //addprocedurestop(0x2079E4, 0x64, true, true, 0x12345678, 0x12345678, 0);
@@ -867,7 +867,7 @@ addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
             //for move back and front
             modset_used_count = 1;
             modset_key = 0x50;
-            modset_used_count2 = 1;
+            modset_used_count2 = 5;
             modset_key2 = 0x48;
         }
         if(reg_eip == 0x1E7B00) {
@@ -886,7 +886,11 @@ addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
                     modset_used_count--;
                 }
             }
-            else if(modset_used_count2)
+            else
+            {
+                mem_writeb(0x2ecef0 + 56, 0);
+                mem_writeb(0x2ecef0 + (modset_key & 0x7F), 0);
+                if(modset_used_count2)
                 {
                     if(modset_used_precount2)
                         modset_used_precount2--;
@@ -901,6 +905,12 @@ addprocedurestop(0x212A70, 0x9d7, true, true, 0x12345678, 0x12345678, 0);
                         modset_used_count2--;
                     }
                 }
+                else
+                {
+                    mem_writeb(0x2ecef0 + 56, 0);
+                    mem_writeb(0x2ecef0 + (modset_key2 & 0x7F), 0);
+                }
+            }
         }
         //str_AE400_AE3F0->reflections_8597 = 0;
 #endif
