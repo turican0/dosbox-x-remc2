@@ -930,7 +930,7 @@ void enginestep() {
         //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
         //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
-        if(reg_eip == 0x1D1680)DEBUG_EnableDebugger();
+        if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
         //if(reg_eip)
 
         spyinspect();
