@@ -369,9 +369,9 @@ void add_index(Bit32u adress) {
     oneadress = adress;
 }
 
+bool afterAdress = false;
 
-void enginestep() {
-    
+void enginestep() {    
     if (count == 0) {
         #ifdef TEST_REGRESSIONS
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
@@ -930,8 +930,80 @@ void enginestep() {
         //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
         //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
+<<<<<<< HEAD
+        //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1DA090)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
+        if(reg_eip == 0x1DA200)DEBUG_EnableDebugger();
+        uint32_t findAdress = 0x1CC4A8;
+        uint32_t findVar = 0x1E1928;
+        if(0)
+        {
+            if(reg_eip == findAdress)
+                afterAdress = true;
+            if(afterAdress)
+            {
+                uint32_t stack0 = mem_readd(SegPhys(ds) + reg_esp);
+                uint32_t stack1 = mem_readd(SegPhys(ds) + reg_esp + 4);
+                uint32_t stack2 = mem_readd(SegPhys(ds) + reg_esp + 8);
+                uint32_t stack3 = mem_readd(SegPhys(ds) + reg_esp + 12);
+                if((findVar == reg_eax) ||
+                    (findVar == reg_ebx) ||
+                    (findVar == reg_eax) ||
+                    (findVar == reg_ecx) ||
+                    (findVar == reg_edx) ||
+                    (findVar == reg_esi) ||
+                    (findVar == reg_edi) ||
+                    (findVar == reg_ebp) ||
+                    (findVar == reg_esp) ||
+                    (findVar == stack0) ||
+                    (findVar == stack1) ||
+                    (findVar == stack2) ||
+                    (findVar == stack3)
+                    )
+                {
+                    DEBUG_EnableDebugger();
+                }
+            }
+        }
+
+        //set infill
+#define SET_INFILL
+#ifdef SET_INFILL
+        
+        if(reg_eip == 0x1D0628) {
+            for(int i = 0; i < 0x4A8/4; i++)
+                mem_writed(SegPhys(ds) + 0x1EF130 + i * 4, i+0xF1000000);
+        }        
+        //sub_14600_1D0600 v10str = (struct_v10*)mallocTest_10010_1CC010(sizeof(struct_v10));
+        
+
+        
+        if(reg_eip == 0x1D07AF) {
+            for(int i = 0; i < 0x14E5/4; i++)
+                mem_writed(SegPhys(ds) + 0x1F0038 + i * 4, i + 0xF2000000);
+        }
+        //v10str->f238 = (struct_f238*)mallocTest_10010_1CC010(sizeof(struct_f238));        
+        
+
+        //v10str->f230x = (char*)mallocTest_10010_1CC010(memsize);
+        if(reg_eip == 0x1D083F) {
+            for(int i = 0; i < 0xB6B50/4; i++)
+                mem_writed(SegPhys(ds) + 0x200038 + i * 4, i + 0xF3000000);
+        }
+        //v10str->f238 = (struct_f238*)mallocTest_10010_1CC010(sizeof(struct_f238));
+        
+        if(reg_eip == 0x1D089D) {
+            for(int i = 0; i < 0x320B8/4; i++)
+                mem_writed(SegPhys(ds) + 0x2B7038 + i * 4, i + 0xF4000000);
+        }
+        //v28_buffer = (char*)mallocTest_10010_1CC010(v24);
+#endif // SET_INFILL
+    
+=======
         if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
         //if(reg_eip)
+>>>>>>> a491f5c90d7b0ea827a69789803097925425cc4a
 
         spyinspect();
         if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
