@@ -130,6 +130,9 @@ char findnamex[300];
 //#define TEST_REGRESSIONS
 int test_regression_level = 21;
 
+Bit32u old_value = 0x123456;
+bool after_first_procedure = false;
+
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;
@@ -902,7 +905,7 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x260cb0, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -914,6 +917,22 @@ void enginestep() {
     }
     if (count > 10000)
     {
+        /*if(reg_eip == 0x1CC341)
+            DEBUG_EnableDebugger();
+        */
+        /*
+        if(reg_eip == 0x1CC126)
+            DEBUG_EnableDebugger();
+        */
+        
+        //if(reg_eip == 0x1CCE54)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
+        //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
+        //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
+        if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
+        //if(reg_eip)
+
         spyinspect();
         if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         if (addprocedurestopcount != -1)
