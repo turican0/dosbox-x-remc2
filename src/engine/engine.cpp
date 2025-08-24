@@ -370,6 +370,7 @@ void add_index(Bit32u adress) {
 }
 
 bool afterAdress = false;
+uint32_t oldMem = 0x12345678;
 
 void enginestep() {    
     if (count == 0) {
@@ -934,8 +935,28 @@ void enginestep() {
         //if(reg_eip == 0x1DA090)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
-        if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
-        //if(reg_eip == 0x1DA010)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
+        if(reg_eip == 0x1DA090)DEBUG_EnableDebugger();
+
+
+        uint32_t findAdress2 = 0x1CC4A8;
+        uint32_t findVar2 = 0x200048;        
+        if(0)
+        {
+            if(reg_eip == findAdress2)
+                afterAdress = true;
+            if(afterAdress)
+            {
+                uint32_t actMem = mem_readd(SegPhys(ds) + findVar2);
+                if((actMem != oldMem)&&(SegValue(cs)==0x180) && (SegValue(ds) == 0x188))
+                {
+                    int locreg_eip = reg_eip;
+                    DEBUG_EnableDebugger();
+                    oldMem = actMem;
+                }
+            }
+        }
+
         uint32_t findAdress = 0x1CC4A8;
         uint32_t findVar = 0x1E1928;
         if(0)
