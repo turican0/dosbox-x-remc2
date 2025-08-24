@@ -930,11 +930,12 @@ void enginestep() {
         //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
         //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
-<<<<<<< HEAD
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DA090)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
-        if(reg_eip == 0x1DA200)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
+        if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1DA010)DEBUG_EnableDebugger();
         uint32_t findAdress = 0x1CC4A8;
         uint32_t findVar = 0x1E1928;
         if(0)
@@ -1000,11 +1001,7 @@ void enginestep() {
         //v28_buffer = (char*)mallocTest_10010_1CC010(v24);
 #endif // SET_INFILL
     
-=======
-        if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
         //if(reg_eip)
->>>>>>> a491f5c90d7b0ea827a69789803097925425cc4a
-
         spyinspect();
         if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         if (addprocedurestopcount != -1)
