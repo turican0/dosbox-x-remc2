@@ -164,14 +164,23 @@ void savesequence(int index,long actsize, Bit32u dataadress) {
     if (dataadress == 0xffffff01)dataadress2 = reg_esi;
     if (dataadress == 0xffffff02)dataadress2 = reg_edi;
     if (dataadress == 0xffffff03)dataadress2 = reg_ecx;
+    if (dataadress == 0xffffff04)dataadress2 = reg_edx;
 
     sprintf(findnamex, "sequence-%08X-%08X.bin", writesequencecodeadress[index], dataadress);
     fopen_s(&fseq[index], findnamex, "ab+");
     //fwrite(&actcount, 4, 4, fseq);
-    unsigned char buffer[1];
-    for (long i = 0; i < actsize; i++) {
-        buffer[0] = (unsigned char)mem_readb(i+ dataadress2);
-        fwrite(buffer, 1, 1, fseq[index]);
+    if(dataadress == 0xffffff14)
+    {
+        dataadress2 = reg_edx;
+        fwrite(&dataadress2, 4, 1, fseq[index]);
+    }
+    else
+    {
+        unsigned char buffer[1];
+        for(long i = 0; i < actsize; i++) {
+            buffer[0] = (unsigned char)mem_readb(i + dataadress2);
+            fwrite(buffer, 1, 1, fseq[index]);
+        }
     }
     fclose(fseq[index]);    
 };
@@ -907,8 +916,19 @@ void enginestep() {
 //addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
 
 //addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
-//writesequence(0x1DA0F7, 0x10000, 0x20, 0x200048, 0);
-writesequence(0x1DA1C9, 0x10000, 0x600, 0x2B7038, 0);
+
+//writesequence(0x1DA0F7, 0x10000, 0x2000, 0x200048, 0);
+//writesequence(0x1DA0F7, 0x10000, 4, 0xffffff14, 0);//edx
+
+//writesequence(0x1DA1C9, 0x10000, 0x600, 0x2B7038, 0);
+//addprocedurestop(0x1DA1C9, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1DA1C9, 0x100, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1DA1C9, 0x4a53, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1DA1A6, 0, true, true, 0x12345678, 0x12345678);
+//writesequence(0x1DA1A0, 0x10000, 0x7468, 0x200038, 0);
+//writesequence(0x1DA04D, 0x10000, 4, 0xffffff02, 0);//edx
+//addprocedurestop(0x1D9D90, 0x1/*4850*/, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x1DA200, 0x0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -938,12 +958,12 @@ writesequence(0x1DA1C9, 0x10000, 0x600, 0x2B7038, 0);
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
-        if(reg_eip == 0x1DA1A0)DEBUG_EnableDebugger();
-        //if(reg_eip == 0x1DA1          C9)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1DA100)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
 
 
         uint32_t findAdress2 = 0x1CC4A8;
-        uint32_t findVar2 = 0x200038+0x7410;        
+        uint32_t findVar2 = 0x200038+0x2010;
         if(0)
         {
             if(reg_eip == findAdress2)
@@ -961,7 +981,7 @@ writesequence(0x1DA1C9, 0x10000, 0x600, 0x2B7038, 0);
         }
 
         uint32_t findAdress = 0x1CC4A8;
-        uint32_t findVar = 0x1E1928;
+        uint32_t findVar = 0x623FF;
         if(0)
         {
             if(reg_eip == findAdress)
