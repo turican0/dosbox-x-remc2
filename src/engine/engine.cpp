@@ -928,7 +928,8 @@ void enginestep() {
 //writesequence(0x1DA1A0, 0x10000, 0x7468, 0x200038, 0);
 //writesequence(0x1DA04D, 0x10000, 4, 0xffffff02, 0);//edx
 //addprocedurestop(0x1D9D90, 0x1/*4850*/, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x1CF640, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1CF640, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x1D0DE0, 0x0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -963,8 +964,8 @@ addprocedurestop(0x1CF640, 0x0, true, true, 0x12345678, 0x12345678);
 
 
         uint32_t findAdress2 = 0x1CC4A8;
-        uint32_t findVar2 = 0x200038+0x2010;
-        if(0)
+        uint32_t findVar2 = 0x1EF530;
+        if(1)
         {
             if(reg_eip == findAdress2)
                 afterAdress = true;
@@ -981,7 +982,7 @@ addprocedurestop(0x1CF640, 0x0, true, true, 0x12345678, 0x12345678);
         }
 
         uint32_t findAdress = 0x1CC4A8;
-        uint32_t findVar = 0x623FF;
+        uint32_t findVar = 0x1EF5E0;
         if(0)
         {
             if(reg_eip == findAdress)
