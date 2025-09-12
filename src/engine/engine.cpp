@@ -960,12 +960,18 @@ void enginestep() {
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DA100)DEBUG_EnableDebugger();
-        //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
+        if(reg_eip == 0x1DC9D0)DEBUG_EnableDebugger();
 
+        /*
+        if(reg_eip == 0x1D0E09)
+        {
+            mem_writed(SegPhys(ds) + reg_eax + 0x48, 0xf0005622);            
+        }
+        */
 
         uint32_t findAdress2 = 0x1CC4A8;
         uint32_t findVar2 = 0x1EF530;
-        if(1)
+        if(0)
         {
             if(reg_eip == findAdress2)
                 afterAdress = true;
