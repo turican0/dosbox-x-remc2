@@ -951,7 +951,7 @@ void enginestep() {
         
         //if(reg_eip == 0x1CCE54)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
-        //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
+        if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
         //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
@@ -960,7 +960,7 @@ void enginestep() {
         //if(reg_eip == 0x1D9D90)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
         //if(reg_eip == 0x1DA100)DEBUG_EnableDebugger();
-        if(reg_eip == 0x1DC9D0)DEBUG_EnableDebugger();
+        //if(reg_eip == 0x1DB680)DEBUG_EnableDebugger();
 
         /*
         if(reg_eip == 0x1D0E09)
@@ -970,8 +970,8 @@ void enginestep() {
         */
 
         uint32_t findAdress2 = 0x1CC4A8;
-        uint32_t findVar2 = 0x1EF530;
-        if(0)
+        uint32_t findVar2 = 0x1E18C0+4;
+        if(1)
         {
             if(reg_eip == findAdress2)
                 afterAdress = true;
