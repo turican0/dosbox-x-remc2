@@ -127,8 +127,8 @@ Bit32u writeseq_D41A0count2[300];
 //Bit32u writesequencedataadress2 = 0;
 //Bit32u writesequencedataadress3 = 0;
 char findnamex[300];
-//#define TEST_REGRESSIONS
-int test_regression_level = 21;
+#define TEST_REGRESSIONS
+int test_regression_level = 51;
 
 Bit32u old_value = 0x123456;
 bool after_first_procedure = false;
@@ -377,10 +377,11 @@ void enginestep() {
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
             //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
             //addprocedurestop(0x265b80, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
-        addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
+        //addprocedurestop(0x228588, 0x0, true, true, 0x356038 + 0x7dba, 0x12345678);
         //writeseqall(0x228583);
         //writeseqall(0x2285ff);
-        /*writeseqall(0x233d56);
+        /*
+        writeseqall(0x233d56);
         writeseqall(0x237B05);
         writeseqall(0x237B55);
         writeseqall(0x237BB0);
@@ -404,23 +405,32 @@ void enginestep() {
         writeseqall(0x228583);
         writeseqall(0x23d954);
         writeseqall(0x238734);
-        writeseqall(0x2389f6);*/
-        //writeseqall(0x238a3d);
-        //writeseqall(0x238A8A);//*/
+        writeseqall(0x2389f6);
+        writeseqall(0x238a3d);
+        writeseqall(0x238A8A);//
 
+        writeseqall(0x238cf3);
 
-        //writeseqall(0x228583);
-        //writeseqall(0x23d954);
+        writeseqall(0x249c1b);*/
 
-        //writeseqall(0x238cf3);
-        //addprocedurestop(0x238cf3, 0x348, true, true, 0x356038 + 0x13de2, 0x12345678);
+        //writeseqall(0x238756);
 
+        //writeseqall(0x2389eb);
+        //addprocedurestop(0x238734, 0x0, true, true, 0x356038 + 0x36625, 0x12345678);
 
-        //addprocedurestop(0x22a543, 0x12, true, true, 0x12345678, 0x12345678);
+        //writeseqall(0x1F3783);
+        //addprocedurestop(0x1F3783, 0x0, true, true, 0x12345678, 0x12345678);
+
+        addprocedurestop(0x25bde0, 0x0, true, true, 0x3aa0a4, 0x12345678);
         #else
+<<<<<<< HEAD
+        //addprocedurestop(0x25d394, 0x0, true, true, 0x46d564, 0x12345678);//0xd8
+=======
         //addprocedurestop(0x23c8d4, 0x0, true, true, 0x134c38, 0x12345678);//0xd8
+>>>>>>> d0db75b07d6876b2650c56d95964d021d0a2b08e
         //addprocedurestop(0x2541e7, 0x0, true, true, 0x3c850, 0x12345678);//0xd8
-        //addprocedurestop(0x23c8d4, 0x0, true, true, 0x2b2276, 0x12345678);//0xd8
+        //addprocedurestop(0x23c8d4, 0x0, true, true, 0x46d564, 0x12345678);//0xd8
+        addprocedurestop(0x257fa4, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
 
         //addprocedurestop(0x253de2, 0x0, true, true, 0x12345678, 0x12345678);//0xd8
         //addprocedurestop(0x237214, 0x0, true, true, 0x2b22aa, 0x12345678);//0xd8
@@ -1252,7 +1262,7 @@ void enginestep() {
                     //if (writesequencedataadress3 > 0)savesequence(writesequencesize, writesequencedataadress3);
                     writesequencecount2[ii]++;
                     #ifdef TEST_REGRESSIONS
-                        if (writesequencecount2[ii] > 20)exit(0);
+                        //if (writesequencecount2[ii] > 20)exit(0);
                     #endif
                 }
             }
