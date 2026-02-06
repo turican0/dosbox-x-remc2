@@ -354,13 +354,13 @@ int debugcounter_258350 = 0;
 
 int debugcounter_1fb7a0 = 0;
 
-void writeseqall(Bit32u adress, Bit32u skip=0) {
-    writesequence(adress, 0x10000, 0x70000, 0x2dc4e0, skip);
-    writesequence(adress, 0x10000, 0x36e16, 0x356038, skip);
-    writesequence(adress, 0x10000, 320 * 200, 0x3aa0a4, skip);
-    writesequence(adress, 0x10000, 0xab, 0x3514b0, skip);
-    writesequence(adress, 0x10000, 0xc4e, 0x2b3a74, skip);
-    writesequence(adress, 0x10000, 0x2, 0x34c4e0, skip);
+void writeseqall(Bit32u adress, Bit32u skip=0, int count= 0x10000) {
+    writesequence(adress, count, 0x70000, 0x2dc4e0, skip);
+    writesequence(adress, count, 0x36e16, 0x356038, skip);
+    writesequence(adress, count, 320 * 200, 0x3aa0a4, skip);
+    writesequence(adress, count, 0xab, 0x3514b0, skip);
+    writesequence(adress, count, 0xc4e, 0x2b3a74, skip);
+    writesequence(adress, count, 0x2, 0x34c4e0, skip);
 }
 
 int oneindex=0;
@@ -907,7 +907,7 @@ void enginestep() {
 
 //addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
 
-writeseqall(0x2285ff,20);//save sequence after first load
+writeseqall(0x2285ff,0,20);//save sequence after first load
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
