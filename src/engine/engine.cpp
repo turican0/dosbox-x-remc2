@@ -907,7 +907,7 @@ void enginestep() {
 
 //addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
 
-writeseqall(0x2285ff);//save sequence after first load
+writeseqall(0x2285ff,20);//save sequence after first load
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
