@@ -46,6 +46,7 @@ int debugafterload = 0;
 int count_begin = 1;//1
 
 bool autoClosePause = true;
+bool killMoveAndRotation = true;
 
 int stage__4A190_0x6E8E = 1;
 //int minstage__4A190_0x6E8E = 0x490;
@@ -910,8 +911,8 @@ void enginestep() {
 //addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
 
 writeseqall(0x2285ff,0,20);//save sequence after first load
-//addprocedurestop(0x210d90, 0, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x2285ff, 0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
+
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -1046,6 +1047,58 @@ writeseqall(0x2285ff,0,20);//save sequence after first load
         if(autoClosePause && (reg_eip == 0x2285ff) && debugafterload)
         {
             mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
+        }
+        if(killMoveAndRotation && (reg_eip == 0x233d16))
+        {
+            int playerIndex= mem_readw(0x356038 + 0xc);
+            int playerIndex2 = mem_readw(0x356038 + 0x2bde + 0x84C* playerIndex + 0xa);
+            
+            long testEsi = mem_readd(0x2bb3e4) + 0xa8 * playerIndex2;
+            if(reg_esi == testEsi)
+            {
+                long dword_0xA4_164x = mem_readd(reg_esi + 0xa4);//3585fc
+                //actEvent->dword_0xA4_164x->entityIndex_0x0 = 0;
+                mem_writed(dword_0xA4_164x + 0,0);
+                //actEvent->dword_0xA4_164x->speed_0xc_12 = 0;
+                mem_writew(dword_0xA4_164x + 0xc,0);
+                //actEvent->dword_0xA4_164x->pitchDelta_0x6_6 = 0;
+                mem_writew(dword_0xA4_164x + 0x6, 0);
+                //actEvent->dword_0xA4_164x->rollDelta_0x4_4 = 0;
+                mem_writew(dword_0xA4_164x + 0x4, 0);
+                //actEvent->dword_0xA4_164x->fov_0x22_34 = 0;
+                mem_writew(dword_0xA4_164x + 0x22, 0);
+                //actEvent->dword_0xA4_164x->yaw_0x1E_30 = 0;
+                mem_writew(dword_0xA4_164x + 0x1e, 0);
+                //actEvent->dword_0xA4_164x->roll_0x155_341 = 0;
+                mem_writew(dword_0xA4_164x + 0x155, 0);
+            }
+            //    x = 35cec6
+            //esi 363286 
+
+            //stop 233c7c
+            /*
+            ENTITY_EA3E4[D41A0_0.array_0x2BDE[i].playerIndex_0x00a_2BE4_11240];
+            ecx 361ae6
+                36179e
+                35cec6
+                 
+
+            mem_readd(0x2A51A4)
+            mem_readd(0x2bb3e4)
+            if(0x361ae6)
+            */
+//mem_writew(0x356038 + 0x3654C + 2, 40);
+//mem_writew(0x356038 + 0x3654C + 4, 40);
+//D41A0_BYTESTR_0.struct_0x3659C[0].array_0x3659C_byte[0 + 3] = 2;
+//D41A0_BYTESTR_0.struct_0x3659C[0].array_0x3659C_byte[1] = 1;
+            //mem_writeb(mem_readd(0x2A51A4) + 0x18, 0);
+                //2a51a0 - x_D41A0_BYTEARRAY_4_struct
+                //2a51a4 - 
+                //0x2bb3e4 - ENTITY_EA3E4
+            /*
+                2dc4e0
+                0x6ae0 0a8*0x98=0x63c0
+                */
         }
         if (reg_eip == 0x26508d) {//fix computer speed
                 mem_writeb(0x35522c, 0x5);
