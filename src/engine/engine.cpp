@@ -42,8 +42,10 @@
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
-int debugafterload = 1;
+int debugafterload = 0;
 int count_begin = 1;//1
+
+bool autoClosePause = true;
 
 int stage__4A190_0x6E8E = 1;
 //int minstage__4A190_0x6E8E = 0x490;
@@ -908,6 +910,8 @@ void enginestep() {
 //addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
 
 writeseqall(0x2285ff,0,20);//save sequence after first load
+//addprocedurestop(0x210d90, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x2285ff, 0, true, true, 0x12345678, 0x12345678);
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
         fopen_s(&fptestep, findname, "wt");
@@ -934,7 +938,6 @@ writeseqall(0x2285ff,0,20);//save sequence after first load
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
         if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
         //if(reg_eip)
-
         spyinspect();
         if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         if (addprocedurestopcount != -1)
@@ -1040,6 +1043,10 @@ writeseqall(0x2285ff,0,20);//save sequence after first load
             //v1 = 1;
         }
         #endif
+        if(autoClosePause && (reg_eip == 0x2285ff) && debugafterload)
+        {
+            mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
+        }
         if (reg_eip == 0x26508d) {//fix computer speed
                 mem_writeb(0x35522c, 0x5);
         }
