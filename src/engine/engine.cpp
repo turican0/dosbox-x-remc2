@@ -1068,7 +1068,7 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
                 //actEvent->dword_0xA4_164x->fov_0x22_34 = 0;
                 mem_writew(dword_0xA4_164x + 0x22, 0);
                 //actEvent->dword_0xA4_164x->yaw_0x1E_30 = 0;
-                mem_writew(dword_0xA4_164x + 0x1e, 0);
+                //mem_writew(dword_0xA4_164x + 0x1e, 0);
                 //actEvent->dword_0xA4_164x->roll_0x155_341 = 0;
                 mem_writew(dword_0xA4_164x + 0x155, 0);
             }
