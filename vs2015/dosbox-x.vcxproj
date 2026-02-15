@@ -960,6 +960,7 @@ copy "$(SolutionDir)\..\contrib\windows\shaders\*.*" "$(OutputPath)\shaders\"</C
     <ClCompile Include="..\src\engine\engine.cpp" />
     <ClCompile Include="..\src\engine\engine_memstack.cpp" />
     <ClCompile Include="..\src\engine\engine_support.cpp" />
+    <ClCompile Include="..\src\engine\InputRecorder.cpp" />
     <ClCompile Include="..\src\fpu\fpu.cpp" />
     <ClCompile Include="..\src\gui\bitop.cpp" />
     <ClCompile Include="..\src\gui\ptrop.cpp" />
@@ -1536,6 +1537,8 @@ copy "$(SolutionDir)\..\contrib\windows\shaders\*.*" "$(OutputPath)\shaders\"</C
     <ClInclude Include="..\src\engine\engine.h" />
     <ClInclude Include="..\src\engine\engine_memstack.h" />
     <ClInclude Include="..\src\engine\engine_support.h" />
+    <ClInclude Include="..\src\engine\InputRecorder.h" />
+    <ClInclude Include="..\src\engine\RecordedEvent.h" />
     <ClInclude Include="..\src\fpu\fpu_instructions.h" />
     <ClInclude Include="..\src\fpu\fpu_instructions_longdouble.h" />
     <ClInclude Include="..\src\fpu\fpu_instructions_x86.h" />
