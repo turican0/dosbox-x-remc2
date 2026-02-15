@@ -65,7 +65,7 @@ Bit8u temp;
 //int stopindex=0;
 
 Bit32u oldmem=-123456789;
-long count = 0;
+long long count = 0;
 FILE *fptestep;
 FILE *fptestepcc;
 unsigned long findvarseg=0x168;
