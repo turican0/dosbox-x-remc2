@@ -1061,7 +1061,7 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
         {
             mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
         }
-        if(m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && (reg_eip == 0x233d16))
+        if(m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && (reg_eip == 0x233d56))
         {
             Bit32u d41A0 = 0x356038;
             uint32_t rand = mem_readd(d41A0 + 0x8);
@@ -1070,34 +1070,30 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
             Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
             int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
 
-            long testEsi = mem_readd(0x2bb3e4) + 0xa8 * playerIndex_0x00a;
+            int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
+            Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+            int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
+            int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+            int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
 
-            if(reg_esi == testEsi)
+            RecordedEventTurn* eventTurn = m_InputRecorder->GetCurrentPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248);
+
+            if(eventTurn != nullptr)
             {
-                int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
-                Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
-                int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
-                int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-                int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x0, eventTurn->Bytes[0]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x1, eventTurn->Bytes[1]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x2, eventTurn->Bytes[2]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x3, eventTurn->Bytes[3]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x4, eventTurn->Bytes[4]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x5, eventTurn->Bytes[5]);
 
-                RecordedEventTurn* eventTurn = m_InputRecorder->GetCurrentPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x6, eventTurn->Bytes[6]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x7, eventTurn->Bytes[7]);
 
-                if(eventTurn != nullptr)
-                {
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x0, eventTurn->Bytes[0]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x1, eventTurn->Bytes[1]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x2, eventTurn->Bytes[2]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x3, eventTurn->Bytes[3]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x4, eventTurn->Bytes[4]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x5, eventTurn->Bytes[5]);
-
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x6, eventTurn->Bytes[6]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x7, eventTurn->Bytes[7]);
-
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x8, eventTurn->Bytes[8]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x9, eventTurn->Bytes[9]);
-                }
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x8, eventTurn->Bytes[8]);
+                mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x9, eventTurn->Bytes[9]);
             }
+
         }
 
         if(killMoveAndRotation && (reg_eip == 0x233d16))
