@@ -47,8 +47,8 @@ int debugafterload = 0;
 int count_begin = 1;//1
 
 bool autoClosePause = true;
-bool killMoveAndRotation = false;
-std::string m_play_file = "C:\\Temp\\Levels-1-5-Recording.bin";
+bool killMoveAndRotation = true;
+std::string m_play_file = "";
 InputRecorder* m_InputRecorder = nullptr;
 
 int stage__4A190_0x6E8E = 1;
