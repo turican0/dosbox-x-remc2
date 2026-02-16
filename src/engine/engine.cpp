@@ -201,21 +201,26 @@ void saveseq_D41A0(int index) {
 
 
 //call stop
-Bit32u addprocedurestopadress = 0;
-Bit32u addprocedurestopfindvaradr = 0;
-int addprocedurestopcount = -1;
-bool addprocedurestopforce = false;
-bool addprocedurestoponmemchange = false;
-bool stoponmemchange = false;
-Bit32u addprocedurecounteradress = 0;
-Bit32u addprocedurecount = 0;
+Bit32u addprocedurestopadressA[300];// = 0;
+Bit32u addprocedurestopfindvaradrA[300];// = 0;
+int addprocedurestopcountA[300];// = -1;
+bool addprocedurestopforceA[300];// = false;
+bool addprocedurestoponmemchangeA[300];// = false;
+bool stoponmemchangeA[300];// = false;
+Bit32u addprocedurecounteradressA[300];// = 0;
+Bit32u addprocedurecountA[300];// = 0;
+
+int addprocedureindex = 0;
 void addprocedurestop(Bit32u adress,int count,bool force,bool memchange, Bit32u memadress, Bit32u counteradress) {
-    addprocedurestopadress = adress;
-    addprocedurestopcount = count;
-    addprocedurestopforce = force;
-    addprocedurestoponmemchange = memchange;
-    addprocedurestopfindvaradr = memadress;
-    addprocedurecounteradress = counteradress;
+    addprocedurestopadressA[addprocedureindex] = adress;
+    addprocedurestopcountA[addprocedureindex] = count;
+    addprocedurestopforceA[addprocedureindex] = force;
+    addprocedurestoponmemchangeA[addprocedureindex] = memchange;
+    addprocedurestopfindvaradrA[addprocedureindex] = memadress;
+    addprocedurecounteradressA[addprocedureindex] = counteradress;
+    stoponmemchangeA[addprocedureindex] = false;
+    addprocedurecountA[addprocedureindex] = 0;
+    addprocedureindex++;
 }
 //call stop
 
@@ -911,10 +916,16 @@ void enginestep() {
 //addprocedurestop(0x20aab8, 0x14, true, true, 0x355170, 0x12345678);
 //addprocedurestop(0x2643c0, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x1CC4A8, 0, true, true, 0x1e1383, 0x12345678);
+//addprocedurestop(0x2285ff, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x228604, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x238A8b, 0x0, true, true, 0x12345678, 0x12345678);
 
-writeseqall(0x2285ff,0,20);//save sequence after first load
-addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x238A8A, 0x6c, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x2368e1, 0x0, true, true, 0x12345678, 0x12345678);
+
+//writeseqall(0x2395d0, 0, 20);
+writeseqall(0x2285ff, 0, 20);//save sequence after first load
+//writeseqall(0x238A8A, 0);//save sequence after first load
 
 #endif
         sprintf(findname, "find-%04X-%08X.txt", findvarseg, findvaradr);
@@ -953,19 +964,21 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
         if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
         //if(reg_eip)
         spyinspect();
+        long tempReg_eip = reg_eip;
         if ((debugafterload==1) && (count_begin == 1)/*&&(stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
-        if (addprocedurestopcount != -1)
+        for(int ii = 0; ii < addprocedureindex; ii++)
+        if (addprocedurestopcountA[ii] != -1)
         {
-            if (addprocedurestopadress && (reg_eip == addprocedurestopadress)) {
+            if (addprocedurestopadressA[ii] && (reg_eip == addprocedurestopadressA[ii])) {
                 //if(mem_readb(0x3aa0a4 + 0x1a4d)==0xb8)
-                if (addprocedurestopcount == 0)
+                if (addprocedurestopcountA[ii] == 0)
                 {
                     //saveactstate();
                     //if (mem_readb(0x32c4e0 + 0xdcdc) == 0x02)
                         DEBUG_EnableDebugger();
-                    if (addprocedurestoponmemchange) {
-                        stoponmemchange = true;
-                        findvaradr = addprocedurestopfindvaradr;
+                    if (addprocedurestoponmemchangeA[ii]) {
+                        stoponmemchangeA[ii] = true;
+                        findvaradr = addprocedurestopfindvaradrA[ii];
                         /*if (0x20eaa0 == addprocedurestopadress)
                         {
                             addprocedurestopadress = 0x20ef1f;
@@ -974,7 +987,7 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
                     }
                     xcounter2++;
                 }
-                else addprocedurestopcount--;
+                else addprocedurestopcountA[ii]--;
             }
         }
         /*
@@ -1338,12 +1351,13 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
             //DEBUG_EnableDebugger();
             debugafter_215540 = true;
         }
-        if (reg_eip == addprocedurecounteradress) {
-            sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradress);
+        for(int ii = 0; ii < addprocedureindex; ii++)
+        if (reg_eip == addprocedurecounteradressA[ii]) {
+            sprintf(findnamecc, "counter-%08X.txt", addprocedurecounteradressA[ii]);
             fopen_s(&fptestepcc, findnamecc, "a+");
-            fprintf(fptestepcc, "%d\n", addprocedurecount);
+            fprintf(fptestepcc, "%d\n", ii);
             fclose(fptestepcc);
-            addprocedurecount++;
+            addprocedurecountA[ii]++;
         }
         //if (debugcounter_258350>0)
         if(debugafter_215540)
@@ -1424,7 +1438,8 @@ addprocedurestop(0x238a3d, 0, true, true, 0x12345678, 0x12345678);
                 pause = false;
                 fprintf(fptestep, "AFTER 04X:%08X/%08X\n\n", SegValue(cs), reg_esp, reg_esp - 0x1E1000);
                 //if (0x6F732F == oldmem)saveactstate();
-                if(stoponmemchange)
+                for(int ii = 0; ii < addprocedureindex; ii++)
+                if(stoponmemchangeA[ii])
                     DEBUG_EnableDebugger();
                 //DEBUG_EnableDebugger();
                 fclose(fptestep);
@@ -1968,10 +1983,11 @@ int engine_call(bool use32, Bitu selector, Bitu offset, Bitu oldeip) {
         
     case 0x00000160: {
         savecalls(offset);
-        if ((addprocedurestopadress == offset)&&(addprocedurestopcount!=-1)) {
-            if (addprocedurestopcount == 0);// DEBUG_EnableDebugger();
+        for(int ii = 0; ii < addprocedureindex; ii++)
+        if ((addprocedurestopadressA[ii] == offset)&&(addprocedurestopcountA[ii] !=-1)) {
+            if (addprocedurestopcountA[ii] == 0);// DEBUG_EnableDebugger();
             else
-            addprocedurestopcount--;
+            addprocedurestopcountA[ii]--;
         }
         switch (offset) {
             case 0x26E8000:{//181000 1A1000 rozdila a rozdil b//main
