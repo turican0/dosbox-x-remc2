@@ -1545,6 +1545,9 @@
     <ClCompile Include="..\src\dosbox.cpp">
       <Filter>Sources\shell</Filter>
     </ClCompile>
+    <ClCompile Include="..\src\engine\InputRecorder.cpp">
+      <Filter>Sources\engine</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\aviwriter\avi.h">
@@ -2445,6 +2448,12 @@
       <Filter>Sources\engine</Filter>
     </ClInclude>
     <ClInclude Include="..\src\engine\engine_support.h">
+      <Filter>Sources\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\engine\InputRecorder.h">
+      <Filter>Sources\engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\engine\RecordedEvent.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
   </ItemGroup>
