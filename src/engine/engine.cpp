@@ -43,12 +43,12 @@
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
-int debugafterload = 0;
+int debugafterload = 1;
 int count_begin = 1;//1
 
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
-std::string m_play_file = "";
+bool killMoveAndRotation = false;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 InputRecorder* m_InputRecorder = nullptr;
 
 int stage__4A190_0x6E8E = 1;
@@ -924,7 +924,7 @@ void enginestep() {
 //addprocedurestop(0x2368e1, 0x0, true, true, 0x12345678, 0x12345678);
 
 //writeseqall(0x2395d0, 0, 20);
-writeseqall(0x2285ff, 0, 20);//save sequence after first load
+writeseqall(0x2285ff, 0, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
 #endif
