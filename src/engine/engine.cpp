@@ -921,7 +921,13 @@ void enginestep() {
 //addprocedurestop(0x238A8b, 0x0, true, true, 0x12345678, 0x12345678);
 
 //addprocedurestop(0x238A8A, 0x6c, true, true, 0x12345678, 0x12345678);
-//addprocedurestop(0x2368e1, 0x0, true, true, 0x12345678, 0x12345678);
+
+/*
+addprocedurestop(0x2368e1, 0x0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x228588, 0x0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x2285ff, 0x0, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x232d2f, 0x0, true, true, 0x12345678, 0x12345678);
+*/
 
 //writeseqall(0x2395d0, 0, 20);
 writeseqall(0x2285ff, 0, 3000);//save sequence after first load
@@ -1074,12 +1080,12 @@ writeseqall(0x2285ff, 0, 3000);//save sequence after first load
         {
             mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
         }
-        if(m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && (reg_eip == 0x233d56))
+        if(m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && (reg_eip == 0x232d2f))
         {
             Bit32u d41A0 = 0x356038;
             uint32_t rand = mem_readd(d41A0 + 0x8);
             int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
-            int16_t playerIndex = mem_readw(d41A0 + 0xc);
+            int16_t playerIndex = reg_edx;
             Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
             int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
 
