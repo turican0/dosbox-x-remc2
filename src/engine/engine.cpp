@@ -922,15 +922,9 @@ void enginestep() {
 
 //addprocedurestop(0x238A8A, 0x6c, true, true, 0x12345678, 0x12345678);
 
-/*
-addprocedurestop(0x2368e1, 0x0, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x228588, 0x0, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x2285ff, 0x0, true, true, 0x12345678, 0x12345678);
-addprocedurestop(0x232d2f, 0x0, true, true, 0x12345678, 0x12345678);
-*/
-
 //writeseqall(0x2395d0, 0, 20);
-writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
+writeseqall(0x2285ff, 0, 20);//save sequence after first load
+//writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
 #endif
