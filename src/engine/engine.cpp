@@ -1151,7 +1151,7 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
             }
         }
 
-        if(reg_eip == 0x23CC20 && m_InputRecorder != nullptr)
+        if(reg_eip == 0x236FE6 && m_InputRecorder != nullptr)
         {
             if(m_InputRecorder->m_IsPlaying)
                 m_InputRecorder->StopPlayback();
