@@ -1083,21 +1083,21 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
         }
         if(m_InputRecorder != nullptr)
         {
+            Bit32u d41A0 = 0x356038;
+            uint32_t rand = mem_readd(d41A0 + 0x8);
+            int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
+            int16_t playerIndex = reg_edx;
+            Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
+            int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+
+            int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
+            Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+            int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
+            int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+            int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
+
             if(m_InputRecorder->m_IsPlaying && (reg_eip == 0x232d2f))
             {
-                Bit32u d41A0 = 0x356038;
-                uint32_t rand = mem_readd(d41A0 + 0x8);
-                int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
-                int16_t playerIndex = reg_edx;
-                Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
-                int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-
-                int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
-                Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
-                int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
-                int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-                int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
-
                 RecordedEventTurn* eventTurn = m_InputRecorder->GetCurrentPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248);
 
                 if(eventTurn != nullptr)
@@ -1119,19 +1119,6 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
 
             if(m_InputRecorder->m_IsRecording && (reg_eip == 0x232d2f))
             {
-                Bit32u d41A0 = 0x356038;
-                uint32_t rand = mem_readd(d41A0 + 0x8);
-                int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
-                int16_t playerIndex = reg_edx;
-                Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
-                int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-
-                int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
-                Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
-                int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
-                int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-                int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
-
                 uint8_t turnBytes[10] = { 0,0,0,0,0,0,0,0,0,0 };
 
                 turnBytes[0] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x0);
@@ -1147,7 +1134,7 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
                 turnBytes[8] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x8);
                 turnBytes[9] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x9);
 
-                m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248, 10, turnBytes);
+                m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248, sizeof(turnBytes), turnBytes);
             }
         }
 
@@ -1157,9 +1144,7 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
                 m_InputRecorder->StopPlayback();
 
             if(m_InputRecorder->m_IsRecording)
-            {
                 m_InputRecorder->StopRecording();
-            }
         }
 
         if(killMoveAndRotation && (reg_eip == 0x233d16))
