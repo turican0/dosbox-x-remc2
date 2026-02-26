@@ -49,8 +49,8 @@ int count_begin = 1;//1
 bool autoClosePause = true;
 bool killMoveAndRotation = false;
 std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
-std::string m_record_file = "C:/temp/test-level1.bin";
-std::string m_play_file = "";
+std::string m_record_file = "";
+
 InputRecorder* m_InputRecorder = nullptr;
 
 int stage__4A190_0x6E8E = 1;
