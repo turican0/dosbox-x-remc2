@@ -43,7 +43,7 @@
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
-int debugafterload = 1;
+int debugafterload = 0;
 int count_begin = 1;//1
 
 bool autoClosePause = true;
@@ -934,14 +934,14 @@ void enginestep() {
 //addprocedurestop(0x228604, 0x0, true, true, 0x12345678, 0x12345678);
 //addprocedurestop(0x238A8b, 0x0, true, true, 0x12345678, 0x12345678);
 
-addprocedurestop(0x232BB3, 0x0, true, true, 0x12345678, 0x12345678);
+//addprocedurestop(0x232BB3, 0x0, true, true, 0x12345678, 0x12345678);
 
-saveInStep(0x232BB4, 3);
+//saveInStep(0x232BB4, 3);
 
-//loadInStep(0x232BB4, 3);
+loadInStep(0x232BB4, 3);
 
 //writeseqall(0x2395d0, 0, 20);
-//writeseqall(0x2285ff, 0, 20);//save sequence after first load
+writeseqall(0x2285ff, 0, 20);//save sequence after first load
 //writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
@@ -1509,6 +1509,22 @@ saveInStep(0x232BB4, 3);
                     mem_writeb(p++, 0xE8); mem_writed(p, 0x002365D0 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
                     // add esp, 0008 (83 C4 08)
                     mem_writeb(p++, 0x83);mem_writeb(p++, 0xC4);mem_writeb(p++, 0x08);
+
+                    // --- CLEAN OptionsSettingFlag_24 (Offset 24 = 0x18) ---
+                    mem_writeb(p++, 0x8B); mem_writeb(p++, 0x1D); mem_writed(p, 0x002A51A4); p += 4;
+                    mem_writeb(p++, 0xC6); mem_writeb(p++, 0x43); mem_writeb(p++, 0x18); mem_writeb(p++, 0x01);
+
+                    Bit32u d41A0 = 0x356038;
+                    int playerIndex = mem_readw(d41A0+0xc);
+                    Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
+                    Bit32u addr_word_0x04d_2C2B_11307 = D41A0_0_array_type_str_0x2BDE + 0x4d;
+                    Bit32u addr_word_0x04f_2C2D_11309 = D41A0_0_array_type_str_0x2BDE + 0x4f;
+                    // --- D41A0_0.array_0x2BDE[playerIndex].word_0x04d_2C2B_11307 = 100; ---
+                    mem_writeb(p++, 0x66);mem_writeb(p++, 0xC7);mem_writeb(p++, 0x05);mem_writed(p, addr_word_0x04d_2C2B_11307); p += 4; // Offset 11307
+                    mem_writew(p, 100); p += 2;
+                    // --- D41A0_0.array_0x2BDE[playerIndex].word_0x04f_2C2D_11309 = 1; ---
+                    mem_writeb(p++, 0x66);mem_writeb(p++, 0xC7);mem_writeb(p++, 0x05);mem_writed(p, addr_word_0x04f_2C2D_11309); p += 4; // Offset 11309
+                    mem_writew(p, 1); p += 2;
 
                     // --- SELF-RESTORATION (5 BYTES) ---
                     for(int i = 0; i < 5; i++) {
