@@ -367,6 +367,19 @@ int debugcounter_258350 = 0;
 
 int debugcounter_1fb7a0 = 0;
 
+Bit32u saveInStep_Adress;
+int saveInStep_Step = -1;
+void saveInStep(Bit32u adress, int step = 0) {
+    saveInStep_Adress = adress;
+    saveInStep_Step = step;
+}
+Bit32u loadInStep_Adress;
+int loadInStep_Step = -1;
+void loadInStep(Bit32u adress, int step = 0) {
+    loadInStep_Adress = adress;
+    loadInStep_Step = step;
+}
+
 void writeseqall(Bit32u adress, Bit32u skip=0, int count= 0x10000) {
     writesequence(adress, count, 0x70000, 0x2dc4e0, skip);
     writesequence(adress, count, 0x36e16, 0x356038, skip);
@@ -923,6 +936,10 @@ void enginestep() {
 
 //addprocedurestop(0x238A8A, 0x6c, true, true, 0x12345678, 0x12345678);
 
+saveInStep(0x228583, 3);
+
+loadInStep(0x228583, 3);
+
 //writeseqall(0x2395d0, 0, 20);
 writeseqall(0x2285ff, 0, 20);//save sequence after first load
 //writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
@@ -1420,7 +1437,105 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
             }
         }
 
-        if (debugafter_215540)
+        if(saveInStep_Step > -1)
+        {
+            if(reg_eip == saveInStep_Adress)
+            {
+                if(saveInStep_Step == 0)
+                {
+                    Bit32u cave_addr = 0xB0000;//or 0x90000, depending on where you can safely write
+                    Bit32u rel_jmp = cave_addr - (reg_eip + 5);
+                    Bit8u orig[5];
+                    for(int i = 0; i < 5; i++) orig[i] = mem_readb(reg_eip + i);
+                    mem_writeb(reg_eip, 0xE9);// JMP
+                    mem_writed(reg_eip + 1, rel_jmp);// JMP adress
+
+                    Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+                    Bit32u levelIndex = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
+
+                    Bitu p = cave_addr;
+                    mem_writeb(p++, 0x60);               // PUSHAD (Save all registers)
+                    mem_writeb(p++, 0xB8); mem_writed(p, levelIndex); p += 4;// Opcode for MOV EAX, imm32
+                    // --- CALL: LoadLevel_555D0(0u, levelnumber, true) ---                    
+                    mem_writeb(p++, 0x50);// push eax (50)                    
+                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x01);// push 0001 (6A 01)                    
+                    mem_writeb(p++, 0xE8); mem_writed(p, 0x002365D0 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
+                    // add esp, 0008 (83 C4 08)
+                    mem_writeb(p++, 0x83);
+                    mem_writeb(p++, 0xC4);
+                    mem_writeb(p++, 0x08);
+
+                    // --- SELF-RESTORATION ---
+                    // Restore first 4 bytes: MOV dword ptr [reg_eip], orig_dword
+                    mem_writeb(p++, 0xC7); mem_writeb(p++, 0x05);       // MOV [addr], imm32
+                    mem_writed(p, reg_eip); p += 4;
+                    mem_writed(p, *(Bit32u*)&orig[0]); p += 4;
+                    // Restore 5th byte: MOV byte ptr [reg_eip + 4], orig_byte
+                    mem_writeb(p++, 0xC6); mem_writeb(p++, 0x05);       // MOV [addr], imm8
+                    mem_writed(p, reg_eip + 4); p += 4;
+                    mem_writeb(p++, orig[4]);
+                    // --- CLEANUP AND EXIT ---
+                    mem_writeb(p++, 0x61);               // POPAD (Restore all registers)
+                    // Jump back to original EIP (which is now restored)
+                    mem_writeb(p++, 0xE9);               // JMP rel32
+                    mem_writed(p, reg_eip - (p + 4));
+
+                    //  SaveLevel_55080(1u, x_D41A0_BYTEARRAY_4_struct.levelnumber_43w, (char*)"");/0x236080 from 0x238640
+                }
+                saveInStep_Step--;
+            }
+        }
+        if(loadInStep_Step > -1)
+        {
+            if(reg_eip == loadInStep_Adress)
+            {
+                if(loadInStep_Step == 0)
+                {
+                    Bit32u cave_addr = 0xB0000;//or 0x90000, depending on where you can safely write
+                    Bit32u rel_jmp = cave_addr - (reg_eip + 5);
+                    Bit8u orig[5];
+                    for(int i = 0; i < 5; i++) orig[i] = mem_readb(reg_eip + i);
+                    mem_writeb(reg_eip, 0xE9);// JMP
+                    mem_writed(reg_eip + 1, rel_jmp);// JMP adress
+
+                    Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+                    Bit32u levelIndex = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
+
+                    Bitu p = cave_addr;
+                    mem_writeb(p++, 0x60);               // PUSHAD (Save all registers)
+                    mem_writeb(p++, 0xB8); mem_writed(p, levelIndex); p += 4;// Opcode for MOV EAX, imm32
+                    // --- CALL: LoadLevel_555D0(0u, levelnumber, true) ---                    
+                    mem_writeb(p++, 0x50);// push eax (50)                    
+                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x01);// push 0001 (6A 01)                    
+                    mem_writeb(p++, 0xE8); mem_writed(p, 0x002365D0 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
+                    // add esp, 0008 (83 C4 08)
+                    mem_writeb(p++, 0x83);
+                    mem_writeb(p++, 0xC4);
+                    mem_writeb(p++, 0x08);
+
+                    // --- SELF-RESTORATION ---
+                    // Restore first 4 bytes: MOV dword ptr [reg_eip], orig_dword
+                    mem_writeb(p++, 0xC7); mem_writeb(p++, 0x05);       // MOV [addr], imm32
+                    mem_writed(p, reg_eip); p += 4;
+                    mem_writed(p, *(Bit32u*)&orig[0]); p += 4;
+                    // Restore 5th byte: MOV byte ptr [reg_eip + 4], orig_byte
+                    mem_writeb(p++, 0xC6); mem_writeb(p++, 0x05);       // MOV [addr], imm8
+                    mem_writed(p, reg_eip + 4); p += 4;
+                    mem_writeb(p++, orig[4]);
+                    // --- CLEANUP AND EXIT ---
+                    mem_writeb(p++, 0x61);               // POPAD (Restore all registers)
+                    // Jump back to original EIP (which is now restored)
+                    mem_writeb(p++, 0xE9);               // JMP rel32
+                    mem_writed(p, reg_eip - (p + 4));
+
+
+                    //    LoadLevel_555D0(0u, x_D41A0_BYTEARRAY_4_struct.levelnumber_43w, true);//0x2365d0 from 0x2385c0
+                }
+                loadInStep_Step--;
+            }
+        }
+
+        if(debugafter_215540)
             if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
         for (int ii = 0; ii < lastwriteindexseq_D41A0; ii++)
             if (writeseq_D41A0count[ii] != -1) {
