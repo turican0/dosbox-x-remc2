@@ -934,11 +934,11 @@ void enginestep() {
 //addprocedurestop(0x228604, 0x0, true, true, 0x12345678, 0x12345678);
 //addprocedurestop(0x238A8b, 0x0, true, true, 0x12345678, 0x12345678);
 
-//addprocedurestop(0x238A8A, 0x6c, true, true, 0x12345678, 0x12345678);
+addprocedurestop(0x232BB3, 0x0, true, true, 0x12345678, 0x12345678);
 
-saveInStep(0x228583, 3);
+saveInStep(0x232BB4, 3);
 
-loadInStep(0x228583, 3);
+//loadInStep(0x232BB4, 3);
 
 //writeseqall(0x2395d0, 0, 20);
 writeseqall(0x2285ff, 0, 20);//save sequence after first load
@@ -1443,10 +1443,9 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
             {
                 if(saveInStep_Step == 0)
                 {
-                    Bit32u cave_addr = 0xB0000;//or 0x90000, depending on where you can safely write
+                    Bit32u cave_addr = 0x90000;// depending on where you can safely write
                     Bit32u rel_jmp = cave_addr - (reg_eip + 5);
-                    Bit8u orig[5];
-                    for(int i = 0; i < 5; i++) orig[i] = mem_readb(reg_eip + i);
+                    Bit8u orig[5];for(int i = 0; i < 5; i++)orig[i] = mem_readb(reg_eip + i);//save 5 byte
                     mem_writeb(reg_eip, 0xE9);// JMP
                     mem_writed(reg_eip + 1, rel_jmp);// JMP adress
 
@@ -1465,20 +1464,17 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
                     mem_writeb(p++, 0xC4);
                     mem_writeb(p++, 0x08);
 
-                    // --- SELF-RESTORATION ---
-                    // Restore first 4 bytes: MOV dword ptr [reg_eip], orig_dword
-                    mem_writeb(p++, 0xC7); mem_writeb(p++, 0x05);       // MOV [addr], imm32
-                    mem_writed(p, reg_eip); p += 4;
-                    mem_writed(p, *(Bit32u*)&orig[0]); p += 4;
-                    // Restore 5th byte: MOV byte ptr [reg_eip + 4], orig_byte
-                    mem_writeb(p++, 0xC6); mem_writeb(p++, 0x05);       // MOV [addr], imm8
-                    mem_writed(p, reg_eip + 4); p += 4;
-                    mem_writeb(p++, orig[4]);
+                    // --- SELF-RESTORATION (5 BYTES) ---
+                    for(int i = 0; i < 5; i++) {
+                        mem_writeb(p++, 0xC6);mem_writeb(p++, 0x05);mem_writed(p, reg_eip + i);p += 4;
+                        mem_writeb(p++, orig[i]);
+                    }
+
                     // --- CLEANUP AND EXIT ---
                     mem_writeb(p++, 0x61);               // POPAD (Restore all registers)
                     // Jump back to original EIP (which is now restored)
                     mem_writeb(p++, 0xE9);               // JMP rel32
-                    mem_writed(p, reg_eip - (p + 4));
+                    mem_writed(p, reg_eip - (p + 4)); p += 4;
 
                     //  SaveLevel_55080(1u, x_D41A0_BYTEARRAY_4_struct.levelnumber_43w, (char*)"");/0x236080 from 0x238640
                 }
@@ -1491,10 +1487,9 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
             {
                 if(loadInStep_Step == 0)
                 {
-                    Bit32u cave_addr = 0xB0000;//or 0x90000, depending on where you can safely write
+                    Bit32u cave_addr = 0xB0000;//0x90000, depending on where you can safely write
                     Bit32u rel_jmp = cave_addr - (reg_eip + 5);
-                    Bit8u orig[5];
-                    for(int i = 0; i < 5; i++) orig[i] = mem_readb(reg_eip + i);
+                    Bit8u orig[5]; for(int i = 0; i < 5; i++)orig[i] = mem_readb(reg_eip + i);//save 5 byte
                     mem_writeb(reg_eip, 0xE9);// JMP
                     mem_writed(reg_eip + 1, rel_jmp);// JMP adress
 
@@ -1513,21 +1508,19 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
                     mem_writeb(p++, 0xC4);
                     mem_writeb(p++, 0x08);
 
-                    // --- SELF-RESTORATION ---
-                    // Restore first 4 bytes: MOV dword ptr [reg_eip], orig_dword
-                    mem_writeb(p++, 0xC7); mem_writeb(p++, 0x05);       // MOV [addr], imm32
-                    mem_writed(p, reg_eip); p += 4;
-                    mem_writed(p, *(Bit32u*)&orig[0]); p += 4;
-                    // Restore 5th byte: MOV byte ptr [reg_eip + 4], orig_byte
-                    mem_writeb(p++, 0xC6); mem_writeb(p++, 0x05);       // MOV [addr], imm8
-                    mem_writed(p, reg_eip + 4); p += 4;
-                    mem_writeb(p++, orig[4]);
+                    // --- SELF-RESTORATION (5 BYTES) ---
+                    for(int i = 0; i < 5; i++) {
+                        mem_writeb(p++, 0xC6);mem_writeb(p++, 0x05);mem_writed(p, reg_eip + i);p += 4;
+                        mem_writeb(p++, orig[i]);
+                    }
+
                     // --- CLEANUP AND EXIT ---
                     mem_writeb(p++, 0x61);               // POPAD (Restore all registers)
                     // Jump back to original EIP (which is now restored)
                     mem_writeb(p++, 0xE9);               // JMP rel32
-                    mem_writed(p, reg_eip - (p + 4));
+                    mem_writed(p, reg_eip - (p + 4)); p += 4;
 
+                    debugafterload = 1;
 
                     //    LoadLevel_555D0(0u, x_D41A0_BYTEARRAY_4_struct.levelnumber_43w, true);//0x2365d0 from 0x2385c0
                 }
