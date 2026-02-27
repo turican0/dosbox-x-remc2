@@ -47,8 +47,8 @@ int debugafterload = 1;
 int count_begin = 1;//1
 
 bool autoClosePause = true;
-bool killMoveAndRotation = false;
-std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+bool killMoveAndRotation = true;
+std::string m_play_file = "";// "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
@@ -941,7 +941,7 @@ saveInStep(0x232BB4, 3);
 //loadInStep(0x232BB4, 3);
 
 //writeseqall(0x2395d0, 0, 20);
-writeseqall(0x2285ff, 0, 20);//save sequence after first load
+//writeseqall(0x2285ff, 0, 20);//save sequence after first load
 //writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
@@ -1454,15 +1454,19 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
 
                     Bitu p = cave_addr;
                     mem_writeb(p++, 0x60);               // PUSHAD (Save all registers)
+                    //write eax
+                    //push eax
+
+                    //Bit32u empty_str = cave_addr + 160;
+                    //mem_writeb(empty_str, 0x00);
+                    //mem_writeb(p++, 0x68); mem_writed(p, empty_str); p += 4;
                     mem_writeb(p++, 0xB8); mem_writed(p, levelIndex); p += 4;// Opcode for MOV EAX, imm32
-                    // --- CALL: LoadLevel_555D0(0u, levelnumber, true) ---                    
-                    mem_writeb(p++, 0x50);// push eax (50)                    
-                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x01);// push 0001 (6A 01)                    
-                    mem_writeb(p++, 0xE8); mem_writed(p, 0x002365D0 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
+                    // --- CALL: LoadLevel_555D0(0u, levelnumber, true) ---
+                    mem_writeb(p++, 0x50);// push eax (50)
+                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x00);// push 0000 (6A 00) - 0-inGame save,1-mapMenuSave
+                    mem_writeb(p++, 0xE8); mem_writed(p, 0x00236080 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
                     // add esp, 0008 (83 C4 08)
-                    mem_writeb(p++, 0x83);
-                    mem_writeb(p++, 0xC4);
-                    mem_writeb(p++, 0x08);
+                    mem_writeb(p++, 0x83);mem_writeb(p++, 0xC4);mem_writeb(p++, 0x08);
 
                     // --- SELF-RESTORATION (5 BYTES) ---
                     for(int i = 0; i < 5; i++) {
@@ -1487,7 +1491,7 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
             {
                 if(loadInStep_Step == 0)
                 {
-                    Bit32u cave_addr = 0xB0000;//0x90000, depending on where you can safely write
+                    Bit32u cave_addr = 0x90000;//0x90000, depending on where you can safely write
                     Bit32u rel_jmp = cave_addr - (reg_eip + 5);
                     Bit8u orig[5]; for(int i = 0; i < 5; i++)orig[i] = mem_readb(reg_eip + i);//save 5 byte
                     mem_writeb(reg_eip, 0xE9);// JMP
@@ -1501,12 +1505,10 @@ writeseqall(0x2285ff, 0, 20);//save sequence after first load
                     mem_writeb(p++, 0xB8); mem_writed(p, levelIndex); p += 4;// Opcode for MOV EAX, imm32
                     // --- CALL: LoadLevel_555D0(0u, levelnumber, true) ---                    
                     mem_writeb(p++, 0x50);// push eax (50)                    
-                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x01);// push 0001 (6A 01)                    
+                    mem_writeb(p++, 0x6A); mem_writeb(p++, 0x00);// push 0000 (6A 00) - 0-inGame save,1-mapMenuSave
                     mem_writeb(p++, 0xE8); mem_writed(p, 0x002365D0 - (p + 4)); p += 4;// call 002365D0 (E8 C7 DF FF FF)
                     // add esp, 0008 (83 C4 08)
-                    mem_writeb(p++, 0x83);
-                    mem_writeb(p++, 0xC4);
-                    mem_writeb(p++, 0x08);
+                    mem_writeb(p++, 0x83);mem_writeb(p++, 0xC4);mem_writeb(p++, 0x08);
 
                     // --- SELF-RESTORATION (5 BYTES) ---
                     for(int i = 0; i < 5; i++) {
