@@ -47,7 +47,7 @@
 RECORD with actions from start:
 int debugafterload = 1;
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
+bool killMoveAndRotation = false;
 std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 --------------------------------
 writeseqall(0x2285ff, 0, 3000);
@@ -64,7 +64,7 @@ writeseqall(0x2285ff, 0, 3000);
 RECORD with actions after load:
 int debugafterload = 0;
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
+bool killMoveAndRotation = false;
 std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 --------------------------------
 loadInStep(0x232BB4, 3);//load in step 3 after start level
@@ -73,7 +73,7 @@ writeseqall(0x2285ff, 0, 3000);
 SAVE IN STEP with actions:
 int debugafterload = 1;
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
+bool killMoveAndRotation = false;
 std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 --------------------------------
 saveInStep(0x232BB4, 500);//save in step 500 after start level
@@ -81,7 +81,7 @@ saveInStep(0x232BB4, 500);//save in step 500 after start level
 SAVE IN STEP with actions after load:
 int debugafterload = 0;
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
+bool killMoveAndRotation = false;
 std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 --------------------------------
 loadInStep(0x232BB4, 500);//load in step 500 after start level
@@ -90,8 +90,8 @@ saveInStep(0x232BB4, 1000);//save in step 1000 after start level
 int debugafterload = 1;
 int count_begin = 1;//1
 bool autoClosePause = true;
-bool killMoveAndRotation = true;
-std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+bool killMoveAndRotation = false;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/level-1-DosBox-Recording.bin";
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
