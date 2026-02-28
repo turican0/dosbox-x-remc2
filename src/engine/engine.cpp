@@ -43,12 +43,55 @@
 //#define MOVE_PLAYER
 //#define SET_REFLECTION 1
 //#define SET_SHADOWS 1
-int debugafterload = 0;
-int count_begin = 1;//1
-
+/*
+RECORD with actions from start:
+int debugafterload = 1;
 bool autoClosePause = true;
 bool killMoveAndRotation = true;
-std::string m_play_file = "";// "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+--------------------------------
+writeseqall(0x2285ff, 0, 3000);
+
+RECORD without actions after load:
+int debugafterload = 0;
+bool autoClosePause = true;
+bool killMoveAndRotation = true;
+std::string m_play_file = "";
+--------------------------------
+loadInStep(0x232BB4, 3);//load in step 3 after start level
+writeseqall(0x2285ff, 0, 3000);
+
+RECORD with actions after load:
+int debugafterload = 0;
+bool autoClosePause = true;
+bool killMoveAndRotation = true;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+--------------------------------
+loadInStep(0x232BB4, 3);//load in step 3 after start level
+writeseqall(0x2285ff, 0, 3000);
+
+SAVE IN STEP with actions:
+int debugafterload = 1;
+bool autoClosePause = true;
+bool killMoveAndRotation = true;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+--------------------------------
+saveInStep(0x232BB4, 500);//save in step 500 after start level
+
+SAVE IN STEP with actions after load:
+int debugafterload = 0;
+bool autoClosePause = true;
+bool killMoveAndRotation = true;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
+--------------------------------
+loadInStep(0x232BB4, 500);//load in step 500 after start level
+saveInStep(0x232BB4, 1000);//save in step 1000 after start level
+*/
+int debugafterload = 1;
+int count_begin = 1;//1
+bool autoClosePause = true;
+bool killMoveAndRotation = true;
+std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/Levels-1-5-Recording.bin";
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
@@ -938,10 +981,10 @@ void enginestep() {
 
 //saveInStep(0x232BB4, 3);
 
-loadInStep(0x232BB4, 3);
+//loadInStep(0x232BB4, 3);
 
 //writeseqall(0x2395d0, 0, 20);
-writeseqall(0x2285ff, 0, 20);//save sequence after first load
+writeseqall(0x2285ff, 0, 3000);//save sequence after first load
 //writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
