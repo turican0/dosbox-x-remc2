@@ -1141,6 +1141,68 @@ writeseqall(0x2285ff, 0, 3000);//save sequence after first load
         {
             mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
         }
+
+        // Play/Record Map Spells
+        if(m_InputRecorder != nullptr)
+        {
+            Bit32u d41A0 = 0x356038;
+            int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
+            int16_t playerIndex = reg_edx;
+            Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
+            int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+
+            Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+            int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
+            int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+
+            Bit32u D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228 = (d41A0 + 0x2bde + (0x84C * playerIndex)) + 998;
+            Bit32u D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228_str_611 = D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228 + 611;
+
+            Bit32u SpellExperience_0x263_611x = D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228_str_611;
+            Bit32u SpellsEnabled_0x333_819x = D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228_str_611 + 208;
+            Bit32u SpellIndexes_0x39B_923x = D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228_str_611 + 312;
+            Bit32u SpellLevels_0x41D_1053z = D41A0_0_array_type_str_0x2BDE_dword_0x3E6_2BE4_12228_str_611 + 442;
+
+            if(m_InputRecorder->m_IsPlaying && m_InputRecorder->GetCurrentPlayer(levelNumber_43w, playerIndex) != nullptr)
+            {
+                auto currentPlayer = m_InputRecorder->GetCurrentPlayer(levelNumber_43w, playerIndex);
+
+                for(int i = 0; i < 26; i++)
+                {
+                    mem_writed(SpellExperience_0x263_611x, currentPlayer->SpellsExperience[i]);
+                    SpellExperience_0x263_611x += 4;
+                    mem_writew(SpellsEnabled_0x333_819x, currentPlayer->SpellsEnabled[i]);
+                    SpellsEnabled_0x333_819x += 2;
+                    mem_writeb(SpellIndexes_0x39B_923x, currentPlayer->SpellIndexes[i]);
+                    SpellIndexes_0x39B_923x += 1;
+                    mem_writeb(SpellLevels_0x41D_1053z, currentPlayer->SpellLevels[i]);
+                    SpellLevels_0x41D_1053z += 1;
+                }
+            }
+
+            if(m_InputRecorder->m_IsRecording)
+            {
+                int32_t experience[26];
+                int16_t enabled[26];
+                uint8_t indexes[26];
+                uint8_t levels[26];
+
+                for(int i = 0; i < 26; i++)
+                {
+                    experience[i] = mem_readd(SpellExperience_0x263_611x);
+                    SpellExperience_0x263_611x += 4;
+                    enabled[i] = mem_readw(SpellsEnabled_0x333_819x);
+                    SpellsEnabled_0x333_819x += 2;
+                    indexes[i] = mem_readb(SpellIndexes_0x39B_923x);
+                    SpellIndexes_0x39B_923x += 1;
+                    levels[i] = mem_readb(SpellLevels_0x41D_1053z);
+                    SpellLevels_0x41D_1053z += 1;
+                }
+
+                m_InputRecorder->RecordPlayerSpells(levelNumber_43w, playerIndex, enabled, indexes, levels, experience);
+            }
+        }
+
         if(m_InputRecorder != nullptr)
         {
             Bit32u d41A0 = 0x356038;
