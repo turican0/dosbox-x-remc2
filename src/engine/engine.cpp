@@ -56,6 +56,100 @@ static CtlConfig g_ctl_cfg;
 static CtlEngine g_ctl;
 static bool g_ctl_initialized = false;
 
+// ---- DUMPREGS: rozsireni jen pro DOSBox stranu ----
+// Radek "DUMPREGS cond=eip:0xADDR label=jmeno" ve STEJNEM ctl souboru
+// zapise pri kazdem zasahu EIP jednoradkovy vypis vsech registru + navratove
+// adresy ze zasobniku (ret=) do vystupniho trace souboru. K cemu to je:
+// Watcom register calling convention predava argumenty v EAX/EDX/EBX/ECX,
+// takze DUMPREGS na VSTUPU funkce (eip = adresa sub_XXXXX) ukaze presne
+// hodnoty argumentu, se kterymi original funkci vola - idealni na overovani
+// podezrelych konstant z dekompilace (napr. velikosti alokaci, ktere IDA
+// mylne prevedla na "&symbol + offset"). "ret=" (dword na [ESP]) navic
+// identifikuje volajici misto, takze jde odfiltrovat volani jen z jedne
+// konkretni funkce. Sdileny parser v ctl_common.h tyhle radky nezna a jen
+// je s varovanim preskoci - zamerne ho nemodifikujeme (je sdileny s
+// nativni stranou), parsujeme si je tady sami.
+// Dva rezimy watche:
+//   cond=eip:0xADDR - zasah presne adresy (vyzaduje znat runtime adresy!)
+//   cond=eax:0xVAL  - EAX prave NABYL dane hodnoty (hranovy trigger - loguje
+//                     se jen prvni instrukce, po ktere EAX hodnotu ma, ne
+//                     kazda dalsi). Nezavisle na adresach - idealni na
+//                     kalibraci posunu runtime vs. IDA adres: chytne uz
+//                     "mov eax, imm" u volajiciho a EIP zaznamu prozradi,
+//                     kde kod skutecne bezi.
+struct RegsWatch {
+    unsigned int eip = 0;        // 0 = neni eip watch
+    unsigned int eax_value = 0;
+    bool eax_mode = false;
+    bool eax_was_match = false;  // stav hranoveho triggeru
+    std::string label;
+};
+static std::vector<RegsWatch> g_regs_watches;
+
+static void ctl_load_dumpregs(const std::string& path) {
+    FILE* f = fopen(path.c_str(), "rt");
+    if (!f) return; // chybejici soubor uz ohlasil ctl_load_config
+    char linebuf[2048];
+    while (fgets(linebuf, sizeof(linebuf), f)) {
+        std::string line(linebuf);
+        size_t hash = line.find('#');
+        if (hash != std::string::npos) line = line.substr(0, hash);
+        auto toks = ctl_split_ws(line);
+        if (toks.empty()) continue;
+        std::string verb = toks[0];
+        for (auto& c : verb) c = (char)toupper((unsigned char)c);
+        if (verb != "DUMPREGS") continue;
+
+        RegsWatch w;
+        for (size_t i = 1; i < toks.size(); i++) {
+            auto eq = toks[i].find('=');
+            if (eq == std::string::npos) continue;
+            std::string k = toks[i].substr(0, eq);
+            std::string v = toks[i].substr(eq + 1);
+            if (k == "cond" && v.rfind("eip:", 0) == 0)
+                w.eip = ctl_parse_hex_or_dec(v.substr(4));
+            else if (k == "cond" && v.rfind("eax:", 0) == 0) {
+                w.eax_mode = true;
+                w.eax_value = ctl_parse_hex_or_dec(v.substr(4));
+            }
+            else if (k == "label")
+                w.label = v;
+        }
+        if (w.eip || w.eax_mode) g_regs_watches.push_back(w);
+        else fprintf(stderr, "[ctl] DUMPREGS bez platne cond=eip:/eax:, preskakuji\n");
+    }
+    fclose(f);
+    if (!g_regs_watches.empty())
+        fprintf(stderr, "[ctl] DUMPREGS: %d sledovanych EIP bodu\n", (int)g_regs_watches.size());
+}
+
+static void ctl_check_dumpregs() {
+    if (g_regs_watches.empty() || !g_ctl.out) return;
+    const unsigned int eip = (unsigned int)reg_eip;
+    for (auto& w : g_regs_watches) {
+        if (w.eax_mode) {
+            bool match = ((unsigned int)reg_eax == w.eax_value);
+            bool edge = match && !w.eax_was_match;
+            w.eax_was_match = match;
+            if (!edge) continue;
+        } else {
+            if (eip != w.eip) continue;
+        }
+        // ret = dword na vrcholu zasobniku - na VSTUPU funkce je to navratova
+        // adresa (u DOS4GW flat modelu je baze SS typicky 0, SegPhys to resi
+        // obecne i kdyby nebyla).
+        unsigned int ret = (unsigned int)mem_readd(SegPhys(ss) + reg_esp);
+        fprintf(g_ctl.out,
+                "REGS %s cycle=%llu eip=%08X eax=%08X ebx=%08X ecx=%08X edx=%08X"
+                " esi=%08X edi=%08X ebp=%08X esp=%08X ret=%08X\n",
+                w.label.empty() ? "-" : w.label.c_str(), g_ctl.cycle, eip,
+                (unsigned int)reg_eax, (unsigned int)reg_ebx, (unsigned int)reg_ecx,
+                (unsigned int)reg_edx, (unsigned int)reg_esi, (unsigned int)reg_edi,
+                (unsigned int)reg_ebp, (unsigned int)reg_esp, ret);
+        fflush(g_ctl.out);
+    }
+}
+
 #include "trace_dosbox_symbols.gen.cpp"   // vygenerovano gen_watchtable.cpp -> g_watch_symbols[]
 
 static unsigned int ctl_read_mem(unsigned int addr, unsigned int width) {
@@ -91,6 +185,7 @@ static void ctl_init_once() {
     std::string cfg_path = env_path ? env_path : "dosbox_ctl.cfg";
 
     ctl_load_config(cfg_path, g_ctl_cfg);
+    ctl_load_dumpregs(cfg_path);
 
     g_ctl.symbols = g_watch_symbols;
     g_ctl.symbols_count = g_watch_symbols_count;
@@ -104,6 +199,9 @@ static void ctl_init_once() {
 void enginestep() {
     ctl_init_once();
     g_ctl.cycle++;
+
+    // DUMPREGS body (registry pri zasahu EIP) - viz komentar u RegsWatch.
+    ctl_check_dumpregs();
 
     // EIP/CYCLE/CHANGED/EQ/NEQ podminky se vyhodnocuji tady (kazdy krok).
     g_ctl.step(g_ctl_cfg, /*is_call_context=*/false, /*call_addr=*/0, (unsigned int)reg_eip);

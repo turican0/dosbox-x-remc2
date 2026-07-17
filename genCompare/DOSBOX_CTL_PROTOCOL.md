@@ -147,6 +147,44 @@ Explicitní přepsání opakování: `repeat=once` / `repeat=always`.
   libovolná "syrová" adresa jako u DOSBoxu tu neexistuje.
 - `SET` není podporován (viz výše).
 
+## DUMPREGS — dump registrů (jen DOSBox strana)
+
+Rozšíření z vlny 10 (ověřování alokací v `sub_10CB5`), parsované přímo v
+`engine.cpp` (sdílený parser v `ctl_common.h` tyto řádky s varováním
+přeskočí — to je v pořádku):
+
+```
+# dump registrů + návratové adresy při zásahu konkrétního EIP
+DUMPREGS cond=eip:0x234CBB  label=misto_volani
+
+# dump ve chvíli, kdy EAX NABUDE dané hodnoty (hranový trigger) —
+# nezávislé na adresách, ideální pro kalibraci (viz níže)
+DUMPREGS cond=eax:0x1B5030  label=velikost_alokace
+```
+
+Výstupní řádek (do stejného trace souboru):
+
+```
+REGS <label> cycle=<N> eip=.. eax=.. ebx=.. ecx=.. edx=.. esi=.. edi=.. ebp=.. esp=.. ret=..
+```
+
+`ret=` je dword na `[ESP]` — na vstupu funkce návratová adresa (identifikuje
+volajícího). Watcom register convention: 1.–4. argument v EAX/EDX/EBX/ECX,
+takže DUMPREGS na vstupu funkce ukazuje přesné hodnoty argumentů.
+
+### DŮLEŽITÉ — mapování adres (zjištěno empiricky, vlna 10)
+
+Runtime EIP této verze `Orion2.exe` pod DOS4GW = **IDA adresa + 0x224000**
+(např. `GameMain_10057` = IDA `0x10057` běží na EIP `0x2340xx`, vstup
+`sub_10CB5` = `0x234CB5`). `eip:` podmínky (DUMP i DUMPREGS) proto musí
+používat runtime adresy! Když si nejsi jistý, začni `cond=eax:` hranovým
+watchem na distinktivní konstantu — EIP v zachyceném řádku posun prozradí.
+(Sedí to i s `TURN_ADVANCE_EIP = 0x232d2f` v engine.cpp.)
+
+Pozn.: `engine_call` (podmínky `call:`) zachytává jen FAR volání — běžná
+near volání uvnitř flat segmentu hry nevidí. Pro vstupy `sub_XXXXX` proto
+používej `DUMPREGS cond=eip:<IDA adresa + 0x224000>`.
+
 ## Krok 5 — porovnání výstupů
 
 Formát trace souboru (stejný na obou stranách):
