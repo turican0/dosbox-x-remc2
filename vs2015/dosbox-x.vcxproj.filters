@@ -2456,6 +2456,9 @@
     <ClInclude Include="..\src\engine\RecordedEvent.h">
       <Filter>Sources\engine</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\engine\ctl_common.h">
+      <Filter>Sources\engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\src\winres.rc">

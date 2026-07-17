@@ -183,9 +183,9 @@ void saveactstate() {
     fprintf(fptw1, "ESI:%08X,EDI:%08X,EBP:%08X,ESP:%08X\n", reg_esi, reg_edi, reg_ebp, reg_esp);
     fprintf(fptw1, "CS:%04X,DS:%04X,ES:%04X,FS:%04X,GS:%04X,SS:%04X\n",
             SegValue(cs), SegValue(ds), SegValue(es), SegValue(fs), SegValue(gs), SegValue(ss));
-    /*fprintf(fptw1, "CF:%01X,ZF:%01X,SF:%01X,OF:%01X,AF:%01X,PF:%01X,IF:%01X\n",
+    fprintf(fptw1, "CF:%01X,ZF:%01X,SF:%01X,OF:%01X,AF:%01X,PF:%01X,IF:%01X\n",
             (get_CF() > 0), (get_ZF() > 0), (get_SF() > 0), (get_OF() > 0),
-            (get_AF() > 0), (get_PF() > 0), GETFLAGBOOL(IF));*/
+            (get_AF() > 0), (get_PF() > 0), GETFLAGBOOL(IF));
     fclose(fptw1);
 
     FILE* fptw;

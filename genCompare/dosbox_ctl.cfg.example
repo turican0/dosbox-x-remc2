@@ -1,0 +1,29 @@
+# dosbox_ctl.cfg.example
+# Zkopíruj jako dosbox_ctl.cfg (nebo nastav DOSBOX_CTL_FILE na jinou cestu)
+# a uprav adresy pro svůj konkrétní test. Viz DOSBOX_CTL_PROTOCOL.md.
+
+OUTPUT file=dosbox_trace.txt
+
+# ---- co dumpovat ----
+
+# Dump při každém volání konkrétní funkce (adresa = ta samá jako sub_ADDR
+# v reimplementaci).
+DUMP  cond=call:0x26D0D              label=sub_26D0D
+
+# Periodický "heartbeat" dump i bez konkrétního volání - užitečné pro
+# hrubou orientaci, kde se běh vůbec nachází.
+DUMP  cond=every:50000               label=heartbeat
+
+# Dump kdykoliv se změní konkrétní hodnota (např. skóre/stav hráče).
+DUMP  cond=changed:0x197F98:4        label=score_changed
+
+# ---- co případně patchnout (jen DOSBox strana) ----
+
+# Příklad: přeskoč intro/logo jakmile běh dosáhne dané adresy.
+# SET   cond=eip:0x2A51AD            addr=0x2A51AD size=1 value=0x01
+
+# ---- kdy skončit ----
+
+STOP  cond=eip:0x236FE6              repeat=once
+STOP  cond=cycle_ge:20000000         repeat=once
+# STOP cond=eq:0x197F98:4:0x00000005 repeat=once
