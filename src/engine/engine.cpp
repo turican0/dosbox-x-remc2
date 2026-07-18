@@ -123,6 +123,74 @@ static void ctl_load_dumpregs(const std::string& path) {
         fprintf(stderr, "[ctl] DUMPREGS: %d sledovanych EIP bodu\n", (int)g_regs_watches.size());
 }
 
+// ---- DUMPMEM: vypis useku emulovane pameti (vlna 13 reorion2) ----
+// Radek "DUMPMEM cond=eip:0xADDR addr=0xA size=N label=x" vypise pri
+// PRVNIM zasahu EIP obsah pameti [addr, addr+size) jako hex radek
+// "MEM <label> addr=... size=N bytes=00112233..." do trace souboru.
+// Pouziti: vytazeni puvodniho STROJOVEHO KODU funkce, jejiz dekompilace
+// selhala (Hex-Rays "could not find valid save-restore pair" a telo
+// zredukovane na "while(1);"), primo z bezici hry - hex se pak
+// disassembluje rucne a porovna s dekompilatem.
+struct MemWatch {
+    unsigned int eip = 0;
+    unsigned int addr = 0;
+    unsigned int size = 0;
+    bool fired = false;
+    std::string label;
+};
+static std::vector<MemWatch> g_mem_watches;
+
+static void ctl_load_dumpmem(const std::string& path) {
+    FILE* f = fopen(path.c_str(), "rt");
+    if (!f) return;
+    char linebuf[2048];
+    while (fgets(linebuf, sizeof(linebuf), f)) {
+        std::string line(linebuf);
+        size_t hash = line.find('#');
+        if (hash != std::string::npos) line = line.substr(0, hash);
+        auto toks = ctl_split_ws(line);
+        if (toks.empty()) continue;
+        std::string verb = toks[0];
+        for (auto& c : verb) c = (char)toupper((unsigned char)c);
+        if (verb != "DUMPMEM") continue;
+
+        MemWatch w;
+        for (size_t i = 1; i < toks.size(); i++) {
+            auto eq = toks[i].find('=');
+            if (eq == std::string::npos) continue;
+            std::string k = toks[i].substr(0, eq);
+            std::string v = toks[i].substr(eq + 1);
+            if (k == "cond" && v.rfind("eip:", 0) == 0)
+                w.eip = ctl_parse_hex_or_dec(v.substr(4));
+            else if (k == "addr") w.addr = ctl_parse_hex_or_dec(v);
+            else if (k == "size") w.size = ctl_parse_hex_or_dec(v);
+            else if (k == "label") w.label = v;
+        }
+        if (w.eip && w.addr && w.size)
+            g_mem_watches.push_back(w);
+        else
+            fprintf(stderr, "[ctl] DUMPMEM potrebuje cond=eip:, addr=, size=, preskakuji\n");
+    }
+    fclose(f);
+    if (!g_mem_watches.empty())
+        fprintf(stderr, "[ctl] DUMPMEM: %d sledovanych useku\n", (int)g_mem_watches.size());
+}
+
+static void ctl_check_dumpmem() {
+    if (g_mem_watches.empty() || !g_ctl.out) return;
+    const unsigned int eip = (unsigned int)reg_eip;
+    for (auto& w : g_mem_watches) {
+        if (w.fired || eip != w.eip) continue;
+        w.fired = true;
+        fprintf(g_ctl.out, "MEM %s addr=%08X size=%u bytes=",
+                w.label.empty() ? "-" : w.label.c_str(), w.addr, w.size);
+        for (unsigned int i = 0; i < w.size; i++)
+            fprintf(g_ctl.out, "%02X", (unsigned int)mem_readb(w.addr + i));
+        fprintf(g_ctl.out, "\n");
+        fflush(g_ctl.out);
+    }
+}
+
 static void ctl_check_dumpregs() {
     if (g_regs_watches.empty() || !g_ctl.out) return;
     const unsigned int eip = (unsigned int)reg_eip;
@@ -186,6 +254,7 @@ static void ctl_init_once() {
 
     ctl_load_config(cfg_path, g_ctl_cfg);
     ctl_load_dumpregs(cfg_path);
+    ctl_load_dumpmem(cfg_path);
 
     g_ctl.symbols = g_watch_symbols;
     g_ctl.symbols_count = g_watch_symbols_count;
@@ -202,6 +271,8 @@ void enginestep() {
 
     // DUMPREGS body (registry pri zasahu EIP) - viz komentar u RegsWatch.
     ctl_check_dumpregs();
+    // DUMPMEM body (vypis pameti pri zasahu EIP) - viz komentar u MemWatch.
+    ctl_check_dumpmem();
 
     // EIP/CYCLE/CHANGED/EQ/NEQ podminky se vyhodnocuji tady (kazdy krok).
     g_ctl.step(g_ctl_cfg, /*is_call_context=*/false, /*call_addr=*/0, (unsigned int)reg_eip);

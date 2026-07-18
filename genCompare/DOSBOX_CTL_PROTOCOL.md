@@ -185,6 +185,26 @@ Pozn.: `engine_call` (podmínky `call:`) zachytává jen FAR volání — běžn
 near volání uvnitř flat segmentu hry nevidí. Pro vstupy `sub_XXXXX` proto
 používej `DUMPREGS cond=eip:<IDA adresa + 0x224000>`.
 
+## DUMPMEM — výpis paměti (jen DOSBox strana, vlna 13)
+
+```
+DUMPMEM cond=eip:0xADDR addr=0xA size=N label=x
+```
+
+Při **prvním** zásahu EIP vypíše `MEM <label> addr=... size=N bytes=<hex>`
+do trace souboru. Hlavní použití: vytažení původního **strojového kódu**
+funkce, jejíž dekompilace selhala („could not find valid save-restore
+pair", tělo `while(1);`), přímo z běžící hry — hex se pak disassembluje
+(`pip install capstone`) a porovná s dekompilátem. Přesně takhle se ve
+vlně 13 zjistilo, že `sub_132AA4` není nekonečná smyčka, ale vracející se
+kalibrace, a že kvůli špatnému `__noreturn` chybí v dumpu celé konce
+`RunGameAndExit_113D47` a `GameMain_10057` (viz
+`reorion2/ref/GameMain_10057.orig.asm.txt`).
+
+**POZOR na adresní báze:** kód = IDA + 0x224000, ale DATA = IDA +
+0x216000 (jiné segmenty). Ověřeno empiricky (dword_1BC798: runtime
+0x3D2798).
+
 ## Krok 5 — porovnání výstupů
 
 Formát trace souboru (stejný na obou stranách):
