@@ -205,6 +205,22 @@ kalibrace, a že kvůli špatnému `__noreturn` chybí v dumpu celé konce
 0x216000 (jiné segmenty). Ověřeno empiricky (dword_1BC798: runtime
 0x3D2798).
 
+## DUMPPAL — dump SKUTEČNĚ vykreslované VGA DAC palety (jen DOSBox strana, vlna 25)
+
+```
+DUMPPAL cond=eip:0xADDR start=N count=M label=x [repeat=always]
+```
+
+Při zásahu EIP vypíše `PAL <label> cycle=<N> start=<S> count=<C>
+rgb=RRGGBB...` — obsah `vga.dac.rgb[start..start+count)`, tedy hodnoty,
+které DOSBox-X SKUTEČNĚ používá k vykreslení (na rozdíl od `DUMPMEM`,
+který čte jen zdrojová data v paměti hry PŘED převodem přes
+`hr_outbyte`/DAC porty). `start`/`count` výchozí 0/256 (celý DAC).
+Hodnoty jsou 6bitové (0-63) — pro porovnání s portovní 8bitovou
+hodnotou vydělit 4 (nebo `>>2`), ne naopak škálovat DOSBox stranu.
+Podporuje `repeat=always` (na rozdíl od `DUMPMEM`, který `repeat=`
+vůbec neparsuje a dumpne jen jednou při prvním zásahu).
+
 ## Krok 5 — porovnání výstupů
 
 Formát trace souboru (stejný na obou stranách):

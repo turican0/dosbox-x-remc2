@@ -39,6 +39,7 @@
 #include "control.h"
 #include "engine_support.h"
 #include "InputRecorder.h"
+#include "vga.h"
 
 #include "ctl_common.h"
 
@@ -176,6 +177,91 @@ static void ctl_load_dumpmem(const std::string& path) {
         fprintf(stderr, "[ctl] DUMPMEM: %d sledovanych useku\n", (int)g_mem_watches.size());
 }
 
+// ---- DUMPPAL: vypis SKUTECNE vykreslovane VGA DAC palety (reorion2 vlna 25) ----
+// Radek "DUMPPAL cond=eip:0xADDR start=N count=M label=x [repeat=always]"
+// vypise pri zasahu EIP obsah `vga.dac.rgb[start .. start+count)` - tedy
+// hodnoty, ktere DOSBox-X SKUTECNE POUZIVA k vykresleni (na rozdil od
+// DUMPMEM, ktery cte jen herni pamet PRED prevodem pres hr_outbyte/DAC).
+// K cemu: reorion2 port ma vlastni g_palette[] (viz port_vga.cpp), a otazka
+// "shoduje se prubeh/skladba fade rampy se skutecnym originalem" se da
+// overit jen porovnanim SKUTECNE zobrazovanych barev, ne jen zdrojovych dat
+// v pameti hry (ktera muze byt spravna, ale cesta k DAC/Present rozdilna -
+// presne takovy bug uz byl v portu dvakrat: chybejici 6->8bit skalovani a
+// roztrzena/neatomicka aktualizace pulky palety mezi dvema Present() volani).
+// Kazdy zaznam: "PAL <label> cycle=<N> start=<S> count=<C> rgb=RRGGBB...".
+// Hodnoty jsou 6-bitove (0-63) presne jak je VGA DAC uklada - k porovnani s
+// portem je nutne portovni 8bit hodnotu vydelit 4 (nebo portovni >>2), NE
+// naopak sklalovat DOSBox stranu.
+struct PalWatch {
+    unsigned int eip = 0;
+    unsigned int start = 0;
+    unsigned int count = 0;
+    bool repeat_always = false;
+    bool fired = false;
+    std::string label;
+};
+static std::vector<PalWatch> g_pal_watches;
+
+static void ctl_load_dumppal(const std::string& path) {
+    FILE* f = fopen(path.c_str(), "rt");
+    if (!f) return;
+    char linebuf[2048];
+    while (fgets(linebuf, sizeof(linebuf), f)) {
+        std::string line(linebuf);
+        size_t hash = line.find('#');
+        if (hash != std::string::npos) line = line.substr(0, hash);
+        auto toks = ctl_split_ws(line);
+        if (toks.empty()) continue;
+        std::string verb = toks[0];
+        for (auto& c : verb) c = (char)toupper((unsigned char)c);
+        if (verb != "DUMPPAL") continue;
+
+        PalWatch w;
+        w.count = 256; // vychozi: cely DAC
+        for (size_t i = 1; i < toks.size(); i++) {
+            auto eq = toks[i].find('=');
+            if (eq == std::string::npos) continue;
+            std::string k = toks[i].substr(0, eq);
+            std::string v = toks[i].substr(eq + 1);
+            if (k == "cond" && v.rfind("eip:", 0) == 0)
+                w.eip = ctl_parse_hex_or_dec(v.substr(4));
+            else if (k == "start") w.start = ctl_parse_hex_or_dec(v);
+            else if (k == "count") w.count = ctl_parse_hex_or_dec(v);
+            else if (k == "label") w.label = v;
+            else if (k == "repeat" && v == "always") w.repeat_always = true;
+        }
+        if (w.eip)
+            g_pal_watches.push_back(w);
+        else
+            fprintf(stderr, "[ctl] DUMPPAL potrebuje cond=eip:, preskakuji\n");
+    }
+    fclose(f);
+    if (!g_pal_watches.empty())
+        fprintf(stderr, "[ctl] DUMPPAL: %d sledovanych useku\n", (int)g_pal_watches.size());
+}
+
+static void ctl_check_dumppal() {
+    if (g_pal_watches.empty() || !g_ctl.out) return;
+    const unsigned int eip = (unsigned int)reg_eip;
+    for (auto& w : g_pal_watches) {
+        if (eip != w.eip) continue;
+        if (w.fired && !w.repeat_always) continue;
+        w.fired = true;
+        fprintf(g_ctl.out, "PAL %s cycle=%llu start=%u count=%u rgb=",
+                w.label.empty() ? "-" : w.label.c_str(), g_ctl.cycle, w.start, w.count);
+        for (unsigned int i = 0; i < w.count; i++) {
+            unsigned int idx = w.start + i;
+            if (idx > 0xFF) break;
+            fprintf(g_ctl.out, "%02X%02X%02X",
+                    (unsigned int)vga.dac.rgb[idx].red,
+                    (unsigned int)vga.dac.rgb[idx].green,
+                    (unsigned int)vga.dac.rgb[idx].blue);
+        }
+        fprintf(g_ctl.out, "\n");
+        fflush(g_ctl.out);
+    }
+}
+
 static void ctl_check_dumpmem() {
     if (g_mem_watches.empty() || !g_ctl.out) return;
     const unsigned int eip = (unsigned int)reg_eip;
@@ -255,6 +341,7 @@ static void ctl_init_once() {
     ctl_load_config(cfg_path, g_ctl_cfg);
     ctl_load_dumpregs(cfg_path);
     ctl_load_dumpmem(cfg_path);
+    ctl_load_dumppal(cfg_path);
 
     g_ctl.symbols = g_watch_symbols;
     g_ctl.symbols_count = g_watch_symbols_count;
@@ -273,6 +360,8 @@ void enginestep() {
     ctl_check_dumpregs();
     // DUMPMEM body (vypis pameti pri zasahu EIP) - viz komentar u MemWatch.
     ctl_check_dumpmem();
+    // DUMPPAL body (vypis skutecne VGA DAC palety pri zasahu EIP) - viz PalWatch.
+    ctl_check_dumppal();
 
     // EIP/CYCLE/CHANGED/EQ/NEQ podminky se vyhodnocuji tady (kazdy krok).
     g_ctl.step(g_ctl_cfg, /*is_call_context=*/false, /*call_addr=*/0, (unsigned int)reg_eip);
