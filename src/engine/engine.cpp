@@ -40,6 +40,7 @@
 #include "engine_support.h"
 #include "InputRecorder.h"
 #include "vga.h"
+#include "keyboard.h"   // reorion2 vlna 26 pokr. 53: SENDKEY -> KEYBOARD_AddKey
 
 #include "ctl_common.h"
 
@@ -83,6 +84,16 @@ struct RegsWatch {
     unsigned int eax_value = 0;
     bool eax_mode = false;
     bool eax_was_match = false;  // stav hranoveho triggeru
+    // reorion2 vlna 25r-6: `cond=changed:0xADDR:W` - dumpne registry ve
+    // chvili, kdy se W-bajtova hodnota na ADDR zmeni. Na rozdil od
+    // stejnojmenne podminky u obecneho DUMP tady dostaneme i EIP, takze to
+    // odpovi na otazku "KTERY kod tuhle pamet prepsal" - presne to, co
+    // hledani zdroje zapisu do herniho backbufferu potrebuje.
+    unsigned int chg_addr = 0;
+    unsigned int chg_width = 1;
+    unsigned int chg_last = 0;
+    bool chg_mode = false;
+    bool chg_primed = false;
     std::string label;
 };
 static std::vector<RegsWatch> g_regs_watches;
@@ -113,15 +124,121 @@ static void ctl_load_dumpregs(const std::string& path) {
                 w.eax_mode = true;
                 w.eax_value = ctl_parse_hex_or_dec(v.substr(4));
             }
+            else if (k == "cond" && v.rfind("changed:", 0) == 0) {
+                // changed:0xADDR[:W]
+                std::string rest = v.substr(8);
+                size_t colon = rest.find(':');
+                w.chg_mode = true;
+                w.chg_addr = ctl_parse_hex_or_dec(colon == std::string::npos ? rest : rest.substr(0, colon));
+                w.chg_width = (colon == std::string::npos) ? 1u : ctl_parse_hex_or_dec(rest.substr(colon + 1));
+                if (w.chg_width != 1 && w.chg_width != 2 && w.chg_width != 4) w.chg_width = 1;
+            }
             else if (k == "label")
                 w.label = v;
         }
-        if (w.eip || w.eax_mode) g_regs_watches.push_back(w);
-        else fprintf(stderr, "[ctl] DUMPREGS bez platne cond=eip:/eax:, preskakuji\n");
+        if (w.eip || w.eax_mode || w.chg_mode) g_regs_watches.push_back(w);
+        else fprintf(stderr, "[ctl] DUMPREGS bez platne cond=eip:/eax:/changed:, preskakuji\n");
     }
     fclose(f);
     if (!g_regs_watches.empty())
         fprintf(stderr, "[ctl] DUMPREGS: %d sledovanych EIP bodu\n", (int)g_regs_watches.size());
+}
+
+// ---- SENDKEY: umely stisk klavesy (reorion2 vlna 26 pokr. 53) ----
+// Radek "SENDKEY cond=cycle_ge:N key=space [hold=200000] [label=x]" (nebo
+// "cond=eip:0xADDR") stiskne a po `hold` cyklech pusti danou klavesu.
+// K cemu to je: nektere useky hry se rozbehnou az po vstupu hrace (SPACE
+// preskoci intro a teprve pak se prehraje animace otevirajiciho se menu).
+// Bez tohohle se do nich automatizovany beh vubec nedostane a trace zustane
+// prazdny. Jde pres KEYBOARD_AddKey, tedy pres skutecny radic klavesnice -
+// hra to vidi jako normalni scancode, vcetne sve vlastni ISR.
+// Kazdy watch se spusti JEN JEDNOU (chceme jeden stisk, ne autorepeat).
+struct KeyWatch {
+    unsigned int eip = 0;          // 0 = neni eip watch
+    unsigned long long cycle = 0;  // 0 = neni cycle watch
+    unsigned long long hold = 200000;
+    KBD_KEYS key = KBD_space;
+    bool fired = false;
+    bool released = false;
+    unsigned long long press_cycle = 0;
+    std::string label;
+};
+static std::vector<KeyWatch> g_key_watches;
+
+// Jen ty klavesy, ktere davaji smysl pro automatizaci menu/intra. Rozsiruj
+// podle potreby - jmena odpovidaji enum KBD_KEYS v include/keyboard.h.
+static bool ctl_parse_key(const std::string& name, KBD_KEYS& out) {
+    if (name == "space")  { out = KBD_space;  return true; }
+    if (name == "enter")  { out = KBD_enter;  return true; }
+    if (name == "esc")    { out = KBD_esc;    return true; }
+    if (name == "q")      { out = KBD_q;      return true; }
+    if (name == "c")      { out = KBD_c;      return true; }
+    if (name == "s")      { out = KBD_s;      return true; }
+    if (name == "l")      { out = KBD_l;      return true; }
+    if (name == "m")      { out = KBD_m;      return true; }
+    if (name == "h")      { out = KBD_h;      return true; }
+    return false;
+}
+
+static void ctl_load_sendkey(const std::string& path) {
+    FILE* f = fopen(path.c_str(), "rt");
+    if (!f) return;
+    char linebuf[2048];
+    while (fgets(linebuf, sizeof(linebuf), f)) {
+        std::string line(linebuf);
+        size_t hash = line.find('#');
+        if (hash != std::string::npos) line = line.substr(0, hash);
+        auto toks = ctl_split_ws(line);
+        if (toks.empty()) continue;
+        std::string verb = toks[0];
+        for (auto& c : verb) c = (char)toupper((unsigned char)c);
+        if (verb != "SENDKEY") continue;
+
+        KeyWatch w;
+        bool key_ok = true;
+        for (size_t i = 1; i < toks.size(); i++) {
+            auto eq = toks[i].find('=');
+            if (eq == std::string::npos) continue;
+            std::string k = toks[i].substr(0, eq);
+            std::string v = toks[i].substr(eq + 1);
+            if (k == "cond" && v.rfind("eip:", 0) == 0)
+                w.eip = ctl_parse_hex_or_dec(v.substr(4));
+            else if (k == "cond" && v.rfind("cycle_ge:", 0) == 0)
+                w.cycle = (unsigned long long)ctl_parse_hex_or_dec(v.substr(9));
+            else if (k == "hold")
+                w.hold = (unsigned long long)ctl_parse_hex_or_dec(v);
+            else if (k == "key")
+                key_ok = ctl_parse_key(v, w.key);
+            else if (k == "label")
+                w.label = v;
+        }
+        if (!key_ok) { fprintf(stderr, "[ctl] SENDKEY: neznama klavesa, preskakuji\n"); continue; }
+        if (w.eip || w.cycle) g_key_watches.push_back(w);
+        else fprintf(stderr, "[ctl] SENDKEY bez platne cond=eip:/cycle_ge:, preskakuji\n");
+    }
+    fclose(f);
+    if (!g_key_watches.empty())
+        fprintf(stderr, "[ctl] SENDKEY: %d naplanovanych stisku\n", (int)g_key_watches.size());
+}
+
+static void ctl_check_sendkey() {
+    for (auto& w : g_key_watches) {
+        if (!w.fired) {
+            bool hit = (w.eip && (unsigned int)reg_eip == w.eip)
+                    || (w.cycle && g_ctl.cycle >= w.cycle);
+            if (!hit) continue;
+            w.fired = true;
+            w.press_cycle = g_ctl.cycle;
+            KEYBOARD_AddKey(w.key, true);
+            fprintf(stderr, "[ctl] SENDKEY %s: stisk v cyklu %llu (eip=%08X)\n",
+                    w.label.c_str(), (unsigned long long)g_ctl.cycle, (unsigned int)reg_eip);
+        } else if (!w.released && g_ctl.cycle >= w.press_cycle + w.hold) {
+            w.released = true;
+            KEYBOARD_AddKey(w.key, false);
+            fprintf(stderr, "[ctl] SENDKEY %s: pusteni v cyklu %llu\n",
+                    w.label.c_str(), (unsigned long long)g_ctl.cycle);
+        }
+    }
 }
 
 // ---- DUMPMEM: vypis useku emulovane pameti (vlna 13 reorion2) ----
@@ -396,10 +513,38 @@ static void ctl_check_dumpmem() {
     }
 }
 
+// Cteni emulovane pameti pro `cond=changed:` (ctl_read_mem je definovana az
+// nize, za trace_dosbox_symbols.gen.cpp).
+static unsigned int ctl_read_mem_raw(unsigned int addr, unsigned int width) {
+    switch (width) {
+        case 1: return (unsigned int)mem_readb(addr);
+        case 2: return (unsigned int)mem_readw(addr);
+        default: return (unsigned int)mem_readd(addr);
+    }
+}
+
 static void ctl_check_dumpregs() {
     if (g_regs_watches.empty() || !g_ctl.out) return;
     const unsigned int eip = (unsigned int)reg_eip;
     for (auto& w : g_regs_watches) {
+        if (w.chg_mode) {
+            unsigned int cur = ctl_read_mem_raw(w.chg_addr, w.chg_width);
+            if (!w.chg_primed) { w.chg_primed = true; w.chg_last = cur; continue; }
+            if (cur == w.chg_last) continue;
+            unsigned int prev = w.chg_last;
+            w.chg_last = cur;
+            unsigned int retc = (unsigned int)mem_readd(SegPhys(ss) + reg_esp);
+            fprintf(g_ctl.out,
+                    "REGS %s cycle=%llu eip=%08X CHANGED addr=%08X %0*X->%0*X"
+                    " eax=%08X ebx=%08X ecx=%08X edx=%08X esi=%08X edi=%08X ebp=%08X esp=%08X ret=%08X\n",
+                    w.label.empty() ? "-" : w.label.c_str(), g_ctl.cycle, eip, w.chg_addr,
+                    (int)(w.chg_width * 2), prev, (int)(w.chg_width * 2), cur,
+                    (unsigned int)reg_eax, (unsigned int)reg_ebx, (unsigned int)reg_ecx,
+                    (unsigned int)reg_edx, (unsigned int)reg_esi, (unsigned int)reg_edi,
+                    (unsigned int)reg_ebp, (unsigned int)reg_esp, retc);
+            fflush(g_ctl.out);
+            continue;
+        }
         if (w.eax_mode) {
             bool match = ((unsigned int)reg_eax == w.eax_value);
             bool edge = match && !w.eax_was_match;
@@ -462,6 +607,7 @@ static void ctl_init_once() {
     ctl_load_dumpmem(cfg_path);
     ctl_load_dumppal(cfg_path);
     ctl_load_dumpframe(cfg_path);
+    ctl_load_sendkey(cfg_path);
 
     g_ctl.symbols = g_watch_symbols;
     g_ctl.symbols_count = g_watch_symbols_count;
@@ -484,6 +630,8 @@ void enginestep() {
     ctl_check_dumppal();
     // DUMPFRAME body (hromadny snimek+paleta dump) - viz FrameWatch.
     ctl_check_dumpframe();
+    // SENDKEY body (umely stisk klavesy) - viz KeyWatch.
+    ctl_check_sendkey();
 
     // EIP/CYCLE/CHANGED/EQ/NEQ podminky se vyhodnocuji tady (kazdy krok).
     g_ctl.step(g_ctl_cfg, /*is_call_context=*/false, /*call_addr=*/0, (unsigned int)reg_eip);
