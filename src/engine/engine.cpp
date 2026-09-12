@@ -984,7 +984,7 @@ void enginestep() {
 //loadInStep(0x232BB4, 3);
 
 //writeseqall(0x2395d0, 0, 20);
-writeseqall(0x2285ff, 0, 3000);//save sequence after first load
+////writeseqall(0x2285ff, 0, 3000);//save sequence after first load
 //writeseqall(0x2285ff, 1600, 3000);//save sequence after first load
 //writeseqall(0x238A8A, 0);//save sequence after first load
 
