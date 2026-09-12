@@ -41,6 +41,7 @@
 #include "InputRecorder.h"
 #include "vga.h"
 #include "keyboard.h"   // reorion2 vlna 26 pokr. 53: SENDKEY -> KEYBOARD_AddKey
+#include "mouse.h"      // reorion2 vlna 121: SENDCLICK -> Mouse_CtlWarp
 
 #include "ctl_common.h"
 
@@ -156,6 +157,10 @@ static void ctl_load_dumpregs(const std::string& path) {
 struct KeyWatch {
     unsigned int eip = 0;          // 0 = neni eip watch
     unsigned long long cycle = 0;  // 0 = neni cycle watch
+    unsigned int after_eip = 0;      // 0 = neni "N cyklu po zasahu EIP"
+    unsigned long long delay = 0;    // pocet cyklu za after_eip
+    bool armed = false;
+    unsigned long long arm_cycle = 0;
     unsigned long long hold = 200000;
     KBD_KEYS key = KBD_space;
     bool fired = false;
@@ -205,6 +210,10 @@ static void ctl_load_sendkey(const std::string& path) {
                 w.eip = ctl_parse_hex_or_dec(v.substr(4));
             else if (k == "cond" && v.rfind("cycle_ge:", 0) == 0)
                 w.cycle = (unsigned long long)ctl_parse_hex_or_dec(v.substr(9));
+            else if (k == "after")
+                w.after_eip = ctl_parse_hex_or_dec(v);
+            else if (k == "delay")
+                w.delay = (unsigned long long)ctl_parse_hex_or_dec(v);
             else if (k == "hold")
                 w.hold = (unsigned long long)ctl_parse_hex_or_dec(v);
             else if (k == "key")
@@ -213,8 +222,8 @@ static void ctl_load_sendkey(const std::string& path) {
                 w.label = v;
         }
         if (!key_ok) { fprintf(stderr, "[ctl] SENDKEY: neznama klavesa, preskakuji\n"); continue; }
-        if (w.eip || w.cycle) g_key_watches.push_back(w);
-        else fprintf(stderr, "[ctl] SENDKEY bez platne cond=eip:/cycle_ge:, preskakuji\n");
+        if (w.eip || w.cycle || w.after_eip) g_key_watches.push_back(w);
+        else fprintf(stderr, "[ctl] SENDKEY bez platne cond=eip:/cycle_ge:/after=, preskakuji\n");
     }
     fclose(f);
     if (!g_key_watches.empty())
@@ -224,7 +233,19 @@ static void ctl_load_sendkey(const std::string& path) {
 static void ctl_check_sendkey() {
     for (auto& w : g_key_watches) {
         if (!w.fired) {
-            bool hit = (w.eip && (unsigned int)reg_eip == w.eip)
+            // after= + delay= je jedina PRENOSITELNA kotva mezi behy:
+            // pri cycles=auto se absolutni cislo cyklu lisi beh od behu
+            // o desitky milionu (zmereno - CONTINUE padl jednou na 121M,
+            // podruhe na 150M), takze cond=cycle_ge: na dlouhou cestu
+            // nefunguje. Odstup OD UDALOSTI uz stabilni je.
+            if (w.after_eip && !w.armed) {
+                if ((unsigned int)reg_eip != w.after_eip) continue;
+                w.armed = true;
+                w.arm_cycle = g_ctl.cycle;
+                continue;
+            }
+            bool hit = (w.after_eip && w.armed && g_ctl.cycle >= w.arm_cycle + w.delay)
+                    || (w.eip && (unsigned int)reg_eip == w.eip)
                     || (w.cycle && g_ctl.cycle >= w.cycle);
             if (!hit) continue;
             w.fired = true;
@@ -236,6 +257,117 @@ static void ctl_check_sendkey() {
             w.released = true;
             KEYBOARD_AddKey(w.key, false);
             fprintf(stderr, "[ctl] SENDKEY %s: pusteni v cyklu %llu\n",
+                    w.label.c_str(), (unsigned long long)g_ctl.cycle);
+        }
+    }
+}
+
+// ---- SENDCLICK: skriptovany klik mysi (vlna 121 reorion2) ----
+// Radek "SENDCLICK cond=cycle_ge:N x=50 y=446 [hold=C] [label=x] [button=0]".
+// V zadanem okamziku se kurzor teleportuje na herni pixel (x,y) v souradnicich
+// 640x480 a stiskne se tlacitko; po `hold` CYKLECH se pusti.
+//
+// K cemu to je: cely obsah hry za hlavni obrazovkou (zalozky COLONIES,
+// PLANETS, FLEETS, LEADERS, RACES, INFO) je dostupny JEN mysi - klavesove
+// zkratky na ne nevedou. Bez tohohle se dosboxova strana srovnani na tyhle
+// obrazovky vubec nedostane a porovnat s portem jde jen hvezdna mapa.
+// Konvence souradnic je schvalne stejna jako u REORION2_CLICK v portu, aby
+// sla obe strany ridit jednim seznamem bodu.
+//
+// POZOR: `hold` je v CYKLECH, ne v ms - jednotka je stejna jako u
+// cond=cycle_ge:. Prilis kratky stisk hra v dialozich nezaznamena (tataz
+// past jako REORION2_CLICK_HOLD v portu, viz PROGRESS.md vlna 98).
+struct ClickWatch {
+    unsigned int eip = 0;            // 0 = neni eip watch
+    unsigned long long cycle = 0;    // 0 = neni cycle watch
+    unsigned int after_eip = 0;      // 0 = neni "N cyklu po zasahu EIP"
+    unsigned long long delay = 0;    // pocet cyklu za after_eip
+    bool armed = false;
+    unsigned long long arm_cycle = 0;
+    unsigned long long hold = 2000000;
+    int x = 0, y = 0;
+    uint8_t button = 0;
+    bool fired = false;
+    bool released = false;
+    unsigned long long press_cycle = 0;
+    std::string label;
+};
+static std::vector<ClickWatch> g_click_watches;
+
+static void ctl_load_sendclick(const std::string& path) {
+    FILE* f = fopen(path.c_str(), "rt");
+    if (!f) return;
+    char linebuf[2048];
+    while (fgets(linebuf, sizeof(linebuf), f)) {
+        std::string line(linebuf);
+        size_t hash = line.find('#');
+        if (hash != std::string::npos) line = line.substr(0, hash);
+        auto toks = ctl_split_ws(line);
+        if (toks.empty()) continue;
+        std::string verb = toks[0];
+        for (auto& c : verb) c = (char)toupper((unsigned char)c);
+        if (verb != "SENDCLICK") continue;
+
+        ClickWatch w;
+        for (size_t i = 1; i < toks.size(); i++) {
+            auto eq = toks[i].find('=');
+            if (eq == std::string::npos) continue;
+            std::string k = toks[i].substr(0, eq);
+            std::string v = toks[i].substr(eq + 1);
+            if (k == "cond" && v.rfind("eip:", 0) == 0)
+                w.eip = ctl_parse_hex_or_dec(v.substr(4));
+            else if (k == "cond" && v.rfind("cycle_ge:", 0) == 0)
+                w.cycle = (unsigned long long)ctl_parse_hex_or_dec(v.substr(9));
+            else if (k == "after") w.after_eip = ctl_parse_hex_or_dec(v);
+            else if (k == "delay") w.delay = (unsigned long long)ctl_parse_hex_or_dec(v);
+            else if (k == "x") w.x = (int)ctl_parse_hex_or_dec(v);
+            else if (k == "y") w.y = (int)ctl_parse_hex_or_dec(v);
+            else if (k == "hold") w.hold = (unsigned long long)ctl_parse_hex_or_dec(v);
+            else if (k == "button") w.button = (uint8_t)ctl_parse_hex_or_dec(v);
+            else if (k == "label") w.label = v;
+        }
+        if (w.eip || w.cycle || w.after_eip) g_click_watches.push_back(w);
+        else fprintf(stderr, "[ctl] SENDCLICK bez platne cond=eip:/cycle_ge:/after=, preskakuji\n");
+    }
+    fclose(f);
+    if (!g_click_watches.empty())
+        fprintf(stderr, "[ctl] SENDCLICK: %d naplanovanych kliku\n", (int)g_click_watches.size());
+}
+
+static void ctl_check_sendclick() {
+    for (auto& w : g_click_watches) {
+        if (!w.fired) {
+            if (w.after_eip && !w.armed) {
+                if ((unsigned int)reg_eip != w.after_eip) continue;
+                w.armed = true;
+                w.arm_cycle = g_ctl.cycle;
+                continue;
+            }
+            bool hit = (w.after_eip && w.armed && g_ctl.cycle >= w.arm_cycle + w.delay)
+                    || (w.eip && (unsigned int)reg_eip == w.eip)
+                    || (w.cycle && g_ctl.cycle >= w.cycle);
+            if (!hit) continue;
+            w.fired = true;
+            w.press_cycle = g_ctl.cycle;
+            Mouse_CtlWarp(w.x, w.y);
+            if (w.hold == 0) {
+                w.released = true;   // hold=0 = jen presun kurzoru (hover)
+                fprintf(stderr, "[ctl] SENDCLICK %s: presun na %d,%d v cyklu %llu\n",
+                        w.label.c_str(), w.x, w.y, (unsigned long long)g_ctl.cycle);
+            } else {
+                Mouse_ButtonPressed(w.button);
+                fprintf(stderr, "[ctl] SENDCLICK %s: stisk na %d,%d v cyklu %llu (eip=%08X)\n",
+                        w.label.c_str(), w.x, w.y, (unsigned long long)g_ctl.cycle,
+                        (unsigned int)reg_eip);
+            }
+        } else if (!w.released && g_ctl.cycle >= w.press_cycle + w.hold) {
+            w.released = true;
+            // kurzor se pred pustenim jeste jednou dorovna - kdyby mezitim
+            // skutecna mys nad oknem posunula pozici, hra by videla pusteni
+            // jinde nez stisk a klik by propadl.
+            Mouse_CtlWarp(w.x, w.y);
+            Mouse_ButtonReleased(w.button);
+            fprintf(stderr, "[ctl] SENDCLICK %s: pusteni v cyklu %llu\n",
                     w.label.c_str(), (unsigned long long)g_ctl.cycle);
         }
     }
@@ -608,6 +740,7 @@ static void ctl_init_once() {
     ctl_load_dumppal(cfg_path);
     ctl_load_dumpframe(cfg_path);
     ctl_load_sendkey(cfg_path);
+    ctl_load_sendclick(cfg_path);
 
     g_ctl.symbols = g_watch_symbols;
     g_ctl.symbols_count = g_watch_symbols_count;
@@ -632,6 +765,8 @@ void enginestep() {
     ctl_check_dumpframe();
     // SENDKEY body (umely stisk klavesy) - viz KeyWatch.
     ctl_check_sendkey();
+    // SENDCLICK body (umely klik mysi) - viz ClickWatch.
+    ctl_check_sendclick();
 
     // EIP/CYCLE/CHANGED/EQ/NEQ podminky se vyhodnocuji tady (kazdy krok).
     g_ctl.step(g_ctl_cfg, /*is_call_context=*/false, /*call_addr=*/0, (unsigned int)reg_eip);

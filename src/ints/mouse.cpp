@@ -710,6 +710,28 @@ void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
     Mouse_AddEvent(MOUSE_HAS_MOVED);
 }
 
+/* ---- SENDCLICK: teleport kurzoru pro skriptovane behy (ctl harness) ----
+ * Mouse_CursorMoved() se neda pouzit - bere RELATIVNI pohyb v mickey a nad
+ * nim jeste jede skalovani citlivosti a "emulace kurzoru", takze vysledna
+ * pozice na pixel nesedi. Tady se pozice zapisuje primo do stavu INT 33h,
+ * tedy do tehoz mista, ze ktereho ji hra cte funkci 03h.
+ * Souradnice se zadavaji v HERNICH pixelech 640x480 - stejna konvence jako
+ * REORION2_CLICK na portovni strane, aby sly obe strany skriptovat stejne. */
+void Mouse_CtlWarp(int gx, int gy) {
+    if (mouse.max_x > 0 && mouse.max_y > 0) {
+        mouse.x = (float)gx * (float)(mouse.max_x + 1) / 640.0f;
+        mouse.y = (float)gy * (float)(mouse.max_y + 1) / 480.0f;
+    } else {
+        mouse.x = (float)gx;
+        mouse.y = (float)gy;
+    }
+    if (mouse.x > mouse.max_x) mouse.x = mouse.max_x;
+    if (mouse.x < mouse.min_x) mouse.x = mouse.min_x;
+    if (mouse.y > mouse.max_y) mouse.y = mouse.max_y;
+    if (mouse.y < mouse.min_y) mouse.y = mouse.min_y;
+    Mouse_AddEvent(MOUSE_HAS_MOVED);
+}
+
 uint8_t Mouse_GetButtonState(void) {
     return mouse.buttons;
 }
