@@ -31,6 +31,7 @@
 
 #include "engine_support.h"
 #include "InputRecorder.h"
+#include "mc2check.h"
 
 
 //#define TEST_NETWORK
@@ -441,6 +442,14 @@ void add_index(Bit32u adress) {
 void enginestep() {
     
     if (count == 0) {
+        mc2chk_init();
+        if (mc2chk_on) {
+            test_regression_level = mc2chk_level;
+            m_play_file = mc2chk_playfile;   // vychozi prazdne = zadny vstup
+            m_record_file = "";
+            lastwriteindexsequence = 0;      // sekvence si harness pise sam (MC2CHK_SEQ)
+            lastwriteindexseq_D41A0 = 0;
+        }
         #ifdef TEST_REGRESSIONS
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
             //addprocedurestop(0x238a3d, 0x33, true, true, 0x356038 + 0x7dba, 0x12345678);
@@ -1004,7 +1013,17 @@ void enginestep() {
             if(m_InputRecorder == nullptr)
             {
                 m_InputRecorder = new InputRecorder(m_play_file.c_str());
-                m_InputRecorder->StartPlayback();
+                const bool loaded = m_InputRecorder->StartPlayback();
+                if (mc2chk_on) {
+                    char msg[1024];
+                    if (loaded)
+                        snprintf(msg, sizeof(msg), "zaznam nacten: %s", m_InputRecorder->Describe().c_str());
+                    else
+                        snprintf(msg, sizeof(msg), "zaznam NEJDE nacist: %s", m_InputRecorder->m_LoadError.c_str());
+                    mc2chk_note(msg);
+                    // bez vstupu by beh vypadal jako uspech, jen by meril neco jineho
+                    if (!loaded) mc2chk_finish(5, "zaznam nejde nacist");
+                }
             }
         }else if(m_record_file.length() > 0)
         {
@@ -1028,7 +1047,12 @@ void enginestep() {
         //if(reg_eip == 0x1CC4A8) { after_first_procedure = true;DEBUG_EnableDebugger(); };//main
         //Bit32u new_value = mem_readd(SegPhys(ds) + 0x1ee994);
         //if((after_first_procedure)&&(old_value != new_value)){old_value = new_value;DEBUG_EnableDebugger();}
-        if(reg_eip == 0x1D0600)DEBUG_EnableDebugger();
+        // MC2CHK: pri automatickem mereni se do ladiciho rezimu skocit nesmi -
+        // DEBUG_EnableDebugger() zastavi procesor a beh skonci pres exit() bez hlasky.
+        if (reg_eip == 0x1D0600) {
+            if (mc2chk_on) mc2chk_stage(6, "EIP 0x1D0600 - ladici odchyt preskocen");
+            else DEBUG_EnableDebugger();
+        }
         //if(reg_eip)
         spyinspect();
         long tempReg_eip = reg_eip;
@@ -1081,11 +1105,18 @@ void enginestep() {
             }
             mousetest++;
         }*/
-        #ifdef TEST_REGRESSIONS
+        // MC2CHK: tytez patche jako TEST_REGRESSIONS, jen zapinane za behu
+        if (mc2chk_on)
+        {
         if (reg_eip == 0x236FE1) {//skip intro
+            mc2chk_stage(0, "faze 0x236FE1 - preskoceni intra");
             mem_writeb(0x2A51AD, 1);
             // x_BYTE_D41AD_skip_screen = 1
         }
+        if (reg_eip == 0x25c254) mc2chk_stage(1, "faze 0x25C254 - new game");
+        if (reg_eip == 0x2585b8) mc2chk_stage(2, "faze 0x2585B8 - vyber levelu");
+        if (reg_eip == 0x227af1) mc2chk_stage(3, "faze 0x227AF1 - init levelu");
+        if (reg_eip == 0x2368e0) mc2chk_stage(4, "faze 0x2368E0 - after load");
         if (reg_eip == 0x25c254) {//skip to new game
             //Bit32u str_E1BAC= mem_readd(0x2B2BAC);
             mem_writed(0x2B2BAC + 0, 0x258350);
@@ -1135,69 +1166,103 @@ void enginestep() {
             
             reg_eax = 1;
             //v1 = 1;
+            if (!mc2chk_started) { mc2chk_started = true; mc2chk_note("level vybran"); }
         }
-        #endif
-        if(autoClosePause && (reg_eip == 0x2285ff) && debugafterload)
+        }
+        if (mc2chk_on && (reg_eip == 0x2285ff)) {
+            mc2chk_stage(5, "faze 0x2285FF - prvni snimek herni smycky");
+            mc2chk_on_frame();
+        }
+        // MC2CHK: remc2 clears only the pause bit, once (the 0x1f8190 hook below);
+        // wiping the whole OptionsSettingFlag_24 every frame is not what it does
+        if(autoClosePause && !mc2chk_on && (reg_eip == 0x2285ff) && debugafterload)
         {
             mem_writeb(mem_readd(0x2A51A4)+0x18, 0);
         }
-        if(m_InputRecorder != nullptr)
+        // Recorded input.  Both hooks sit exactly where remc2 applies the same data, so a
+        // recording made in remc2 drives the original the way it drove the port:
+        //   0x232D2F  loc_51D2F, top of the per-player loop in sub_51BB0.  remc2 copies the
+        //             recorded bytes into playerInputs_0x6E3E[i] right before this point.
+        //   0x235AA4  sub_54A50 (InitialiseSpells) after the spell tables were cleared and
+        //             before the loop that clamps spell levels.  remc2 loads the recorded
+        //             spells at the same spot, so the clamping runs on them in both.
+        if(m_InputRecorder != nullptr && (reg_eip == 0x232d2f || reg_eip == 0x235aa4))
         {
-            Bit32u d41A0 = 0x356038;
-            uint32_t rand = mem_readd(d41A0 + 0x8);
-            int16_t numberOfPlayers_0xe = mem_readw(d41A0 + 0xe);
-            int16_t playerIndex = reg_edx;
-            Bit32u D41A0_0_array_type_str_0x2BDE = d41A0 + 0x2bde + (0x84C * playerIndex);
-            int playerIndex_0x00a = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
+            const Bit32u d41A0 = 0x356038;
+            const Bit32u playerRecords = d41A0 + 0x2bde;   // array_0x2BDE, 0x84C per player
+            const Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
+            const int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
 
-            int d41A0_0_playerInputs_0x6E3E = d41A0 + 0x6e3e + (0xa * playerIndex);
-            Bit32u x_D41A0_BYTEARRAY_4_struct = mem_readd(0x2a51a4);
-            int16_t levelNumber_43w = mem_readw(x_D41A0_BYTEARRAY_4_struct + 43);
-            int16_t levelIndex_0xc = mem_readw(D41A0_0_array_type_str_0x2BDE + 0xa);
-            int32_t turn_2BE0_11248 = mem_readd(D41A0_0_array_type_str_0x2BDE + 18);
-
-            if(m_InputRecorder->m_IsPlaying && (reg_eip == 0x232d2f))
+            if(reg_eip == 0x232d2f && !(mc2chk_on && mc2chk_noinput))
             {
-                RecordedEventTurn* eventTurn = m_InputRecorder->GetCurrentPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248);
+                // The loop walks the player records in EBX (add ebx,84Ch per iteration at
+                // 0x52D3E).  The index used to be taken from EDX, which here only holds what
+                // the loop condition left in it.
+                const long long rel = (long long)reg_ebx - (long long)playerRecords;
+                const int playerIndex = (int)(rel / 0x84C);
+                // remc2 looks every player up by the LOCAL player's turn counter
+                // (array_0x2BDE[LevelIndex_0xc].Turn_2BE0_11248 at +0x12), already
+                // incremented for this turn at 0x51C91.
+                const int16_t levelIndex_0xc = mem_readw(d41A0 + 0xc);
+                const int32_t turn = mem_readd(playerRecords + 0x84C * levelIndex_0xc + 0x12);
+                const Bit32u inputs = d41A0 + 0x6e3e + 0xa * playerIndex;
 
-                if(eventTurn != nullptr)
+                if(rel >= 0 && rel % 0x84C == 0 && playerIndex < 8)
                 {
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x0, eventTurn->Bytes[0]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x1, eventTurn->Bytes[1]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x2, eventTurn->Bytes[2]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x3, eventTurn->Bytes[3]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x4, eventTurn->Bytes[4]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x5, eventTurn->Bytes[5]);
-
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x6, eventTurn->Bytes[6]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x7, eventTurn->Bytes[7]);
-
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x8, eventTurn->Bytes[8]);
-                    mem_writeb(d41A0_0_playerInputs_0x6E3E + 0x9, eventTurn->Bytes[9]);
+                    if(m_InputRecorder->m_IsPlaying)
+                    {
+                        RecordedEventTurn* eventTurn = m_InputRecorder->GetCurrentPlayerActions(levelNumber_43w, playerIndex, turn);
+                        if(eventTurn != nullptr)
+                        {
+                            const Bit32u n = eventTurn->SizeBytes < 10 ? eventTurn->SizeBytes : 10;
+                            for(Bit32u k = 0; k < n; k++)
+                                mem_writeb(inputs + k, eventTurn->Bytes[k]);
+                            mc2chk_stage(7, "prehravani: prvni vstup ze zaznamu vlozen");
+                        }
+                    }
+                    if(m_InputRecorder->m_IsRecording)
+                    {
+                        uint8_t turnBytes[10];
+                        for(int k = 0; k < 10; k++)
+                            turnBytes[k] = mem_readb(inputs + k);
+                        m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn, sizeof(turnBytes), turnBytes);
+                    }
                 }
             }
-
-            if(m_InputRecorder->m_IsRecording && (reg_eip == 0x232d2f))
+            else if(reg_eip == 0x235aa4 && m_InputRecorder->m_IsPlaying && !(mc2chk_on && mc2chk_nospells))
             {
-                uint8_t turnBytes[10] = { 0,0,0,0,0,0,0,0,0,0 };
-
-                turnBytes[0] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x0);
-                turnBytes[1] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x1);
-                turnBytes[2] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x2);
-                turnBytes[3] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x3);
-                turnBytes[4] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x4);
-                turnBytes[5] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x5);
-                             
-                turnBytes[6] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x6);
-                turnBytes[7] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x7);
- 
-                turnBytes[8] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x8);
-                turnBytes[9] = mem_readb(d41A0_0_playerInputs_0x6E3E + 0x9);
-
-                m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn_2BE0_11248, sizeof(turnBytes), turnBytes);
+                // EDX holds arg_4 (mov edx,[ebp+arg_4] at 0x54A59): the player's record.
+                const long long rel = (long long)reg_edx - (long long)playerRecords;
+                const int playerIndex = (int)(rel / 0x84C);
+                RecordedEventPlayer* player = (rel >= 0 && rel % 0x84C == 0 && playerIndex < 8)
+                    ? m_InputRecorder->GetCurrentPlayer(levelNumber_43w, playerIndex) : nullptr;
+                if(player != nullptr && player->SpellsEnabled != nullptr)
+                {
+                    // dword_0x3E6_2BE4_12228 starts at 0x3E6 in the record; the offsets below
+                    // are the str_611 fields remc2 fills (SpellExperience_0x263 etc.).
+                    const Bit32u str164 = reg_edx + 0x3e6;
+                    for(int k = 0; k < 26; k++)
+                    {
+                        mem_writed(str164 + 0x263 + 4 * k, (Bit32u)player->SpellsExperience[k]);
+                        mem_writew(str164 + 0x333 + 2 * k, (Bit16u)player->SpellsEnabled[k]);
+                        mem_writeb(str164 + 0x39b + k, player->SpellIndexes[k]);
+                        mem_writeb(str164 + 0x41d + k, player->SpellLevels[k]);
+                    }
+                    if(mc2chk_on)
+                    {
+                        char msg[160];
+                        snprintf(msg, sizeof(msg), "prehravani: kouzla hrace %d nastavena ze zaznamu (level %d)", playerIndex, (int)levelNumber_43w);
+                        mc2chk_note(msg);
+                    }
+                }
             }
         }
 
+        // MC2CHK: konec hry - po startu levelu uz neni co merit, beh se ukonci sam
+        if (mc2chk_on && (reg_eip == 0x236FE6)) {
+            if (mc2chk_started) mc2chk_finish(0, "konec hry (EIP 0x236FE6)");
+            mc2chk_note("EIP 0x236FE6 - konec hry pred startem levelu");
+        }
         if(reg_eip == 0x236FE6 && m_InputRecorder != nullptr)
         {
             if(m_InputRecorder->m_IsPlaying)
@@ -1334,6 +1399,11 @@ void enginestep() {
         if (reg_eip == 0x1fb7a3) {//fix mouse special
             if ((debugafterload == 1) && (count_begin == 1)/* && (stage__4A190_0x6E8E >= minstage__4A190_0x6E8E)*/)
             {
+                if (mc2chk_on) {
+                    // as remc2 DoFixMouse: no buttons, every call
+                    mem_writed(0x35159c, 0);   // MouseButtonState_18059C
+                    mem_writew(0x35174c, 0);   // x_WORD_18074C_mouse_left2_button
+                }
                 if(debugcounter_1fb7a0<1000) {
                     //mem_writew(0x356038 + 0x36dec, 0x128);
                     //mem_writew(0x356038 + 0x36dec + 2, 0x7e);
@@ -1654,6 +1724,7 @@ void enginestep() {
             }
     }
     count++;
+    mc2chk_tick(count);
 }
 void saveactstate() {
     char name1[1024];
