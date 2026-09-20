@@ -96,6 +96,7 @@ std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/level-1-DosBox-Rec
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
+Bitu mc2_last_turn_tick = 0;//PIC_Ticks of the last played turn, read by Mouse_Blocked
 
 int stage__4A190_0x6E8E = 1;
 //int minstage__4A190_0x6E8E = 0x490;
@@ -397,6 +398,20 @@ void addspy() {
 
 long xcounter = 0;
 long xcounter2 = 0;
+
+// sub_616D0 as remc2 TransformPlayerColorIndex_616D0 (MP case 7: 6, original 7)
+static int mc2_transform_color(int index)
+{
+    if (index < 0 || index > 7) return 0;
+    if (mem_readb(mem_readd(0x2a51a4) + 0x16) & 0x10)
+    {
+        static const int mp[8] = { 0, 4, 1, 2, 5, 7, 3, 6 };
+        const Bit8u b = mem_readb(0x356038 + 0x84c * index + 0x3184);
+        return b <= 7 ? mp[b] : 0;
+    }
+    static const int sp[8] = { 0, 1, 4, 3, 2, 5, 7, 6 };
+    return sp[index];
+}
 
 bool killmouse = false;
 bool killmouse2 = false;
@@ -1195,6 +1210,7 @@ void enginestep() {
 
             if(reg_eip == 0x232d2f && !(mc2chk_on && mc2chk_noinput))
             {
+                mc2_last_turn_tick = PIC_Ticks;//the turns run: the host mouse stays out of a playback
                 // The loop walks the player records in EBX (add ebx,84Ch per iteration at
                 // 0x52D3E).  The index used to be taken from EDX, which here only holds what
                 // the loop condition left in it.
@@ -1225,7 +1241,7 @@ void enginestep() {
                         uint8_t turnBytes[10];
                         for(int k = 0; k < 10; k++)
                             turnBytes[k] = mem_readb(inputs + k);
-                        m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn, sizeof(turnBytes), turnBytes);
+                        m_InputRecorder->RecordPlayerActions(levelNumber_43w, playerIndex, turn, mem_readd(d41A0 + 0x8), sizeof(turnBytes), turnBytes);//D41A0.rand_0x8
                     }
                 }
             }
@@ -1373,6 +1389,14 @@ void enginestep() {
         if (reg_eip == 0x2368e4) {//fix load            
             mem_writed(0x3965c7, 0x35cf6e);
         }
+        // remc2 fixes of the original
+        if (reg_eip == 0x219488 || reg_eip == 0x2194de) {//219484/2194DA add di/dx,[eax+38h]: flag of the owner, remc2 AddHouse0A_2D_38330
+            const int16_t color = (int16_t)mem_readw(reg_eax + 0x38);
+            const Bit16u fixed = (Bit16u)(mc2_transform_color(color) - color);
+            if (reg_eip == 0x219488) reg_di += fixed; else reg_dx += fixed;
+        }
+        if (reg_eip == 0x242763 && reg_eax == 7 && (mem_readb(mem_readd(0x2a51a4) + 0x16) & 0x10) && (reg_edx & 0xff) == 7)//24275E mov eax,7: MP case 7
+            reg_eax = 6;
 
         /*if (reg_eip == 0x237bb0) {//setobjective
             mem_writeb(0x356038 + 0x3659C + 0 + 3, 2);

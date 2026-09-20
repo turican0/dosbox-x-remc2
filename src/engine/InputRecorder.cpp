@@ -5,17 +5,15 @@ using namespace std;
 
 // Layout of a recording, as remc2 writes it (little endian):
 //
-//   "MC2-HD-Recording"                          16 bytes
+//   "MC2-HD-RecordV03"                          16 bytes
 //   per level:
 //     uint16 Level, uint16 PlayerCount
+//     uint32 SaveCount, per save: uint32 Size, Size bytes (remc2 level start save, skipped)
 //     per player:
 //       uint16 PlayerIdx, uint32 TurnCount
-//       int16[26] SpellsEnabled, uint8[26] SpellIndexes,     <- only in the newer layout
+//       int16[26] SpellsEnabled, uint8[26] SpellIndexes,
 //       uint8[26] SpellLevels, int32[26] SpellsExperience       (208 bytes)
-//       per turn: uint32 Turn, uint32 SizeBytes, SizeBytes bytes of input
-//
-// The spell block was added later without changing the signature, so both layouts are
-// tried and the one that consumes the file exactly, with sane sizes, is taken.
+//       per turn: uint32 Turn, uint32 Rand, uint32 Rand, uint32 SizeBytes, SizeBytes bytes of input
 
 namespace
 {
@@ -165,7 +163,7 @@ void InputRecorder::RecordPlayerSpells(int level, int playerIdx, int16_t* spells
 	}
 }
 
-void InputRecorder::RecordPlayerActions(uint16_t level, uint16_t playerIdx, uint32_t turn, uint64_t sizeBytes, uint8_t* buffer)
+void InputRecorder::RecordPlayerActions(uint16_t level, uint16_t playerIdx, uint32_t turn, uint32_t rand, uint64_t sizeBytes, uint8_t* buffer)
 {
 	if (!m_IsRecording)
 		return;
@@ -183,6 +181,7 @@ void InputRecorder::RecordPlayerActions(uint16_t level, uint16_t playerIdx, uint
 		delete[] recorded->Bytes;
 	}
 	recorded->Turn = turn;
+	recorded->Rand = rand;
 	recorded->SizeBytes = (uint32_t)sizeBytes;
 	recorded->Bytes = new uint8_t[(size_t)sizeBytes];
 	memcpy(recorded->Bytes, buffer, (size_t)sizeBytes);
@@ -198,9 +197,9 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 	if (!eventsFile)
 		return false;
 
-	// Always the newer layout, so remc2 can read what DOSBox records.  Players without spell
-	// data get zeros, which is what remc2 would see from a wizard with no spells.
+	// no level saves: remc2 starts such a level without a load; players without spells get zeros
 	fwrite(m_FileSignature.c_str(), m_FileSignature.length(), 1, eventsFile);
+	const uint32_t saveCount = 0;
 	const int16_t zero16[kSpellCount] = { 0 };
 	const uint8_t zero8[kSpellCount] = { 0 };
 	const int32_t zero32[kSpellCount] = { 0 };
@@ -211,6 +210,7 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 		uint16_t playerCount = (uint16_t)level.second->Players->size();
 		fwrite(&levelNumber, sizeof(levelNumber), 1, eventsFile);
 		fwrite(&playerCount, sizeof(playerCount), 1, eventsFile);
+		fwrite(&saveCount, sizeof(saveCount), 1, eventsFile);
 
 		for (auto& playerIt : *level.second->Players)
 		{
@@ -228,6 +228,8 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 			{
 				RecordedEventTurn* turn = turnIt.second;
 				fwrite(&turn->Turn, sizeof(turn->Turn), 1, eventsFile);
+				fwrite(&turn->Rand, sizeof(turn->Rand), 1, eventsFile);
+				fwrite(&turn->Rand, sizeof(turn->Rand), 1, eventsFile);
 				fwrite(&turn->SizeBytes, sizeof(turn->SizeBytes), 1, eventsFile);
 				fwrite(turn->Bytes, turn->SizeBytes, 1, eventsFile);
 			}
@@ -236,7 +238,7 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 	return fclose(eventsFile) == 0;
 }
 
-bool InputRecorder::ParseRecording(const std::vector<uint8_t>& data, bool withSpells)
+bool InputRecorder::ParseRecording(const std::vector<uint8_t>& data)
 {
 	ClearInputEvents();
 	Reader r{ data, m_FileSignature.length() };
@@ -247,11 +249,19 @@ bool InputRecorder::ParseRecording(const std::vector<uint8_t>& data, bool withSp
 		uint16_t level = r.u16();
 		uint16_t playerCount = r.u16();
 		if (playerCount > kMaxPlayers) { m_LoadError = "player count out of range"; break; }
-
+		if (!r.has(4)) { m_LoadError = "truncated save count"; break; }
+		uint32_t saveCount = r.u32();
 		bool ok = true;
+		while (saveCount-- && ok)
+		{
+			if (!r.has(4)) { m_LoadError = "truncated save"; ok = false; break; }
+			const uint32_t saveSize = r.u32();
+			if (!r.has(saveSize)) { m_LoadError = "truncated save"; ok = false; break; }
+			r.p += saveSize;
+		}
 		for (uint16_t k = 0; k < playerCount && ok; k++)
 		{
-			if (!r.has(6 + (withSpells ? kSpellBlockSize : 0))) { m_LoadError = "truncated player header"; ok = false; break; }
+			if (!r.has(6 + kSpellBlockSize)) { m_LoadError = "truncated player header"; ok = false; break; }
 			uint16_t playerIdx = r.u16();
 			uint32_t turnCount = r.u32();
 			if (playerIdx >= kMaxPlayers) { m_LoadError = "player index out of range"; ok = false; break; }
@@ -260,34 +270,33 @@ bool InputRecorder::ParseRecording(const std::vector<uint8_t>& data, bool withSp
 			// same as remc2 does when a file holds a level twice.
 			const bool known = m_InputEvents->count(level) != 0 && m_InputEvents->at(level)->Players->count(playerIdx) != 0;
 			RecordedEventPlayer* player = EnsurePlayer(level, playerIdx);
-			if (withSpells)
+			int16_t enabled[kSpellCount];
+			uint8_t indexes[kSpellCount];
+			uint8_t levels[kSpellCount];
+			int32_t experience[kSpellCount];
+			for (int i = 0; i < kSpellCount; i++) enabled[i] = (int16_t)r.u16();
+			for (int i = 0; i < kSpellCount; i++) indexes[i] = data[r.p++];
+			for (int i = 0; i < kSpellCount; i++) levels[i] = data[r.p++];
+			for (int i = 0; i < kSpellCount; i++) experience[i] = (int32_t)r.u32();
+			if (!known)
 			{
-				int16_t enabled[kSpellCount];
-				uint8_t indexes[kSpellCount];
-				uint8_t levels[kSpellCount];
-				int32_t experience[kSpellCount];
-				for (int i = 0; i < kSpellCount; i++) enabled[i] = (int16_t)r.u16();
-				for (int i = 0; i < kSpellCount; i++) indexes[i] = data[r.p++];
-				for (int i = 0; i < kSpellCount; i++) levels[i] = data[r.p++];
-				for (int i = 0; i < kSpellCount; i++) experience[i] = (int32_t)r.u32();
-				if (!known)
-				{
-					player->SpellsEnabled = new int16_t[kSpellCount];
-					player->SpellIndexes = new uint8_t[kSpellCount];
-					player->SpellLevels = new uint8_t[kSpellCount];
-					player->SpellsExperience = new int32_t[kSpellCount];
-					memcpy(player->SpellsEnabled, enabled, sizeof(enabled));
-					memcpy(player->SpellIndexes, indexes, sizeof(indexes));
-					memcpy(player->SpellLevels, levels, sizeof(levels));
-					memcpy(player->SpellsExperience, experience, sizeof(experience));
-				}
+				player->SpellsEnabled = new int16_t[kSpellCount];
+				player->SpellIndexes = new uint8_t[kSpellCount];
+				player->SpellLevels = new uint8_t[kSpellCount];
+				player->SpellsExperience = new int32_t[kSpellCount];
+				memcpy(player->SpellsEnabled, enabled, sizeof(enabled));
+				memcpy(player->SpellIndexes, indexes, sizeof(indexes));
+				memcpy(player->SpellLevels, levels, sizeof(levels));
+				memcpy(player->SpellsExperience, experience, sizeof(experience));
 			}
 
 			for (uint32_t t = 0; t < turnCount; t++)
 			{
-				if (!r.has(8)) { m_LoadError = "truncated turn header"; ok = false; break; }
+				if (!r.has(16)) { m_LoadError = "truncated turn header"; ok = false; break; }
 				RecordedEventTurn* turn = new RecordedEventTurn();
 				turn->Turn = r.u32();
+				turn->Rand = r.u32();
+				r.u32();
 				turn->SizeBytes = r.u32();
 				if (turn->SizeBytes == 0 || turn->SizeBytes > kMaxTurnBytes || !r.has(turn->SizeBytes))
 				{
@@ -344,25 +353,12 @@ bool InputRecorder::LoadRecordingFile(const char* inputFileName)
 		return false;
 	}
 
-	if (ParseRecording(data, true))
-	{
-		m_HasSpells = true;
-		return true;
-	}
-	const std::string newerError = m_LoadError;
-	m_LoadError.clear();
-	if (ParseRecording(data, false))
-	{
-		m_HasSpells = false;
-		return true;
-	}
-	m_LoadError = "neither layout fits (with spells: " + newerError + "; without: " + m_LoadError + ")";
-	return false;
+	return ParseRecording(data);
 }
 
 std::string InputRecorder::Describe()
 {
-	std::string s = m_HasSpells ? "layout with spells" : "layout without spells";
+	std::string s = m_FileSignature;
 	char buf[128];
 	for (auto& level : *m_InputEvents)
 	{

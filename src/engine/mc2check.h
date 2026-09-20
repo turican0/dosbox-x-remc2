@@ -14,6 +14,9 @@
  *    MC2CHK_PLAY    soubor se zaznamem vstupu (prazdne = zadny vstup)
  *    MC2CHK_SEQ     adresar; kdyz je nastaveny, pise se kazdy snimek i do
  *                   sequence-002285FF-*.bin ve formatu regresnich testu remc2
+ *    MC2CHK_SEQZ    1 = misto .bin jen porovnavane oblasti (mapy, D41A0) do .binz,
+ *                   zmeny proti predchozimu snimku
+ *    MC2CHK_SEQ_SCREEN  1 = v .binz i obrazovka
  *    MC2CHK_NOINPUT 1 = ze zaznamu nevkladat vstupy hracu
  *    MC2CHK_NOSPELLS 1 = ze zaznamu nenastavovat kouzla
  *    MC2CHK_WATCH   linearni adresa (hex); kazda zmena hodnoty se zapise i s EIP
@@ -136,6 +139,44 @@ static bool   mc2chk_poke_done = false;
 static bool   mc2chk_rawstageptr = false;
 static int    mc2chk_stageptr_hits = 0;
 static Bit8u mc2chk_seqbuf[0x70000];
+/* .binz: "MC2SEQZ1", uint32 velikost snimku; za snimek uint32 delka a useky zmen proti
+ * predchozimu snimku (prvni proti nulam): varint stejnych, varint zmenenych, zmenene bajty */
+static bool   mc2chk_seqz = false;
+static bool   mc2chk_seqscreen = false;
+static Bit8u* mc2chk_seqprev[8];
+static Bit8u  mc2chk_seqout[2 * 0x70000 + 64];
+
+static Bit32u mc2chk_varint(Bit8u* out, Bit32u v) {
+    Bit32u n = 0;
+    for (; v >= 0x80; v >>= 7) out[n++] = (Bit8u)(v | 0x80);
+    out[n++] = (Bit8u)v;
+    return n;
+}
+
+static void mc2chk_seqz_frame(FILE* fp, const Bit8u* cur, Bit8u* prev, Bit32u size) {
+    Bit8u* out = mc2chk_seqout;
+    Bit32u n = 4, i = 0;
+    while (i < size) {
+        Bit32u start = i;
+        while (i < size && cur[i] == prev[i]) i++;
+        n += mc2chk_varint(out + n, i - start);
+        start = i;
+        while (i < size) {
+            if (cur[i] != prev[i]) { i++; continue; }
+            Bit32u j = i;
+            while (j < size && j < i + 4 && cur[j] == prev[j]) j++;
+            if (j < size && j < i + 4) { i = j; continue; }   /* kratka mezera se prepise */
+            break;
+        }
+        n += mc2chk_varint(out + n, i - start);
+        memcpy(out + n, cur + start, i - start);
+        n += i - start;
+    }
+    const Bit32u len = n - 4;
+    memcpy(out, &len, 4);
+    fwrite(out, 1, n, fp);
+    memcpy(prev, cur, size);
+}
 
 static void mc2chk_crcinit(void) {
     for (Bit32u i = 0; i < 256; i++) {
@@ -168,6 +209,8 @@ static void mc2chk_init(void) {
     strncpy(mc2chk_dumpdir, mc2chk_env("MC2CHK_DUMP", ""), sizeof(mc2chk_dumpdir) - 1);
     strncpy(mc2chk_playfile, mc2chk_env("MC2CHK_PLAY", ""), sizeof(mc2chk_playfile) - 1);
     strncpy(mc2chk_seqdir, mc2chk_env("MC2CHK_SEQ", ""), sizeof(mc2chk_seqdir) - 1);
+    mc2chk_seqz = atoi(mc2chk_env("MC2CHK_SEQZ", "0")) != 0;
+    mc2chk_seqscreen = atoi(mc2chk_env("MC2CHK_SEQ_SCREEN", "0")) != 0;
     mc2chk_noinput  = atoi(mc2chk_env("MC2CHK_NOINPUT", "0")) != 0;
     mc2chk_nospells = atoi(mc2chk_env("MC2CHK_NOSPELLS", "0")) != 0;
     mc2chk_rawstageptr = atoi(mc2chk_env("MC2CHK_RAWSTAGEPTR", "0")) != 0;
@@ -226,12 +269,20 @@ static void mc2chk_init(void) {
                 mc2chk_noinput ? " (BEZ vstupu)" : "", mc2chk_nospells ? " (BEZ kouzel)" : "");
     if (mc2chk_seqdir[0] != '\0') {
         for (int i = 0; i < MC2CHK_NSEQ; i++) {
+            const Bit32u base = mc2chk_seq[i].base;
+            if (mc2chk_seqz && base != 0x2DC4E0u && base != 0x356038u && !(mc2chk_seqscreen && base == 0x3AA0A4u))
+                continue;
             char path[600];
-            sprintf(path, "%s/sequence-002285FF-%08X.bin", mc2chk_seqdir, mc2chk_seq[i].base);
+            sprintf(path, "%s/sequence-002285FF-%08X.%s", mc2chk_seqdir, base, mc2chk_seqz ? "binz" : "bin");
             mc2chk_seq[i].fp = fopen(path, "wb");
             if (mc2chk_seq[i].fp == NULL) {
                 fprintf(stderr, "MC2CHK: nelze otevrit %s\n", path);
                 exit(3);
+            }
+            if (mc2chk_seqz) {
+                fwrite("MC2SEQZ1", 1, 8, mc2chk_seq[i].fp);
+                fwrite(&mc2chk_seq[i].size, 4, 1, mc2chk_seq[i].fp);
+                mc2chk_seqprev[i] = (Bit8u*)calloc(mc2chk_seq[i].size, 1);
             }
         }
         fprintf(mc2chk_fp, "# sekvence pro remc2: %s\n", mc2chk_seqdir);
@@ -481,12 +532,14 @@ static void mc2chk_on_frame(void) {
 
     if (mc2chk_seqdir[0] != '\0') {
         for (int i = 0; i < MC2CHK_NSEQ; i++) {
+            if (mc2chk_seq[i].fp == NULL) continue;
             MEM_BlockRead((PhysPt)mc2chk_seq[i].base, mc2chk_seqbuf, mc2chk_seq[i].size);
-            fwrite(mc2chk_seqbuf, 1, mc2chk_seq[i].size, mc2chk_seq[i].fp);
+            if (mc2chk_seqz) mc2chk_seqz_frame(mc2chk_seq[i].fp, mc2chk_seqbuf, mc2chk_seqprev[i], mc2chk_seq[i].size);
+            else fwrite(mc2chk_seqbuf, 1, mc2chk_seq[i].size, mc2chk_seq[i].fp);
         }
         /* prubezne na disk, at po padu zustane aspon vetsina snimku */
         if (mc2chk_frame % 100 == 99)
-            for (int i = 0; i < MC2CHK_NSEQ; i++) fflush(mc2chk_seq[i].fp);
+            for (int i = 0; i < MC2CHK_NSEQ; i++) if (mc2chk_seq[i].fp != NULL) fflush(mc2chk_seq[i].fp);
     }
 
     mc2chk_frame++;

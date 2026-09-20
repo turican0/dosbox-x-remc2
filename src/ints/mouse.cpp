@@ -38,6 +38,15 @@
 #include "support.h"
 #include "setup.h"
 #include "control.h"
+#include "../engine/InputRecorder.h"
+
+extern InputRecorder* m_InputRecorder;
+extern Bitu mc2_last_turn_tick;
+// MC2 playback of a recording: no host mouse while the turns run, as in remc2.  The menus
+// outside the level and the pause menu play no turns, so there the mouse works - without it
+// there is no way to reach a playback at all.
+static bool Mouse_Blocked() { return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying
+    && PIC_Ticks - mc2_last_turn_tick < 500; }
 
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
@@ -604,6 +613,7 @@ extern bool user_cursor_locked;
 
 /* FIXME: Re-test this code */
 void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
+    if (Mouse_Blocked()) return;
     extern bool Mouse_Vertical;
     float dx = xrel * mouse.pixelPerMickey_x;
     float dy = (Mouse_Vertical?-yrel:yrel) * mouse.pixelPerMickey_y;
@@ -835,6 +845,7 @@ void Mouse_Select(int x1, int y1, int x2, int y2, int w, int h, bool select) {
 #endif
 
 void Mouse_ButtonPressed(uint8_t button) {
+    if (Mouse_Blocked()) return;
     if (!IS_PC98_ARCH && KEYBOARD_AUX_Active()) {
         switch (button) {
             case 0:
@@ -892,6 +903,7 @@ void Mouse_ButtonPressed(uint8_t button) {
 }
 
 void Mouse_ButtonReleased(uint8_t button) {
+    if (Mouse_Blocked()) return;
     if (!IS_PC98_ARCH && KEYBOARD_AUX_Active()) {
         switch (button) {
             case 0:

@@ -3,10 +3,12 @@
 #
 #   .\run_replay.ps1 -Play C:\Users\vesely\Downloads\Level5-mine.dem -Frames 5410 -Seq
 #
-#   -Play     recording (.dem/.bin, both remc2 layouts - with or without spells)
+#   -Play     recording (.dem/.bin, remc2 layout MC2-HD-RecordV03)
 #   -Level    levelnumber_43w, 0-based.  Taken from the recording when left out
 #             (Level5-mine.dem stores 4).
 #   -Frames   how many frames of the game loop to record (EIP 0x2285FF)
+#   -SeqZ     like -Seq, but only the compared regions (maps, D41A0) as .binz: changes
+#             against the previous frame.  -SeqScreen adds the screen.
 #   -Seq      also write regressions/sequence-002285FF-*.bin, the files remc2 regression
 #             comparison reads (~750 KB per frame)
 #   -Dump     raw bytes of the watched regions for every frame (for tools that diff dumps)
@@ -23,6 +25,8 @@ param(
     [int]$Frames = 500,
     [string]$Tag = "",
     [switch]$Seq,
+    [switch]$SeqZ,
+    [switch]$SeqScreen,
     [switch]$Dump,
     [switch]$NoPlayback,   # recording only for the level number; the game gets no input
     [switch]$NoInputs,     # play the recording without the player inputs
@@ -52,7 +56,7 @@ $Play = (Resolve-Path $Play).Path
 
 # The recording starts with the 16-byte signature, then the level of its first block.
 $bytes = [System.IO.File]::ReadAllBytes($Play)
-if ([System.Text.Encoding]::ASCII.GetString($bytes, 0, 16) -ne "MC2-HD-Recording") {
+if ([System.Text.Encoding]::ASCII.GetString($bytes, 0, 16) -ne "MC2-HD-RecordV03") {
     throw "$Play is not a remc2 recording"
 }
 $recordedLevel = [BitConverter]::ToUInt16($bytes, 16)
@@ -77,6 +81,8 @@ $env:MC2CHK_PLAY   = if ($NoPlayback) { "" } else { $Play }
 $env:MC2CHK_NOINPUT  = if ($NoInputs) { "1" } else { "0" }
 $env:MC2CHK_NOSPELLS = if ($NoSpells) { "1" } else { "0" }
 $env:MC2CHK_SEQ    = ""
+$env:MC2CHK_SEQZ   = if ($SeqZ) { "1" } else { "0" }
+$env:MC2CHK_SEQ_SCREEN = if ($SeqScreen) { "1" } else { "0" }
 $env:MC2CHK_WATCH  = $Watch
 $env:MC2CHK_WATCH_SIZE = "$WatchSize"
 $env:MC2CHK_WATCH_FROM = "$WatchFrom"
@@ -86,7 +92,7 @@ $env:MC2CHK_TRACE_EAX = $TraceEax
 $env:MC2CHK_POKE   = $Poke
 $env:MC2CHK_RAWSTAGEPTR = if ($RawStagePtr) { "1" } else { "0" }
 $env:MC2CHK_DUMP   = ""
-if ($Seq) {
+if ($Seq -or $SeqZ) {
     $seqDir = Join-Path $runDir "regressions"
     New-Item -ItemType Directory $seqDir | Out-Null
     $env:MC2CHK_SEQ = $seqDir

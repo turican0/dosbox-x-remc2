@@ -11,6 +11,7 @@ struct RecordedEventHeader
 struct RecordedEventTurn
 {
 	uint32_t Turn = 0;
+	uint32_t Rand = 0;
 	uint32_t SizeBytes = 0;
 	uint8_t* Bytes = nullptr;
 
@@ -25,10 +26,7 @@ struct RecordedEventPlayer
 	uint16_t PlayerIdx = 0;
 	uint32_t TurnCount = 0;
 	std::map<uint32_t, RecordedEventTurn*>* Turns = nullptr;
-	// Spell state the player entered the level with (26 entries each).  remc2 stores it
-	// because a campaign carries spells over from the previous levels, so a level started
-	// directly would otherwise begin with a different wizard.  Null for recordings made
-	// before remc2 added the block.
+	// Spell state the player entered the level with (26 entries each).
 	int16_t* SpellsEnabled = nullptr;
 	uint8_t* SpellIndexes = nullptr;
 	uint8_t* SpellLevels = nullptr;
