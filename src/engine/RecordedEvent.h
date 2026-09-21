@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <map>
+#include <vector>
 
 struct RecordedEventHeader
 {
@@ -45,4 +46,5 @@ struct RecordedEvent
 {
 	RecordedEventHeader* Header = nullptr;
 	std::map<uint16_t, RecordedEventPlayer*>* Players = nullptr;
+	std::vector<std::vector<uint8_t>> Saves;//SLEV + SMAP of every level start, restarts included (remc2)
 };

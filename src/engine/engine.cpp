@@ -96,7 +96,20 @@ std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/level-1-DosBox-Rec
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
-Bitu mc2_last_turn_tick = 0;//PIC_Ticks of the last played turn, read by Mouse_Blocked
+Bitu mc2_last_turn_tick = 0;//PIC_Ticks of the last played turn
+
+// the switches of remc2 (sdlmain.cpp): --play_file, --record_file, --set_level (from 0), --all_spells
+std::string mc2_opt_play_file, mc2_opt_record_file;
+int mc2_opt_set_level = -1;
+bool mc2_opt_all_spells = false;
+static bool mc2_all_spells_pending = false;//the cheat goes with the first turn of a level
+
+// MC2 playback of a recording: no host mouse and keys while the turns run, as in remc2.  The menus
+// outside the level and the pause menu play no turns, so there the input works.
+bool MC2_PlaybackBlocksHostInput()
+{
+    return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && PIC_Ticks - mc2_last_turn_tick < 500;
+}
 
 int stage__4A190_0x6E8E = 1;
 //int minstage__4A190_0x6E8E = 0x490;
@@ -454,8 +467,191 @@ void add_index(Bit32u adress) {
     oneadress = adress;
 }
 
+// remc2 LoadLevelFromBuffer on the guest: the level start save of a recording, SLEV shadow + SMAP.
+// The shadow is D41A0 of the saving remc2: its pointers are host pointers, except the entity
+// lists (indexes) and the stages/events (offsets, sub_55100(1)); they are turned into guest ones.
+static bool mc2_load_level_save(const std::vector<uint8_t>& save)
+{
+    const Bit32u d41A0 = 0x356038;
+    const Bit32u shadowSize = 224791;               // sizeof(type_shadow_D41A0_BYTESTR_0)
+    const Bit32u d41A0Size = 0x36E16;               // the last byte of the shadow lies past D41A0
+    const Bit32u entities = d41A0 + 0x6e8e;         // struct_0x6E8E, 0xA8 per entity
+    const Bit32u entities30311 = d41A0 + 0x30311;   // terrain entity_0x30311, 20 per entity
+    const Bit32u smapSize = 0x70000;                // mapTerrainType_10B4E0 .. mapEntityIndex_15B4E0
+    if(save.size() != shadowSize + smapSize + 4802)
+        return false;
+
+    MEM_BlockWrite(0x2dc4e0, &save[shadowSize], smapSize);
+    MEM_BlockWrite(0x2c3cd0, &save[shadowSize + smapSize], 4802);//building_F2CD0x
+
+    // what LoadLevelFromBuffer keeps from the running game
+    const Bit32u liveEntity0A4 = mem_readd(entities + 0xa4);
+    const Bit32u liveEvent0 = mem_readd(d41A0 + 0x3664c + 0xa);
+    const Bit32u live36DF6 = mem_readd(d41A0 + 0x36df6);
+    uint8_t liveSettings[0x30];                     // m_GameSettings .. str_0x21B6
+    MEM_BlockRead(d41A0 + 0x218a, liveSettings, sizeof(liveSettings));
+    Bit32u liveNext[1000];                          // next_0: host pointer in the save, rebuilt every frame
+    Bit32u liveA0[1000], liveA4[1000];              // only for the check of the guest addresses below
+    for(int i = 0; i < 1000; i++)
+    {
+        liveNext[i] = mem_readd(entities + 0xa8 * i);
+        liveA0[i] = mem_readd(entities + 0xa8 * i + 0xa0);
+        liveA4[i] = mem_readd(entities + 0xa8 * i + 0xa4);
+    }
+
+    MEM_BlockWrite(d41A0, &save[0], d41A0Size);
+
+    for(int i = 0; i < 1000; i++)
+    {
+        mem_writed(entities + 0xa8 * i, liveNext[i]);
+        const Bit32u list246 = mem_readd(d41A0 + 0x246 + 4 * i);
+        mem_writed(d41A0 + 0x246 + 4 * i, list246 && list246 < 1000 ? entities + 0xa8 * list246 : 0);
+        const Bit32u list11EA = mem_readd(d41A0 + 0x11ea + 4 * i);
+        mem_writed(d41A0 + 0x11ea + 4 * i, list11EA && list11EA < 1000 ? entities + 0xa8 * list11EA : 0);
+    }
+
+    // sub_55100(2), 0x236100: stages and events
+    const uint8_t stageCount = mem_readb(d41A0 + 0x36e01);
+    for(int i = 0; i < stageCount; i++)
+    {
+        const Bit32u stage = d41A0 + 0x3654c + 10 * i;
+        const Bit32u offset = mem_readd(stage + 6);
+        const uint8_t type = mem_readb(stage);
+        if(!offset || type == 0 || type >= 5)
+            continue;
+        if(!(mem_readb(stage + 1) & 1))
+        {
+            if(type == 1 || type == 2 || type == 4)
+                mem_writed(stage + 6, entities30311 + offset);
+        }
+        else
+            mem_writed(stage + 6, entities + offset);
+    }
+    for(int j = 1; j < 50; j++)
+    {
+        const Bit32u event = d41A0 + 0x3664c + 39 * j;
+        if(mem_readb(event))
+            mem_writed(event + 0xa, entities + mem_readd(event + 0xa));
+    }
+    // stage vars stay offsets in sub_55100(2) (0x2361C9), LoadLevelFromBuffer converts them
+    const uint8_t stageVarCount = mem_readb(d41A0 + 0x36e00);
+    for(int i = 1; i <= stageVarCount; i++)
+    {
+        const Bit32u stageVar = d41A0 + 0x365f4 + 8 * i;
+        const uint8_t type = mem_readb(stageVar);
+        const Bit32u offset = mem_readd(stageVar + 4);
+        if(((type >= 3 && type <= 5) || type == 8 || type == 9) && !(mem_readb(stageVar + 1) & 2)
+            && offset && offset % 0xa8 == 0 && offset < 1000 * 0xa8)
+            mem_writed(stageVar + 4, entities + offset);
+    }
+
+    // sub_57680, 0x238680: dword_0xA4_164x and dword_0xA0_160x of the entities
+    const Bit32u saved36DF6 = mem_readd(d41A0 + 0x36df6);
+    for(int i = 1; i < 1000; i++)
+    {
+        const Bit32u entity = entities + 0xa8 * i;
+        if(mem_readd(entity + 0xa4) == 0x2c75e28)
+            mem_writed(entity + 0xa4, 0x2c52b0);   // unk_F42B0
+    }
+    const uint16_t players = mem_readw(d41A0 + 0xe);
+    for(int p = 0; p < players; p++)
+    {
+        const Bit32u player = d41A0 + 0x2bde + 0x84c * p;
+        mem_writed(entities + 0xa8 * mem_readw(player + 0xa) + 0xa4, player + 0x3e6);
+    }
+    for(int i = 1; i < 1000; i++)
+    {
+        const Bit32u entity = entities + 0xa8 * i;
+        if(mem_readb(entity + 0x3f))                // &str_D7BD6[(ptr - dword_0x36DF6) + 59]
+            mem_writed(entity + 0xa0, 0x2a8bd6 + 59 * 34 + (mem_readd(entity + 0xa0) - saved36DF6));
+    }
+
+    if(mc2chk_on)
+    {
+        int differA0 = 0, differA4 = 0;
+        for(int i = 1; i < 1000; i++)
+        {
+            if(!mem_readb(entities + 0xa8 * i + 0x3f))
+                continue;
+            differA0 += mem_readd(entities + 0xa8 * i + 0xa0) != liveA0[i];
+            differA4 += mem_readd(entities + 0xa8 * i + 0xa4) != liveA4[i];
+        }
+        char msg[160];
+        snprintf(msg, sizeof(msg), "level save loaded: entities with another dword_0xA0 %d, dword_0xA4 %d", differA0, differA4);
+        mc2chk_note(msg);
+    }
+
+    mem_writed(entities + 0xa4, liveEntity0A4);
+    mem_writed(d41A0 + 0x3664c + 0xa, liveEvent0);
+    mem_writed(d41A0 + 0x36df6, live36DF6);
+    MEM_BlockWrite(d41A0 + 0x218a, liveSettings, sizeof(liveSettings));
+    return true;
+}
+
+// remc2 SaveLevelToBuffer on the guest: the level start save of a recording, SLEV shadow + SMAP.
+// The pointers are what remc2 writes: entity lists as indexes, stages/events as offsets
+// (sub_55100(1)), the dummy dword_0xA4_164x as 0x2c75e28, dword_0x36DF6 = &str_D7BD6[59].
+static std::vector<uint8_t> mc2_save_level()
+{
+    const Bit32u d41A0 = 0x356038;
+    const Bit32u shadowSize = 224791;               // sizeof(type_shadow_D41A0_BYTESTR_0)
+    const Bit32u entities = d41A0 + 0x6e8e;
+    const Bit32u entities30311 = d41A0 + 0x30311;
+    const Bit32u smapSize = 0x70000;
+    std::vector<uint8_t> save(shadowSize + smapSize + 4802);
+    MEM_BlockRead(d41A0, &save[0], shadowSize);
+    MEM_BlockRead(0x2dc4e0, &save[shadowSize], smapSize);
+    MEM_BlockRead(0x2c3cd0, &save[shadowSize + smapSize], 4802);//building_F2CD0x
+    auto get = [&](Bit32u offset) { Bit32u v; memcpy(&v, &save[offset], 4); return v; };
+    auto put = [&](Bit32u offset, Bit32u v) { memcpy(&save[offset], &v, 4); };
+    auto isEntity = [&](Bit32u p) { return p >= entities && p < entities + 1000 * 0xa8; };
+
+    for(int i = 0; i < 1000; i++)
+    {
+        const Bit32u list246 = get(0x246 + 4 * i);
+        put(0x246 + 4 * i, list246 ? (list246 - entities) / 0xa8 : 0);
+        const Bit32u list11EA = get(0x11ea + 4 * i);
+        put(0x11ea + 4 * i, list11EA ? (list11EA - entities) / 0xa8 : 0);
+    }
+    const uint8_t stageCount = save[0x36e01];
+    for(int i = 0; i < stageCount; i++)
+    {
+        const Bit32u stage = 0x3654c + 10 * i;
+        const Bit32u pointer = get(stage + 6);
+        const uint8_t type = save[stage];
+        if(!pointer || type == 0 || type >= 5)
+            continue;
+        if(!(save[stage + 1] & 1))
+        {
+            if(type == 1 || type == 2 || type == 4)
+                put(stage + 6, pointer - entities30311);
+        }
+        else
+            put(stage + 6, pointer - entities);
+    }
+    const uint8_t stageVarCount = save[0x36e00];
+    for(int i = 1; i <= stageVarCount; i++)
+    {
+        const Bit32u stageVar = 0x365f4 + 8 * i;
+        const uint8_t type = save[stageVar];
+        if(((type >= 3 && type <= 5) || type == 8 || type == 9) && !(save[stageVar + 1] & 2) && isEntity(get(stageVar + 4)))
+            put(stageVar + 4, get(stageVar + 4) - entities);
+    }
+    for(int j = 1; j < 50; j++)
+    {
+        const Bit32u event = 0x3664c + 39 * j;
+        if(save[event])
+            put(event + 0xa, get(event + 0xa) - entities);
+    }
+    for(int i = 1; i < 1000; i++)
+        if(get(0x6e8e + 0xa8 * i + 0xa4) == 0x2c52b0)//unk_F42B0
+            put(0x6e8e + 0xa8 * i + 0xa4, 0x2c75e28);
+    put(0x36df6, 0x2a8bd6 + 59 * 34);
+    return save;
+}
+
 void enginestep() {
-    
+
     if (count == 0) {
         mc2chk_init();
         if (mc2chk_on) {
@@ -464,6 +660,13 @@ void enginestep() {
             m_record_file = "";
             lastwriteindexsequence = 0;      // sekvence si harness pise sam (MC2CHK_SEQ)
             lastwriteindexseq_D41A0 = 0;
+        }
+        else if (!mc2_opt_play_file.empty() || !mc2_opt_record_file.empty() || mc2_opt_set_level >= 0 || mc2_opt_all_spells)
+        {
+            m_play_file = mc2_opt_play_file;
+            m_record_file = mc2_opt_record_file;
+            if (mc2_opt_set_level >= 0)
+                test_regression_level = mc2_opt_set_level;
         }
         #ifdef TEST_REGRESSIONS
             //addprocedurestop(0x236F70, 0x0, true, true, 0x12345678, 0x12345678);
@@ -1120,8 +1323,8 @@ void enginestep() {
             }
             mousetest++;
         }*/
-        // MC2CHK: tytez patche jako TEST_REGRESSIONS, jen zapinane za behu
-        if (mc2chk_on)
+        // MC2CHK: tytez patche jako TEST_REGRESSIONS, jen zapinane za behu; --set_level jako v remc2
+        if (mc2chk_on || mc2_opt_set_level >= 0)
         {
         if (reg_eip == 0x236FE1) {//skip intro
             mc2chk_stage(0, "faze 0x236FE1 - preskoceni intra");
@@ -1201,6 +1404,22 @@ void enginestep() {
         //   0x235AA4  sub_54A50 (InitialiseSpells) after the spell tables were cleared and
         //             before the loop that clamps spell levels.  remc2 loads the recorded
         //             spells at the same spot, so the clamping runs on them in both.
+        // --all_spells: the cheat of the original (PlayerAction 0x1E, byte1 1: GiveAllSpells) as the
+        // input of the local player in the first turn of a level, so a recording carries it too
+        if(mc2_all_spells_pending && reg_eip == 0x232d2f)
+        {
+            const Bit32u playerRecords = 0x356038 + 0x2bde;
+            const long long rel = (long long)reg_ebx - (long long)playerRecords;
+            if(rel >= 0 && rel % 0x84C == 0 && rel / 0x84C == (long long)mem_readw(0x356038 + 0xc))
+            {
+                const Bit32u inputs = 0x356038 + 0x6e3e + 0xa * (Bit32u)(rel / 0x84C);
+                for(int k = 0; k < 10; k++)
+                    mem_writeb(inputs + k, 0);
+                mem_writeb(inputs, 0x1e);
+                mem_writeb(inputs + 1, 1);
+                mc2_all_spells_pending = false;
+            }
+        }
         if(m_InputRecorder != nullptr && (reg_eip == 0x232d2f || reg_eip == 0x235aa4))
         {
             const Bit32u d41A0 = 0x356038;
@@ -1234,6 +1453,18 @@ void enginestep() {
                             for(Bit32u k = 0; k < n; k++)
                                 mem_writeb(inputs + k, eventTurn->Bytes[k]);
                             mc2chk_stage(7, "prehravani: prvni vstup ze zaznamu vlozen");
+                            // the recorded rand_0x8 only checks the playback: the first turn of a level it differs in is logged
+                            static int randDiffersLevel = -1;
+                            if(eventTurn->Rand != 0 && eventTurn->Rand != mem_readd(d41A0 + 0x8) && randDiffersLevel != levelNumber_43w)
+                            {
+                                randDiffersLevel = levelNumber_43w;
+                                char msg[160];
+                                snprintf(msg, sizeof(msg), "playback differs from the recording: level %d turn %d rand %08X, recorded %08X",
+                                    (int)levelNumber_43w, (int)turn, (unsigned)mem_readd(d41A0 + 0x8), (unsigned)eventTurn->Rand);
+                                LOG_MSG("%s", msg);
+                                if(mc2chk_on)
+                                    mc2chk_note(msg);
+                            }
                         }
                     }
                     if(m_InputRecorder->m_IsRecording)
@@ -1273,6 +1504,58 @@ void enginestep() {
                 }
             }
         }
+
+        // 237BF0 add esp,4 (sub_56A30) / 237EB3 add esp,4 (sub_56D60): back from sub_60F00, the level
+        // is set up - remc2 RecordingLevelSave loads the save of the recording at this point
+        if(reg_eip == 0x237bf0 || reg_eip == 0x237eb3)
+        {
+            const int16_t level = mem_readw(mem_readd(0x2a51a4) + 43);//levelnumber_43w
+            if(m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying)
+            {
+                m_InputRecorder->LevelStarted(level);
+                const std::vector<uint8_t>* save = m_InputRecorder->GetLevelSave(level);
+                if(save != nullptr)
+                {
+                    const bool loaded = mc2_load_level_save(*save);
+                    if(mc2chk_on)
+                        mc2chk_note(loaded ? "level save of the recording loaded" : "level save of the recording has a wrong size");
+                }
+            }
+            else
+            {
+                if(m_InputRecorder != nullptr && m_InputRecorder->m_IsRecording)
+                {
+                    m_InputRecorder->RecordLevelSave(level, mc2_save_level());
+                    m_InputRecorder->SaveRecording();
+                }
+                if(mc2_opt_all_spells)
+                    mc2_all_spells_pending = true;
+            }
+        }
+        // 235D1C mov esp,ebp (end of sub_54A50): recording, the spells of the player as remc2
+        // InitialiseSpells_54A50 records them; [ebp+18h] = arg_4, the player's record
+        if(reg_eip == 0x235d1c && m_InputRecorder != nullptr && m_InputRecorder->m_IsRecording)
+        {
+            const Bit32u playerRecords = 0x356038 + 0x2bde;
+            const Bit32u record = mem_readd(reg_ebp + 0x18);
+            const long long rel = (long long)record - (long long)playerRecords;
+            if(rel >= 0 && rel % 0x84C == 0 && rel / 0x84C < 8)
+            {
+                const Bit32u str611 = record + 0x3e6;
+                int16_t enabled[26]; uint8_t indexes[26]; uint8_t levels[26]; int32_t experience[26];
+                for(int k = 0; k < 26; k++)
+                {
+                    enabled[k] = (int16_t)mem_readw(str611 + 0x333 + 2 * k);
+                    indexes[k] = mem_readb(str611 + 0x39b + k);
+                    levels[k] = mem_readb(str611 + 0x41d + k);
+                    experience[k] = (int32_t)mem_readd(str611 + 0x263 + 4 * k);
+                }
+                m_InputRecorder->RecordPlayerSpells(mem_readw(mem_readd(0x2a51a4) + 43), (int)(rel / 0x84C), enabled, indexes, levels, experience);
+            }
+        }
+        // 227948 call sub_53CC0 (back from sub_47320, the level is over): recording, the file as remc2 after GAMEPLAY_ENDED
+        if(reg_eip == 0x227948 && m_InputRecorder != nullptr && m_InputRecorder->m_IsRecording)
+            m_InputRecorder->SaveRecording();
 
         // MC2CHK: konec hry - po startu levelu uz neni co merit, beh se ukonci sam
         if (mc2chk_on && (reg_eip == 0x236FE6)) {
@@ -1397,6 +1680,8 @@ void enginestep() {
         }
         if (reg_eip == 0x242763 && reg_eax == 7 && (mem_readb(mem_readd(0x2a51a4) + 0x16) & 0x10) && (reg_edx & 0xff) == 7)//24275E mov eax,7: MP case 7
             reg_eax = 6;
+        if (reg_eip == 0x23d95c)//23D959 mov ebx,[ebp+arg_4]: revival, the death countdown (1200) is not left to the castle code
+            mem_writed(reg_ebx + 0x10, 0);
 
         /*if (reg_eip == 0x237bb0) {//setobjective
             mem_writeb(0x356038 + 0x3659C + 0 + 3, 2);

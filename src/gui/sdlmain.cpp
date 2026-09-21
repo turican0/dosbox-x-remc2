@@ -8799,6 +8799,10 @@ void DOSBox_ConsolePauseWait() {
 }
 
 bool usecfgdir = false;
+extern std::string mc2_opt_play_file, mc2_opt_record_file;//engine.cpp
+extern int mc2_opt_set_level;
+extern bool mc2_opt_all_spells;
+
 bool DOSBOX_parse_argv() {
     std::string optname,tmp;
     uint8_t disp2_color=0;
@@ -9083,6 +9087,22 @@ bool DOSBOX_parse_argv() {
         else if (optname == "socket") {
             if (!control->cmdline->NextOptArgv(tmp)) return false;
             socknum = std::stoi(tmp);
+        }
+        // MC2: the switches of remc2 (engine.cpp)
+        else if (optname == "play_file") {
+            if (!control->cmdline->NextOptArgv(tmp)) return false;
+            mc2_opt_play_file = tmp;
+        }
+        else if (optname == "record_file") {
+            if (!control->cmdline->NextOptArgv(tmp)) return false;
+            mc2_opt_record_file = tmp;
+        }
+        else if (optname == "set_level") {
+            if (!control->cmdline->NextOptArgv(tmp)) return false;
+            mc2_opt_set_level = atoi(tmp.c_str());
+        }
+        else if (optname == "all_spells") {
+            mc2_opt_all_spells = true;
         } else {
             printf("WARNING: Unknown option %s (first parsing stage)\n",optname.c_str());
         }

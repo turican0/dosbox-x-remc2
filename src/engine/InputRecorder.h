@@ -12,7 +12,9 @@ private:
 	const std::string m_FileSignature = "MC2-HD-RecordV03";
 	std::string m_FilePath;
 	std::map<uint16_t, RecordedEvent*>* m_InputEvents;
+	std::map<uint16_t, size_t> m_LevelStarts;//how often a level has started in this playback
 
+	RecordedEvent* EnsureLevel(uint16_t level);
 	RecordedEventPlayer* EnsurePlayer(uint16_t level, uint16_t playerIdx);
 	bool ParseRecording(const std::vector<uint8_t>& data);
 
@@ -34,6 +36,10 @@ public:
 
 	RecordedEventPlayer* GetCurrentPlayer(int level, int playerIdx);
 	RecordedEventTurn* GetCurrentPlayerActions(int level, int playerIdx, int turn);
+	void LevelStarted(uint16_t level);
+	void RecordLevelSave(uint16_t level, std::vector<uint8_t> save);//recording: the save of a level start
+	bool SaveRecording();//recording: the file so far, the recording goes on
+	const std::vector<uint8_t>* GetLevelSave(int level);//of the current start of the level
 	void RecordPlayerActions(uint16_t level, uint16_t playerIdx, uint32_t turn, uint32_t rand, uint64_t sizeBytes, uint8_t* buffer);
 	void RecordPlayerSpells(int level, int playerIdx, int16_t* spellsEnabled, uint8_t* spellIndexes, uint8_t* spellLevels, int32_t* spellsExperience);
 

@@ -8,7 +8,7 @@ using namespace std;
 //   "MC2-HD-RecordV03"                          16 bytes
 //   per level:
 //     uint16 Level, uint16 PlayerCount
-//     uint32 SaveCount, per save: uint32 Size, Size bytes (remc2 level start save, skipped)
+//     uint32 SaveCount, per save: uint32 Size, Size bytes (level start save, loaded as in remc2)
 //     per player:
 //       uint16 PlayerIdx, uint32 TurnCount
 //       int16[26] SpellsEnabled, uint8[26] SpellIndexes,
@@ -110,6 +110,30 @@ RecordedEventPlayer* InputRecorder::GetCurrentPlayer(int level, int playerIdx)
 	return m_InputEvents->at(level)->Players->at(playerIdx);
 }
 
+void InputRecorder::RecordLevelSave(uint16_t level, std::vector<uint8_t> save)
+{
+	if (m_IsRecording)
+		EnsureLevel(level)->Saves.push_back(std::move(save));
+}
+
+bool InputRecorder::SaveRecording()
+{
+	return SaveRecordingToFile(m_FilePath.c_str());
+}
+
+void InputRecorder::LevelStarted(uint16_t level)
+{
+	m_LevelStarts[level]++;
+}
+
+const std::vector<uint8_t>* InputRecorder::GetLevelSave(int level)
+{
+	const size_t start = m_LevelStarts[(uint16_t)level];
+	if (m_InputEvents->count(level) == 0 || start == 0 || m_InputEvents->at(level)->Saves.size() < start)
+		return nullptr;
+	return &m_InputEvents->at(level)->Saves[start - 1];
+}
+
 RecordedEventTurn* InputRecorder::GetCurrentPlayerActions(int level, int playerIdx, int turn)
 {
 	RecordedEventPlayer* player = GetCurrentPlayer(level, playerIdx);
@@ -119,7 +143,7 @@ RecordedEventTurn* InputRecorder::GetCurrentPlayerActions(int level, int playerI
 	return player->Turns->at(turn);
 }
 
-RecordedEventPlayer* InputRecorder::EnsurePlayer(uint16_t level, uint16_t playerIdx)
+RecordedEvent* InputRecorder::EnsureLevel(uint16_t level)
 {
 	if (m_InputEvents->count(level) == 0)
 	{
@@ -129,7 +153,12 @@ RecordedEventPlayer* InputRecorder::EnsurePlayer(uint16_t level, uint16_t player
 		event->Players = new std::map<uint16_t, RecordedEventPlayer*>();
 		m_InputEvents->insert({ level, event });
 	}
-	RecordedEvent* event = m_InputEvents->at(level);
+	return m_InputEvents->at(level);
+}
+
+RecordedEventPlayer* InputRecorder::EnsurePlayer(uint16_t level, uint16_t playerIdx)
+{
+	RecordedEvent* event = EnsureLevel(level);
 	if (event->Players->count(playerIdx) == 0)
 	{
 		RecordedEventPlayer* player = new RecordedEventPlayer();
@@ -197,9 +226,8 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 	if (!eventsFile)
 		return false;
 
-	// no level saves: remc2 starts such a level without a load; players without spells get zeros
+	// players without spells get zeros
 	fwrite(m_FileSignature.c_str(), m_FileSignature.length(), 1, eventsFile);
-	const uint32_t saveCount = 0;
 	const int16_t zero16[kSpellCount] = { 0 };
 	const uint8_t zero8[kSpellCount] = { 0 };
 	const int32_t zero32[kSpellCount] = { 0 };
@@ -210,7 +238,14 @@ bool InputRecorder::SaveRecordingToFile(const char* outputFileName)
 		uint16_t playerCount = (uint16_t)level.second->Players->size();
 		fwrite(&levelNumber, sizeof(levelNumber), 1, eventsFile);
 		fwrite(&playerCount, sizeof(playerCount), 1, eventsFile);
+		const uint32_t saveCount = (uint32_t)level.second->Saves.size();
 		fwrite(&saveCount, sizeof(saveCount), 1, eventsFile);
+		for (const auto& save : level.second->Saves)
+		{
+			const uint32_t saveSize = (uint32_t)save.size();
+			fwrite(&saveSize, sizeof(saveSize), 1, eventsFile);
+			fwrite(save.data(), 1, saveSize, eventsFile);
+		}
 
 		for (auto& playerIt : *level.second->Players)
 		{
@@ -257,6 +292,7 @@ bool InputRecorder::ParseRecording(const std::vector<uint8_t>& data)
 			if (!r.has(4)) { m_LoadError = "truncated save"; ok = false; break; }
 			const uint32_t saveSize = r.u32();
 			if (!r.has(saveSize)) { m_LoadError = "truncated save"; ok = false; break; }
+			EnsureLevel(level)->Saves.emplace_back(data.begin() + r.p, data.begin() + r.p + saveSize);
 			r.p += saveSize;
 		}
 		for (uint16_t k = 0; k < playerCount && ok; k++)

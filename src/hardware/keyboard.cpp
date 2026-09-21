@@ -1639,7 +1639,11 @@ static void KEYBOARD_TickHandler(void) {
     }
 }
 
+bool MC2_PlaybackBlocksHostInput();//engine.cpp
+
 void KEYBOARD_AddKey(KBD_KEYS keytype,bool pressed) {
+    if (pressed && MC2_PlaybackBlocksHostInput())//MC2 playback: no host keys, a release still goes through
+        return;
     if (IS_PC98_ARCH) {
         KEYBOARD_PC98_AddKey(keytype,pressed);
     }

@@ -40,13 +40,8 @@
 #include "control.h"
 #include "../engine/InputRecorder.h"
 
-extern InputRecorder* m_InputRecorder;
-extern Bitu mc2_last_turn_tick;
-// MC2 playback of a recording: no host mouse while the turns run, as in remc2.  The menus
-// outside the level and the pause menu play no turns, so there the mouse works - without it
-// there is no way to reach a playback at all.
-static bool Mouse_Blocked() { return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying
-    && PIC_Ticks - mc2_last_turn_tick < 500; }
+bool MC2_PlaybackBlocksHostInput();//engine.cpp
+static bool Mouse_Blocked() { return MC2_PlaybackBlocksHostInput(); }
 
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
