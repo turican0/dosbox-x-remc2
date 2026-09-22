@@ -1356,24 +1356,12 @@ void enginestep() {
             //if (unk_E17CC_str_0x194[test_regression_level].byte_18_act == 1)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 4u;
 
-                int retval = -1;
-                int ri = 0;
-                //Bit32u x_WORD_E2970x = mem_readd(0x2b3970+0);
-                if (!mem_readb(0x2b3970 + 17 * ri+12))
-                    retval=0;
-                if (retval == -1)
-                {
-                    while (test_regression_level != mem_readw(0x2b3970 + 17 * ri + 4))
-                    {
-                        ri++;
-                        if (!mem_readb(0x2b3970 + 17 * ri + 12))
-                            retval = 0;
-                    }
-                    if (retval == -1)
-                        retval= 0x2b3970 +17*ri;
-                }
-            //type_x_WORD_E2970* v46x = sub_824B0(x_D41A0_BYTEARRAY_4_struct.levelnumber_43w);
-            if((retval)&& mem_readb(retval + 12))
+            // 2634B0 sub_824B0: the secret portal of the level, the list ends with word [+0Ch] == 0
+            Bit32u portal = 0x2b3970;//unk_E2970, 11h per portal
+            while (mem_readw(portal + 0xc) != 0 && mem_readw(portal + 4) != (Bit16u)test_regression_level)
+                portal += 0x11;
+            // 2603F0 cmp word ptr [eax+0Ch],2 - only an active one
+            if (mem_readw(portal + 0xc) == 2)
                 mem_writeb(x_D41A0_BYTEARRAY_4_struct + 38545, mem_readb(x_D41A0_BYTEARRAY_4_struct + 38545) | 0x10u);
             //if (v46x && v46x->word_12 == 2)
             //    x_D41A0_BYTEARRAY_4_struct.setting_38545 |= 0x10u;
