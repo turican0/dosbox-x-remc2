@@ -31,6 +31,7 @@
 #include "timer.h"
 #include <math.h>
 #include "8255.h"
+#include "engine/engine.h"
 
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
@@ -1638,8 +1639,6 @@ static void KEYBOARD_TickHandler(void) {
         }
     }
 }
-
-bool MC2_PlaybackBlocksHostInput();//engine.cpp
 
 void KEYBOARD_AddKey(KBD_KEYS keytype,bool pressed) {
     if (pressed && MC2_PlaybackBlocksHostInput())//MC2 playback: no host keys, a release still goes through

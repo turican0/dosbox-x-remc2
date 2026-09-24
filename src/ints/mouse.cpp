@@ -39,9 +39,7 @@
 #include "setup.h"
 #include "control.h"
 #include "../engine/InputRecorder.h"
-
-bool MC2_PlaybackBlocksHostInput();//engine.cpp
-static bool Mouse_Blocked() { return MC2_PlaybackBlocksHostInput(); }
+#include "engine/engine.h"
 
 #if defined(_MSC_VER)
 # pragma warning(disable:4244) /* const fmath::local::uint64_t to double possible loss of data */
@@ -608,7 +606,7 @@ extern bool user_cursor_locked;
 
 /* FIXME: Re-test this code */
 void Mouse_CursorMoved(float xrel,float yrel,float x,float y,bool emulate) {
-    if (Mouse_Blocked()) return;
+    if (MC2_PlaybackBlocksHostInput()) return;
     extern bool Mouse_Vertical;
     float dx = xrel * mouse.pixelPerMickey_x;
     float dy = (Mouse_Vertical?-yrel:yrel) * mouse.pixelPerMickey_y;
@@ -840,7 +838,7 @@ void Mouse_Select(int x1, int y1, int x2, int y2, int w, int h, bool select) {
 #endif
 
 void Mouse_ButtonPressed(uint8_t button) {
-    if (Mouse_Blocked()) return;
+    if (MC2_PlaybackBlocksHostInput()) return;
     if (!IS_PC98_ARCH && KEYBOARD_AUX_Active()) {
         switch (button) {
             case 0:
@@ -898,7 +896,7 @@ void Mouse_ButtonPressed(uint8_t button) {
 }
 
 void Mouse_ButtonReleased(uint8_t button) {
-    if (Mouse_Blocked()) return;
+    if (MC2_PlaybackBlocksHostInput()) return;
     if (!IS_PC98_ARCH && KEYBOARD_AUX_Active()) {
         switch (button) {
             case 0:

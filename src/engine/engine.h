@@ -16,7 +16,7 @@ void saveactstate();
 void engine_ret(Bitu myreg_eip);
 
 void enginestep();
-
 void restart_calls();
+bool MC2_PlaybackBlocksHostInput();
 
 #endif

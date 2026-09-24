@@ -92,7 +92,7 @@ int debugafterload = 1;
 int count_begin = 1;//1
 bool autoClosePause = true;
 bool killMoveAndRotation = false;
-std::string m_play_file = "c:/prenos/dosbox-x-remc2/resources/level-1-DosBox-Recording.bin";
+std::string m_play_file = "";
 std::string m_record_file = "";
 
 InputRecorder* m_InputRecorder = nullptr;
@@ -103,13 +103,6 @@ std::string mc2_opt_play_file, mc2_opt_record_file;
 int mc2_opt_set_level = -1;
 bool mc2_opt_all_spells = false;
 static bool mc2_all_spells_pending = false;//the cheat goes with the first turn of a level
-
-// MC2 playback of a recording: no host mouse and keys while the turns run, as in remc2.  The menus
-// outside the level and the pause menu play no turns, so there the input works.
-bool MC2_PlaybackBlocksHostInput()
-{
-    return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && PIC_Ticks - mc2_last_turn_tick < 500;
-}
 
 int stage__4A190_0x6E8E = 1;
 //int minstage__4A190_0x6E8E = 0x490;
@@ -198,6 +191,13 @@ int test_regression_level = 21;
 
 Bit32u old_value = 0x123456;
 bool after_first_procedure = false;
+
+// MC2 playback of a recording: no host mouse and keys while the turns run, as in remc2.  The menus
+// outside the level and the pause menu play no turns, so there the input works.
+bool MC2_PlaybackBlocksHostInput()
+{
+    return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && PIC_Ticks - mc2_last_turn_tick < 500;
+}
 
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
@@ -1243,7 +1243,8 @@ void enginestep() {
                     if (!loaded) mc2chk_finish(5, "zaznam nejde nacist");
                 }
             }
-        }else if(m_record_file.length() > 0)
+        }
+        else if(m_record_file.length() > 0)
         {
             if(m_InputRecorder == nullptr)
             {
