@@ -91,9 +91,10 @@ saveInStep(0x232BB4, 1000);//save in step 1000 after start level
 int debugafterload = 1;
 int count_begin = 1;//1
 bool autoClosePause = true;
-bool killMoveAndRotation = false;
+bool killMoveAndRotation = false;//first type of kill mouse
 std::string m_play_file = "";
 std::string m_record_file = "";
+bool forceKillMouse=false;//second type of kill mouse
 
 InputRecorder* m_InputRecorder = nullptr;
 Bitu mc2_last_turn_tick = 0;//PIC_Ticks of the last played turn
@@ -1642,7 +1643,7 @@ void enginestep() {
                 findvaradr = 0x3aa0a4 + 0x7da0;
             }
         }*/
-        if (reg_eip == 0x237a30) {//kill mouses
+        if (reg_eip == 0x237a30 && (MC2_PlaybackBlocksHostInput() || forceKillMouse)) {//kill mouses
             killmouse = true;
             killmouse2 = true;
         }
