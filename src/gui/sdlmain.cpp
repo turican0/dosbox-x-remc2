@@ -111,6 +111,7 @@ void GFX_OpenGLRedrawScreen(void);
 #include "inout.h"
 #include "../dos/cdrom.h"
 #include "../ints/int10.h"
+#include "../engine/engine.h"
 #if !defined(HX_DOS)
 #if !defined(__MINGW32__) || defined(__MINGW64_VERSION_MAJOR)
 #include "whereami.c"
@@ -3080,6 +3081,15 @@ void GFX_CaptureMouse(void) {
 }
 
 void GFX_CaptureMouse(bool capture) {
+    // MC2: don't grab/lock the host cursor while a recording is being made or
+    // replayed - the mouse driver's own request for relative mode would
+    // otherwise still lock the cursor to the window (independently of
+    // MC2_PlaybackBlocksHostInput, which only blocks the resulting input
+    // events, not this capture). Releasing an already-held lock is still
+    // allowed, so this only suppresses newly *acquiring* the lock.
+    if (capture && MC2_RecordingOrPlaybackActive())
+        return;
+
     sdl.mouse.locked=capture;
     if (sdl.mouse.locked) {
 #if defined(C_SDL2)

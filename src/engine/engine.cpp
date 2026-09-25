@@ -199,6 +199,13 @@ bool MC2_PlaybackBlocksHostInput()
     return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && PIC_Ticks - mc2_last_turn_tick < 500;
 }
 
+// Unlike MC2_PlaybackBlocksHostInput() (only true in a short window around a turn),
+// this stays true for the whole recording/playback session - see engine.h.
+bool MC2_RecordingOrPlaybackActive()
+{
+    return m_InputRecorder != nullptr && (m_InputRecorder->m_IsRecording || m_InputRecorder->m_IsPlaying);
+}
+
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
     writesequencecodeadress[lastwriteindexsequence] = codeadress;
     writesequencecount[lastwriteindexsequence] = count;

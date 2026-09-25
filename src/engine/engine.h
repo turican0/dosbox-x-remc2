@@ -19,4 +19,12 @@ void enginestep();
 void restart_calls();
 bool MC2_PlaybackBlocksHostInput();
 
+// True while a recording is being made OR replayed (m_IsRecording || m_IsPlaying).
+// Used to stop DOSBox-X from grabbing/locking the host mouse cursor while a
+// recording tool (or MC2_PlaybackBlocksHostInput) is driving the input instead
+// of a human at the mouse - grabbing it would fight with external mouse
+// injection and gives no benefit since MC2_PlaybackBlocksHostInput already
+// keeps host input out of the emulated driver during playback turns.
+bool MC2_RecordingOrPlaybackActive();
+
 #endif
