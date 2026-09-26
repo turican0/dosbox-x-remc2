@@ -44,6 +44,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <string>
+#include "sequence_codec.h"
 #if defined(WIN32) || defined(_WIN32)
 #include <process.h>   /* _exit() */
 #define WIN32_LEAN_AND_MEAN
@@ -144,6 +146,9 @@ static Bit8u mc2chk_seqbuf[0x70000];
 static bool   mc2chk_seqz = false;
 static bool   mc2chk_seqscreen = false;
 static Bit8u* mc2chk_seqprev[8];
+/* The run writes "MC2SEQZ1" into <file>.z1tmp frame by frame; at its end the file becomes
+ * <file> in "MC2SEQZ4" (sequence_codec.h, the one format remc2 gets from DOSBox). */
+static char   mc2chk_seqpath[8][600];
 static Bit8u  mc2chk_seqout[2 * 0x70000 + 64];
 
 static Bit32u mc2chk_varint(Bit8u* out, Bit32u v) {
@@ -274,6 +279,9 @@ static void mc2chk_init(void) {
                 continue;
             char path[600];
             sprintf(path, "%s/sequence-002285FF-%08X.%s", mc2chk_seqdir, base, mc2chk_seqz ? "binz" : "bin");
+            strcpy(mc2chk_seqpath[i], path);
+            if (mc2chk_seqz)
+                strcat(path, ".z1tmp");
             mc2chk_seq[i].fp = fopen(path, "wb");
             if (mc2chk_seq[i].fp == NULL) {
                 fprintf(stderr, "MC2CHK: nelze otevrit %s\n", path);
@@ -310,6 +318,26 @@ static void mc2chk_stage(int idx, const char* what) {
 
 static bool mc2chk_finishing = false;
 
+/* The sequences closed; the .binz ones from <file>.z1tmp into <file> as "MC2SEQZ4",
+ * kept only when they give the same frames. */
+static void mc2chk_seq_close(void) {
+    for (int i = 0; i < MC2CHK_NSEQ; i++) {
+        if (mc2chk_seq[i].fp == NULL) continue;
+        fclose(mc2chk_seq[i].fp);
+        mc2chk_seq[i].fp = NULL;
+        if (!mc2chk_seqz) continue;
+        const std::string final_path = mc2chk_seqpath[i];
+        const std::string temp_path = final_path + ".z1tmp";
+        if (seqz::ConvertZ1ToZ4(temp_path, final_path) && seqz::SameFrames(temp_path, final_path))
+            remove(temp_path.c_str());
+        else {
+            remove(final_path.c_str());
+            fprintf(stderr, "MC2CHK: %s not converted to MC2SEQZ4, the frames stay in %s\n",
+                    final_path.c_str(), temp_path.c_str());
+        }
+    }
+}
+
 /* Konec behu - at uz radny nebo pres watchdog. */
 static void mc2chk_finish(int code, const char* why) {
     mc2chk_finishing = true;
@@ -319,8 +347,7 @@ static void mc2chk_finish(int code, const char* why) {
         fclose(mc2chk_fp);
         mc2chk_fp = NULL;
     }
-    for (int i = 0; i < MC2CHK_NSEQ; i++)
-        if (mc2chk_seq[i].fp != NULL) { fclose(mc2chk_seq[i].fp); mc2chk_seq[i].fp = NULL; }
+    mc2chk_seq_close();
     exit(code);
 }
 
@@ -379,6 +406,8 @@ static LONG WINAPI mc2chk_seh(EXCEPTION_POINTERS* ep) {
 #endif
 
 static void mc2chk_atexit(void) {
+    if (!mc2chk_finishing)
+        mc2chk_seq_close();//the frames written so far stay usable, as with MC2SEQZ1
     if (mc2chk_finishing || mc2chk_fp == NULL) return;
     fprintf(mc2chk_fp, "# NECEKANY KONEC: proces skoncil pres exit()/return,"
                        " ne nasim zpusobem (snimku %d z %d, krok %lld)\n",
