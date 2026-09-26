@@ -197,7 +197,8 @@ bool after_first_procedure = false;
 // outside the level and the pause menu play no turns, so there the input works.
 bool MC2_PlaybackBlocksHostInput()
 {
-    return m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying && PIC_Ticks - mc2_last_turn_tick < 500;
+    const bool playing = m_InputRecorder != nullptr && m_InputRecorder->m_IsPlaying;
+    return (playing || mc2chk_on) && PIC_Ticks - mc2_last_turn_tick < 500;
 }
 
 void writesequence(Bit32u codeadress, int count, int size, Bit32u dataadress, Bit32u savefrom=0) {
@@ -1380,6 +1381,8 @@ void enginestep() {
         if (mc2chk_on && (reg_eip == 0x2285ff)) {
             mc2chk_stage(5, "faze 0x2285FF - prvni snimek herni smycky");
             mc2chk_on_frame();
+            mc2_last_turn_tick = PIC_Ticks;//comparison run: no host input in the level
+
         }
         // MC2CHK: remc2 clears only the pause bit, once (the 0x1f8190 hook below);
         // wiping the whole OptionsSettingFlag_24 every frame is not what it does
@@ -1643,7 +1646,7 @@ void enginestep() {
                 findvaradr = 0x3aa0a4 + 0x7da0;
             }
         }*/
-        if (reg_eip == 0x237a30 && (MC2_PlaybackBlocksHostInput() || forceKillMouse)) {//kill mouses
+        if (reg_eip == 0x237a30 && (MC2_PlaybackBlocksHostInput() || forceKillMouse || mc2chk_on)) {//kill mouses
             killmouse = true;
             killmouse2 = true;
         }
