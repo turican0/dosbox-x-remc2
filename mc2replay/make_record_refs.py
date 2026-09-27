@@ -63,7 +63,8 @@ def run(job, conf):
     dst = os.path.join(REGRESSIONS, 'record%d' % record, 'level%d' % level)
     os.makedirs(dst, exist_ok=True)
     for name in os.listdir(os.path.join(run_dir, 'regressions')):
-        shutil.copy(os.path.join(run_dir, 'regressions', name), dst)
+        if name.endswith('.binz'):  # MC2SEQZ4; a <name>.z1tmp is left only when its conversion failed
+            shutil.copy(os.path.join(run_dir, 'regressions', name), dst)
     return '%s: %d frames, %s' % (tag, frames, end[0].strip() if end else 'NO END')
 
 
