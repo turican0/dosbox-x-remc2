@@ -125,6 +125,13 @@ static Bit32u mc2chk_watch_prev_eip = 0;
 static int    mc2chk_watch_hits = 0;
 static int    mc2chk_watch_from = 0;   /* zapisovat az od tohoto snimku */
 /* vypis registru na zvolenych adresach */
+/* MC2CHK_TEXREAD: file "EIP esi|ebp" per line - texture reads mov al,[ebx+reg] of sub_B6253; reads past the BLOCK atlas are logged */
+static Bit8u* mc2chk_texread_reg = NULL;          /* per EIP from MC2CHK_TEXREAD_BASE: 0 none, 1 esi, 2 ebp */
+static const Bit32u MC2CHK_TEXREAD_BASE = 0x290000u, MC2CHK_TEXREAD_SIZE = 0x20000u;
+static bool mc2chk_norender = false;          /* MC2CHK_NORENDER=1: the in-game DrawWorld calls of sub_2BE30 are skipped */
+static bool mc2chk_nowait = false;            /* MC2CHK_NOWAIT=1: sub_47320 does not wait 5 timer ticks per frame */
+static long long mc2chk_texread_past = 0;
+static long long mc2chk_texread_max = -1;
 static Bit32u mc2chk_trace_eip[8];
 static int    mc2chk_trace_hits[8];
 static int    mc2chk_trace_count = 0;
@@ -230,6 +237,20 @@ static void mc2chk_init(void) {
         for (char* tok = strtok(list, ","); tok != NULL && mc2chk_trace_count < 8; tok = strtok(NULL, ","))
             mc2chk_trace_eip[mc2chk_trace_count++] = (Bit32u)strtoul(tok, NULL, 16);
         mc2chk_trace_frame = atoi(mc2chk_env("MC2CHK_TRACE_FRAME", "-1"));
+        mc2chk_norender = atoi(mc2chk_env("MC2CHK_NORENDER", "0")) != 0;
+        mc2chk_nowait = atoi(mc2chk_env("MC2CHK_NOWAIT", "0")) != 0;
+        {
+            FILE* tf = fopen(mc2chk_env("MC2CHK_TEXREAD", ""), "rt");
+            if (tf != NULL) {
+                mc2chk_texread_reg = (Bit8u*)calloc(MC2CHK_TEXREAD_SIZE, 1);
+                char reg[8];
+                unsigned int eip;
+                while (fscanf(tf, "%x %7s", &eip, reg) == 2)
+                    if (eip >= MC2CHK_TEXREAD_BASE && eip < MC2CHK_TEXREAD_BASE + MC2CHK_TEXREAD_SIZE)
+                        mc2chk_texread_reg[eip - MC2CHK_TEXREAD_BASE] = strcmp(reg, "ebp") == 0 ? 2 : 1;
+                fclose(tf);
+            }
+        }
         const char* e = mc2chk_env("MC2CHK_TRACE_EAX", "");
         mc2chk_trace_eax_on = (*e != '\0');
         mc2chk_trace_eax = (Bit32u)strtoul(e, NULL, 16);
@@ -659,6 +680,26 @@ static void mc2chk_tick(long long stepcount) {
             if (mc2chk_fp != NULL)
                 fprintf(mc2chk_fp, "# POKE 0x%08X: 0x%02X -> 0x%02X (snimek %d, krok %lld)\n",
                         mc2chk_poke_addr[i], before, mc2chk_poke_val[i], mc2chk_frame, stepcount);
+        }
+    }
+
+    /* B6253 mov al,[ebx+esi|ebp]: a texture read past the end of the BLOCK atlas (pointer 2BAC2C, 26000h bytes) */
+    if (mc2chk_texread_reg != NULL && mc2chk_started && reg_eip >= MC2CHK_TEXREAD_BASE && reg_eip < MC2CHK_TEXREAD_BASE + MC2CHK_TEXREAD_SIZE) {
+        const Bit8u r = mc2chk_texread_reg[reg_eip - MC2CHK_TEXREAD_BASE];
+        if (r != 0 && mc2chk_fp != NULL) {
+            const Bit32u texture = r == 2 ? reg_ebp : reg_esi;
+            const Bit32u atlas = mem_readd(0x2BAC2Cu);
+            const Bit32u atlasEnd = atlas + 0x26000u;
+            if (texture >= atlas && texture < atlasEnd && texture + reg_ebx >= atlasEnd) {
+                const long long past = (long long)(texture + reg_ebx) - (long long)atlasEnd;
+                mc2chk_texread_past++;
+                if (past > mc2chk_texread_max || mc2chk_texread_past <= 5) {
+                    if (past > mc2chk_texread_max) mc2chk_texread_max = past;
+                    fprintf(mc2chk_fp, "# TEXREAD za koncem atlasu: snimek %d, IDA 0x%05X, dlazdice +0x%X, posun 0x%X, %lld B za koncem (celkem %lld)\n",
+                            mc2chk_frame, reg_eip - 0x1E1000u, texture - atlas, reg_ebx, past, mc2chk_texread_past);
+                    fflush(mc2chk_fp);
+                }
+            }
         }
     }
 

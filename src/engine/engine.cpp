@@ -1378,6 +1378,16 @@ void enginestep() {
             if (!mc2chk_started) { mc2chk_started = true; mc2chk_note("level vybran"); }
         }
         }
+        // Faster comparison runs (run_replay.ps1 -NoRender -NoWait, off by default). Verified: the .binz
+        // references are byte-identical with and without them, the game state does not depend on either.
+        // -NoRender: 20D049/20D654 call sub_411A0 (DrawWorld, the 3D view) in the in-game loop is skipped,
+        // the caller's add esp,20h that follows cleans the pushed arguments as usual.
+        if (mc2chk_on && mc2chk_norender && (reg_eip == 0x20d049 || reg_eip == 0x20d654))
+            reg_eip += 5;
+        // -NoWait: 228357 cmp esi,dword_17DB54 / ja - sub_47320 spins until 5 timer ticks passed since the
+        // last frame (most of the emulated time of a frame); jumping to 22835F skips the spin (~6x faster).
+        if (mc2chk_on && mc2chk_nowait && reg_eip == 0x228357)
+            reg_eip = 0x22835f;
         if (mc2chk_on && (reg_eip == 0x2285ff)) {
             mc2chk_stage(5, "faze 0x2285FF - prvni snimek herni smycky");
             mc2chk_on_frame();
@@ -1675,6 +1685,67 @@ void enginestep() {
             reg_eax = 6;
         if (reg_eip == 0x23d95c)//23D959 mov ebx,[ebp+arg_4]: revival, the death countdown (1200) is not left to the castle code
             mem_writed(reg_ebx + 0x10, 0);
+        /*
+         * Fixes of bugs of the ORIGINAL game: it reads uninitialized stack variables or memory it does not own.
+         * The value it gets is garbage that depends on the environment (stack left by earlier calls and by IRQ
+         * handlers, DOS addresses, the interrupt vector table), so the same recording can play differently
+         * between two DOSBox runs and remc2 can never match it. Each hook below gives the original the same
+         * defined value that remc2 uses at the same place, so the references (.binz) stay deterministic.
+         * When a hook is added or changed, regenerate the references of the affected recordings only
+         * (mc2replay/make_record_refs.py <record> --fast). Addresses: DOSBox linear = IDA + 0x1E1000.
+         */
+
+        // sub_30D50 (IDA 30D50), the three calls of sub_45DC0 at 211DFC/211E17/211E32 (IDA 30DFC/30E17/30E32):
+        // dl is the "type" argument of sub_45BE0, but the original never sets it - dl is left over from
+        // sub_10C40, the low byte of a DOS address. remc2 sub_30D50 passes type 0.
+        // cl is reloaded from [ebx+0Eh] because sub_10C80 (called on one path before) clobbers it.
+        if (reg_eip == 0x211dfc || reg_eip == 0x211e17 || reg_eip == 0x211e32) {
+            reg_edx &= ~0xFFu;
+            reg_ecx = (reg_ecx & ~0xFFu) | mem_readb(reg_ebx + 0x0E);
+        }
+
+        // sub_29A90 (IDA 29A90, class 5 model 27 creatures, action 233), right after 20AA96 sub esp,10h:
+        // var_10 is read (v34x: "if (v34x > 4)", "!(v34x & 1)") on paths where it was never written, var_C
+        // (v35x) likewise. The stack garbage differs between runs (timer IRQs write into the same stack),
+        // record033/034/036/037/041 diverged on it. remc2 sub_29A90: v34x = 0x355188 (the value seen most
+        // often in the original), v35x = 0.
+        if (reg_eip == 0x20aa99) {
+            mem_writed(reg_ebp - 0x10, 0x355188);
+            mem_writed(reg_ebp - 0x0C, 0);
+        }
+
+        // sub_6D5E0 = remc2 SetSpell_6D5E0 (IDA 6D5E0), at 24E614 loc_6D614 (after the clamp from above):
+        // the spell index al is signed (movsx) and only clamped from above. sub_5F890 (IDA 5F890, the end of
+        // a castle projectile) calls sub_6D880 with the WIZARD instead of the spell entity, so the index is
+        // the wizard's word_0x2C_44 - 1, e.g. -37 (record038 turn 6754). The original then reads
+        // byte_DA818 + model*50h + 2 + al*1Ah, 370h bytes before the spell table (half of a pointer of another
+        // table), and sets subSpellIndex/mana of the wizard from it. remc2 SetSpell_6D5E0: a negative index is 0.
+        if (reg_eip == 0x24e614 && (int8_t)reg_al < 0)
+            reg_al = 0;
+
+        // sub_161A0 (IDA 161A0, AI wizard), 1F7406 lea eax,[edi+4Ch] / call sub_581E0 / 1F7417 movsx eax,[edi+50h]:
+        // edi is the nearest other wizard; when none is found edi = 0 and the original takes the target
+        // position from linear address 4Ch..51h - the interrupt vectors 13h/14h (record038 turn 4670).
+        // remc2 sub_161A0 uses position 0,0,0, so the 6 bytes read as zeros here and are restored right
+        // after the last read (no interrupt uses INT 13h/14h in between).
+        static uint8_t ivt4c[6];
+        if (reg_eip == 0x1f7406 && reg_edi == 0)
+            for (int i = 0; i < 6; i++) {
+                ivt4c[i] = mem_readb(0x4c + i);
+                mem_writeb(0x4c + i, 0);
+            }
+        if (reg_eip == 0x1f741b && reg_edi == 0)
+            for (int i = 0; i < 6; i++)
+                mem_writeb(0x4c + i, ivt4c[i]);
+
+        // sub_26FF0 (IDA 26FF0, class 5 model 22), 20806C jmp loc_270A7 (before the loop over the chain):
+        // var_10 (v9x, the position passed to sub_1B7A0) is written only when sub_10C40 returns > 0 for an
+        // entity of the chain. When all return 0 the original passes stack garbage (record032 turn 5626: a
+        // pointer and a return address left by sub_271D0) and chooses z += 100h or z += 40h by it.
+        // remc2 sub_26FF0: v9x starts as the position of the entity itself.
+        if (reg_eip == 0x20806c)
+            for (int i = 0; i < 6; i++)
+                mem_writeb(reg_ebp - 0x10 + i, mem_readb(reg_ebx + 0x4C + i));
 
         /*if (reg_eip == 0x237bb0) {//setobjective
             mem_writeb(0x356038 + 0x3659C + 0 + 3, 2);

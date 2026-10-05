@@ -1,8 +1,8 @@
 """DOSBox references (.binz) for the remc2 level tests: the level started without any input.
 
-    python make_level_refs.py [levels...] [--frames N] [--jobs N]
+    python make_level_refs.py [levels...] [--frames N] [--jobs N] [--fast]
 
-Output: remc2-regression-test/memimages/regressions/level<L>/sequence-002285FF-*.binz.
+Output: remc2-regression-test/memimages/regressions/level<LLL>/sequence-002285FF-*.binz.
 The recording given to run_replay.ps1 only satisfies its check, -NoPlayback gives the game no input.
 """
 import concurrent.futures
@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 
-from make_record_refs import HERE, REGRESSIONS, worker_conf
+from make_record_refs import HERE, REGRESSIONS, FAST, worker_conf
 
 
 def any_recording():
@@ -28,14 +28,14 @@ def run(dem, level, frames, conf):
     tag = 'level%d_%df' % (level, frames)
     subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', os.path.join(HERE, 'run_replay.ps1'),
                     '-Play', dem, '-NoPlayback', '-Level', str(level - 1), '-Frames', str(frames), '-SeqZ', '-Tag', tag,
-                    '-Conf', conf, '-TimeoutSec', '36000'],
+                    '-Conf', conf, '-TimeoutSec', '36000'] + FAST,
                    capture_output=True, text=True)
     run_dir = os.path.join(HERE, 'work', 'runs', tag)
     end = [l for l in open(os.path.join(run_dir, 'frames.txt'), encoding='latin-1') if l.startswith('# konec')]
     done = sum(1 for l in open(os.path.join(run_dir, 'frames.txt'), encoding='latin-1') if not l.startswith('#'))
     if done != frames:
         return '%s: only %d of %d frames, reference kept' % (tag, done, frames)
-    dst = os.path.join(REGRESSIONS, 'level%d' % level)
+    dst = os.path.join(REGRESSIONS, 'level%03d' % level)
     os.makedirs(dst, exist_ok=True)
     for name in os.listdir(os.path.join(run_dir, 'regressions')):
         if name.endswith('.binz'):
@@ -45,6 +45,9 @@ def run(dem, level, frames, conf):
 
 def main():
     args = sys.argv[1:]
+    if '--fast' in args:
+        args.remove('--fast')
+        FAST.extend(['-NoWait', '-NoRender'])
     options = {'--jobs': 6, '--frames': 2000}
     for key in options:
         if key in args:
