@@ -483,7 +483,10 @@ static bool mc2_load_level_save(const std::vector<uint8_t>& save)
     if(save.size() != shadowSize + smapSize + 4802)
         return false;
 
-    MEM_BlockWrite(0x2dc4e0, &save[shadowSize], smapSize);
+    // 31C4E0 (x_BYTE_14B4E0) holds the sky of off_D41A8 now, sub_54660 loaded it: kept, a remc2 save has zeros there
+    const Bit32u skyOffset = 0x40000, skySize = 0x10000;
+    MEM_BlockWrite(0x2dc4e0, &save[shadowSize], skyOffset);
+    MEM_BlockWrite(0x2dc4e0 + skyOffset + skySize, &save[shadowSize + skyOffset + skySize], smapSize - skyOffset - skySize);
     MEM_BlockWrite(0x2c3cd0, &save[shadowSize + smapSize], 4802);//building_F2CD0x
 
     // what LoadLevelFromBuffer keeps from the running game

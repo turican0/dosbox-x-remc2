@@ -1,8 +1,8 @@
 """DOSBox references (.binz) for the remc2 level tests: the level started without any input.
 
-    python make_level_refs.py [levels...] [--frames N] [--jobs N] [--fast]
+    python make_level_refs.py [levels...] [--frames N] [--jobs N] [--fast] [--screen]
 
-Output: remc2-regression-test/memimages/regressions/level<LLL>/sequence-002285FF-*.binz.
+Output: remc2-regression-test/memimages/regressions/level<LLL>/sequence-002285FF-*.binz (--screen: C:/prenos/remc2-screens).
 The recording given to run_replay.ps1 only satisfies its check, -NoPlayback gives the game no input.
 """
 import concurrent.futures
@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import sys
 
-from make_record_refs import HERE, REGRESSIONS, FAST, worker_conf
+from make_record_refs import HERE, REGRESSIONS, FAST, worker_conf, common_options, store_references
 
 
 def any_recording():
@@ -35,20 +35,13 @@ def run(dem, level, frames, conf):
     done = sum(1 for l in open(os.path.join(run_dir, 'frames.txt'), encoding='latin-1') if not l.startswith('#'))
     if done != frames:
         return '%s: only %d of %d frames, reference kept' % (tag, done, frames)
-    dst = os.path.join(REGRESSIONS, 'level%03d' % level)
-    os.makedirs(dst, exist_ok=True)
-    for name in os.listdir(os.path.join(run_dir, 'regressions')):
-        if name.endswith('.binz'):
-            shutil.copy(os.path.join(run_dir, 'regressions', name), dst)
+    store_references(run_dir, 'level%03d' % level)
     return '%s: %d frames, %s' % (tag, frames, end[0].strip() if end else 'NO END')
 
 
 def main():
-    args = sys.argv[1:]
-    if '--fast' in args:
-        args.remove('--fast')
-        FAST.extend(['-NoWait', '-NoRender'])
-    options = {'--jobs': 6, '--frames': 2000}
+    args = common_options(sys.argv[1:])
+    options ={'--jobs': 6, '--frames': 2000}
     for key in options:
         if key in args:
             i = args.index(key)
