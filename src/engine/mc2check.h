@@ -17,6 +17,7 @@
  *    MC2CHK_SEQZ    1 = misto .bin jen porovnavane oblasti (mapy, D41A0) do .binz,
  *                   zmeny proti predchozimu snimku
  *    MC2CHK_SEQ_SCREEN  1 = v .binz i obrazovka
+ *    MC2CHK_HIRES   1 = level in 640x480 (key R at its start), the screen as 640x480
  *    MC2CHK_NOINPUT 1 = ze zaznamu nevkladat vstupy hracu
  *    MC2CHK_NOSPELLS 1 = ze zaznamu nenastavovat kouzla
  *    MC2CHK_WATCH   linearni adresa (hex); kazda zmena hodnoty se zapise i s EIP
@@ -152,6 +153,7 @@ static Bit8u mc2chk_seqbuf[0x70000];
  * predchozimu snimku (prvni proti nulam): varint stejnych, varint zmenenych, zmenene bajty */
 static bool   mc2chk_seqz = false;
 static bool   mc2chk_seqscreen = false;
+static bool   mc2chk_hires = false;
 static Bit8u* mc2chk_seqprev[8];
 /* The run writes "MC2SEQZ1" into <file>.z1tmp frame by frame; at its end the file becomes
  * <file> in "MC2SEQZ4" (sequence_codec.h, the one format remc2 gets from DOSBox). */
@@ -223,6 +225,9 @@ static void mc2chk_init(void) {
     strncpy(mc2chk_seqdir, mc2chk_env("MC2CHK_SEQ", ""), sizeof(mc2chk_seqdir) - 1);
     mc2chk_seqz = atoi(mc2chk_env("MC2CHK_SEQZ", "0")) != 0;
     mc2chk_seqscreen = atoi(mc2chk_env("MC2CHK_SEQ_SCREEN", "0")) != 0;
+    mc2chk_hires = atoi(mc2chk_env("MC2CHK_HIRES", "0")) != 0;
+    if (mc2chk_hires)
+        mc2chk_seq[2].size = 640u * 480u;//3AA0A4: the screen buffer of both modes
     mc2chk_noinput  = atoi(mc2chk_env("MC2CHK_NOINPUT", "0")) != 0;
     mc2chk_nospells = atoi(mc2chk_env("MC2CHK_NOSPELLS", "0")) != 0;
     mc2chk_rawstageptr = atoi(mc2chk_env("MC2CHK_RAWSTAGEPTR", "0")) != 0;

@@ -1537,6 +1537,8 @@ void enginestep() {
                 if(mc2_opt_all_spells)
                     mc2_all_spells_pending = true;
             }
+            if(mc2chk_hires)
+                mem_writeb(0x3516e4, 0x13);//LastPressedKey_1806E4 = R: ChangeSettings_1A970(16), 640x480 in the next frame
         }
         // 235D1C mov esp,ebp (end of sub_54A50): recording, the spells of the player as remc2
         // InitialiseSpells_54A50 records them; [ebp+18h] = arg_4, the player's record

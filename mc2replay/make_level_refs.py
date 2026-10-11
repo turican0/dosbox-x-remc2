@@ -1,8 +1,9 @@
 """DOSBox references (.binz) for the remc2 level tests: the level started without any input.
 
-    python make_level_refs.py [levels...] [--frames N] [--jobs N] [--fast] [--screen]
+    python make_level_refs.py [levels...] [--frames N] [--jobs N] [--fast] [--screen] [--hires]
 
-Output: remc2-regression-test/memimages/regressions/level<LLL>/sequence-002285FF-*.binz (--screen: C:/prenos/remc2-screens).
+Output: remc2-regression-test/memimages/regressions/level<LLL>/sequence-002285FF-*.binz (--screen: C:/prenos/remc2-screens,
+--hires: 640x480 in C:/prenos/remc2-screens-640).
 The recording given to run_replay.ps1 only satisfies its check, -NoPlayback gives the game no input.
 """
 import concurrent.futures

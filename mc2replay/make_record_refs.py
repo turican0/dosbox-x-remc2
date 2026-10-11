@@ -4,6 +4,7 @@
 
 --fast: run_replay.ps1 -NoWait -NoRender (no wait for the timer, no DrawWorld), ~6x faster, same .binz.
 --screen: also the screen (sequence-002285FF-003AA0A4.binz) for the renderer tests; the game draws then.
+--hires: as --screen in 640x480 (key R at the level start), into C:\prenos\remc2-screens-640.
 
 Recordings: remc2-regression-test/memimages/regressions/record<NNN>/*.dem (MC2-HD-RecordV03).
 Output: record<N>/level<L>/sequence-002285FF-*.binz in the repository.  Frames = turns of the level.
@@ -59,13 +60,14 @@ FAST = []  # ['-NoWait', '-NoRender'] with --fast; with --screen also -SeqScreen
 
 
 SCREENS = r'C:\prenos\remc2-screens'  # the screen references, too big for the repository (~12 KB a frame)
+SCREENS_640 = r'C:\prenos\remc2-screens-640'  # --hires: the levels in 640x480
 
 
 def store_references(run_dir, folder):
     """The .binz of a run into the repository (memimages/regressions/<folder>), with --screen only the screen
     into SCREENS/<folder> (remc2-regression-test --screens C:/prenos/remc2-screens)."""
     screen_only = '-SeqScreen' in FAST
-    dst = os.path.join(SCREENS if screen_only else REGRESSIONS, folder)
+    dst = os.path.join((SCREENS_640 if '-HiRes' in FAST else SCREENS) if screen_only else REGRESSIONS, folder)
     os.makedirs(dst, exist_ok=True)
     for name in os.listdir(os.path.join(run_dir, 'regressions')):
         if name.endswith('.binz') and (name.endswith('-003AA0A4.binz') == screen_only):
@@ -77,12 +79,14 @@ def common_options(args):
     --screen: the .binz also hold the screen (sequence-002285FF-003AA0A4.binz, the references of the renderers),
     so the game draws: --fast then only skips the wait for the timer."""
     fast = '--fast' in args
-    screen = '--screen' in args
-    args = [a for a in args if a not in ('--fast', '--screen')]
+    screen = '--screen' in args or '--hires' in args
+    args = [a for a in args if a not in ('--fast', '--screen', '--hires')]
     if fast:
         FAST.extend(['-NoWait'] if screen else ['-NoWait', '-NoRender'])
     if screen:
         FAST.append('-SeqScreen')
+    if '--hires' in sys.argv:
+        FAST.append('-HiRes')
     return args
 
 

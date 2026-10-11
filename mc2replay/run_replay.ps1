@@ -27,6 +27,7 @@ param(
     [switch]$Seq,
     [switch]$SeqZ,
     [switch]$SeqScreen,
+    [switch]$HiRes,         # the level in 640x480 (key R at its start), the screen as 640x480
     [switch]$Dump,
     [switch]$NoPlayback,   # recording only for the level number; the game gets no input
     [switch]$NoInputs,     # play the recording without the player inputs
@@ -87,6 +88,7 @@ $env:MC2CHK_NOSPELLS = if ($NoSpells) { "1" } else { "0" }
 $env:MC2CHK_SEQ    = ""
 $env:MC2CHK_SEQZ   = if ($SeqZ) { "1" } else { "0" }
 $env:MC2CHK_SEQ_SCREEN = if ($SeqScreen) { "1" } else { "0" }
+$env:MC2CHK_HIRES = if ($HiRes) { "1" } else { "0" }
 $env:MC2CHK_WATCH  = $Watch
 $env:MC2CHK_WATCH_SIZE = "$WatchSize"
 $env:MC2CHK_WATCH_FROM = "$WatchFrom"
