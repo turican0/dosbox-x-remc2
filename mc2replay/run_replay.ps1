@@ -27,6 +27,7 @@ param(
     [switch]$Seq,
     [switch]$SeqZ,
     [switch]$SeqScreen,
+    [switch]$HiRes,         # the level in 640x480 (key R at its start), the screen as 640x480
     [switch]$Dump,
     [switch]$NoPlayback,   # recording only for the level number; the game gets no input
     [switch]$NoInputs,     # play the recording without the player inputs
@@ -40,12 +41,16 @@ param(
     [int]$TraceFrame = -1,  # only in this frame
     [string]$TraceEax = "", # only when EAX holds this value (hex)
     [string]$Poke = "",     # "addr=value,..." (hex bytes) written once when the level is chosen
-    [switch]$RawStagePtr    # let sub_12780 dereference stale StageVars2 offsets as the original does
+    [switch]$RawStagePtr,   # let sub_12780 dereference stale StageVars2 offsets as the original does
+    [string]$TexRead = "",  # file "EIP esi|ebp": texture reads of sub_B6253, reads past the BLOCK atlas are logged
+    [switch]$NoRender,      # skip the in-game DrawWorld (sub_411A0) - faster, the game state does not depend on it
+    [switch]$NoWait,        # the in-game loop does not wait 5 timer ticks per frame (228357)
+    [string]$Exe = ""       # dosbox-x.exe to run; bin\x64\Release\dosbox-x.exe when left out
 )
 
 $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
-$exe  = Join-Path (Split-Path -Parent $root) "bin\x64\Release\dosbox-x.exe"
+$exe  = if ($Exe) { (Resolve-Path $Exe).Path } else { Join-Path (Split-Path -Parent $root) "bin\x64\Release\dosbox-x.exe" }
 $conf = if ($Conf) { (Resolve-Path $Conf).Path } else { Join-Path $root "mc2replay.conf" }
 $game = Join-Path $root "work\game\NETHERW.EXE"
 
@@ -83,6 +88,7 @@ $env:MC2CHK_NOSPELLS = if ($NoSpells) { "1" } else { "0" }
 $env:MC2CHK_SEQ    = ""
 $env:MC2CHK_SEQZ   = if ($SeqZ) { "1" } else { "0" }
 $env:MC2CHK_SEQ_SCREEN = if ($SeqScreen) { "1" } else { "0" }
+$env:MC2CHK_HIRES = if ($HiRes) { "1" } else { "0" }
 $env:MC2CHK_WATCH  = $Watch
 $env:MC2CHK_WATCH_SIZE = "$WatchSize"
 $env:MC2CHK_WATCH_FROM = "$WatchFrom"
@@ -91,6 +97,9 @@ $env:MC2CHK_TRACE_FRAME = "$TraceFrame"
 $env:MC2CHK_TRACE_EAX = $TraceEax
 $env:MC2CHK_POKE   = $Poke
 $env:MC2CHK_RAWSTAGEPTR = if ($RawStagePtr) { "1" } else { "0" }
+$env:MC2CHK_TEXREAD = if ($TexRead) { (Resolve-Path $TexRead).Path } else { "" }
+$env:MC2CHK_NORENDER = if ($NoRender) { "1" } else { "0" }
+$env:MC2CHK_NOWAIT = if ($NoWait) { "1" } else { "0" }
 $env:MC2CHK_DUMP   = ""
 if ($Seq -or $SeqZ) {
     $seqDir = Join-Path $runDir "regressions"

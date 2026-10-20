@@ -1,8 +1,12 @@
 """DOSBox references (.binz) for the remc2 record tests: every level of every recording.
 
-    python make_record_refs.py [record numbers or record:level...] [--jobs N]
+    python make_record_refs.py [record numbers or record:level...] [--jobs N] [--fast] [--screen]
 
-Recordings: remc2-regression-test/memimages/regressions/record<N>/*.dem (MC2-HD-RecordV03).
+--fast: run_replay.ps1 -NoWait -NoRender (no wait for the timer, no DrawWorld), ~6x faster, same .binz.
+--screen: also the screen (sequence-002285FF-003AA0A4.binz) for the renderer tests; the game draws then.
+--hires: as --screen in 640x480 (key R at the level start), into C:\prenos\remc2-screens-640.
+
+Recordings: remc2-regression-test/memimages/regressions/record<NNN>/*.dem (MC2-HD-RecordV03).
 Output: record<N>/level<L>/sequence-002285FF-*.binz in the repository.  Frames = turns of the level.
 Every parallel run has its own copy of the game: the game writes NETHERW/CLEVELS and NETHERW/SAVE.
 """
@@ -52,23 +56,58 @@ def worker_conf(n):
     return conf
 
 
+FAST = []  # ['-NoWait', '-NoRender'] with --fast; with --screen also -SeqScreen and DrawWorld stays
+
+
+SCREENS = r'C:\prenos\remc2-screens'  # the screen references, too big for the repository (~12 KB a frame)
+SCREENS_640 = r'C:\prenos\remc2-screens-640'  # --hires: the levels in 640x480
+
+
+def store_references(run_dir, folder):
+    """The .binz of a run into the repository (memimages/regressions/<folder>), with --screen only the screen
+    into SCREENS/<folder> (remc2-regression-test --screens C:/prenos/remc2-screens)."""
+    screen_only = '-SeqScreen' in FAST
+    dst = os.path.join((SCREENS_640 if '-HiRes' in FAST else SCREENS) if screen_only else REGRESSIONS, folder)
+    os.makedirs(dst, exist_ok=True)
+    for name in os.listdir(os.path.join(run_dir, 'regressions')):
+        if name.endswith('.binz') and (name.endswith('-003AA0A4.binz') == screen_only):
+            shutil.copy(os.path.join(run_dir, 'regressions', name), dst)
+
+
+def common_options(args):
+    """--fast and --screen of both scripts; returns the other arguments.
+    --screen: the .binz also hold the screen (sequence-002285FF-003AA0A4.binz, the references of the renderers),
+    so the game draws: --fast then only skips the wait for the timer."""
+    fast = '--fast' in args
+    screen = '--screen' in args or '--hires' in args
+    args = [a for a in args if a not in ('--fast', '--screen', '--hires')]
+    if fast:
+        FAST.extend(['-NoWait'] if screen else ['-NoWait', '-NoRender'])
+    if screen:
+        FAST.append('-SeqScreen')
+    if '--hires' in sys.argv:
+        FAST.append('-HiRes')
+    return args
+
+
 def run(job, conf):
     record, dem, level, frames = job
     tag = 'record%d_L%d' % (record, level)
     subprocess.run(['powershell', '-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', os.path.join(HERE, 'run_replay.ps1'),
-                    '-Play', dem, '-Level', str(level - 1), '-Frames', str(frames), '-SeqZ', '-Tag', tag, '-Conf', conf, '-TimeoutSec', '36000'],
+                    '-Play', dem, '-Level', str(level - 1), '-Frames', str(frames), '-SeqZ', '-Tag', tag, '-Conf', conf, '-TimeoutSec', '36000'] + FAST,
                    capture_output=True, text=True)
     run_dir = os.path.join(HERE, 'work', 'runs', tag)
-    end = [l for l in open(os.path.join(run_dir, 'frames.txt'), encoding='latin-1') if l.startswith('# konec')]
-    dst = os.path.join(REGRESSIONS, 'record%d' % record, 'level%d' % level)
-    os.makedirs(dst, exist_ok=True)
-    for name in os.listdir(os.path.join(run_dir, 'regressions')):
-        shutil.copy(os.path.join(run_dir, 'regressions', name), dst)
+    lines = open(os.path.join(run_dir, 'frames.txt'), encoding='latin-1').readlines()
+    end = [l for l in lines if l.startswith('# konec')]
+    done = sum(1 for l in lines if not l.startswith('#'))
+    if not end or done != frames:  # an unfinished run leaves only *.z1tmp, the test would see no reference
+        return '%s: UNFINISHED, %d of %d frames, %s - reference not written' % (tag, done, frames, end[0].strip() if end else 'no end')
+    store_references(run_dir, os.path.join('record%03d' % record, 'level%03d' % level))  # a <name>.z1tmp: conversion failed
     return '%s: %d frames, %s' % (tag, frames, end[0].strip() if end else 'NO END')
 
 
 def main():
-    args = sys.argv[1:]
+    args = common_options(sys.argv[1:])
     jobs_count = 6
     if '--jobs' in args:
         i = args.index('--jobs')
@@ -78,7 +117,7 @@ def main():
     records = sorted({int(a.split(':')[0]) for a in args}) or sorted(int(n[6:]) for n in os.listdir(REGRESSIONS) if n.startswith('record'))
     jobs = []
     for record in records:
-        folder = os.path.join(REGRESSIONS, 'record%d' % record)
+        folder = os.path.join(REGRESSIONS, 'record%03d' % record)
         dem = [n for n in os.listdir(folder) if n.endswith('.dem')][0]
         for level, frames in level_turns(os.path.join(folder, dem)).items():
             if not only or (record, level) in only:

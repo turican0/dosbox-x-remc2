@@ -17,6 +17,7 @@
  *    MC2CHK_SEQZ    1 = misto .bin jen porovnavane oblasti (mapy, D41A0) do .binz,
  *                   zmeny proti predchozimu snimku
  *    MC2CHK_SEQ_SCREEN  1 = v .binz i obrazovka
+ *    MC2CHK_HIRES   1 = level in 640x480 (key R at its start), the screen as 640x480
  *    MC2CHK_NOINPUT 1 = ze zaznamu nevkladat vstupy hracu
  *    MC2CHK_NOSPELLS 1 = ze zaznamu nenastavovat kouzla
  *    MC2CHK_WATCH   linearni adresa (hex); kazda zmena hodnoty se zapise i s EIP
@@ -44,6 +45,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <string>
+#include "sequence_codec.h"
 #if defined(WIN32) || defined(_WIN32)
 #include <process.h>   /* _exit() */
 #define WIN32_LEAN_AND_MEAN
@@ -123,6 +126,13 @@ static Bit32u mc2chk_watch_prev_eip = 0;
 static int    mc2chk_watch_hits = 0;
 static int    mc2chk_watch_from = 0;   /* zapisovat az od tohoto snimku */
 /* vypis registru na zvolenych adresach */
+/* MC2CHK_TEXREAD: file "EIP esi|ebp" per line - texture reads mov al,[ebx+reg] of sub_B6253; reads past the BLOCK atlas are logged */
+static Bit8u* mc2chk_texread_reg = NULL;          /* per EIP from MC2CHK_TEXREAD_BASE: 0 none, 1 esi, 2 ebp */
+static const Bit32u MC2CHK_TEXREAD_BASE = 0x290000u, MC2CHK_TEXREAD_SIZE = 0x20000u;
+static bool mc2chk_norender = false;          /* MC2CHK_NORENDER=1: the in-game DrawWorld calls of sub_2BE30 are skipped */
+static bool mc2chk_nowait = false;            /* MC2CHK_NOWAIT=1: sub_47320 does not wait 5 timer ticks per frame */
+static long long mc2chk_texread_past = 0;
+static long long mc2chk_texread_max = -1;
 static Bit32u mc2chk_trace_eip[8];
 static int    mc2chk_trace_hits[8];
 static int    mc2chk_trace_count = 0;
@@ -143,7 +153,11 @@ static Bit8u mc2chk_seqbuf[0x70000];
  * predchozimu snimku (prvni proti nulam): varint stejnych, varint zmenenych, zmenene bajty */
 static bool   mc2chk_seqz = false;
 static bool   mc2chk_seqscreen = false;
+static bool   mc2chk_hires = false;
 static Bit8u* mc2chk_seqprev[8];
+/* The run writes "MC2SEQZ1" into <file>.z1tmp frame by frame; at its end the file becomes
+ * <file> in "MC2SEQZ4" (sequence_codec.h, the one format remc2 gets from DOSBox). */
+static char   mc2chk_seqpath[8][600];
 static Bit8u  mc2chk_seqout[2 * 0x70000 + 64];
 
 static Bit32u mc2chk_varint(Bit8u* out, Bit32u v) {
@@ -211,6 +225,9 @@ static void mc2chk_init(void) {
     strncpy(mc2chk_seqdir, mc2chk_env("MC2CHK_SEQ", ""), sizeof(mc2chk_seqdir) - 1);
     mc2chk_seqz = atoi(mc2chk_env("MC2CHK_SEQZ", "0")) != 0;
     mc2chk_seqscreen = atoi(mc2chk_env("MC2CHK_SEQ_SCREEN", "0")) != 0;
+    mc2chk_hires = atoi(mc2chk_env("MC2CHK_HIRES", "0")) != 0;
+    if (mc2chk_hires)
+        mc2chk_seq[2].size = 640u * 480u;//3AA0A4: the screen buffer of both modes
     mc2chk_noinput  = atoi(mc2chk_env("MC2CHK_NOINPUT", "0")) != 0;
     mc2chk_nospells = atoi(mc2chk_env("MC2CHK_NOSPELLS", "0")) != 0;
     mc2chk_rawstageptr = atoi(mc2chk_env("MC2CHK_RAWSTAGEPTR", "0")) != 0;
@@ -225,6 +242,20 @@ static void mc2chk_init(void) {
         for (char* tok = strtok(list, ","); tok != NULL && mc2chk_trace_count < 8; tok = strtok(NULL, ","))
             mc2chk_trace_eip[mc2chk_trace_count++] = (Bit32u)strtoul(tok, NULL, 16);
         mc2chk_trace_frame = atoi(mc2chk_env("MC2CHK_TRACE_FRAME", "-1"));
+        mc2chk_norender = atoi(mc2chk_env("MC2CHK_NORENDER", "0")) != 0;
+        mc2chk_nowait = atoi(mc2chk_env("MC2CHK_NOWAIT", "0")) != 0;
+        {
+            FILE* tf = fopen(mc2chk_env("MC2CHK_TEXREAD", ""), "rt");
+            if (tf != NULL) {
+                mc2chk_texread_reg = (Bit8u*)calloc(MC2CHK_TEXREAD_SIZE, 1);
+                char reg[8];
+                unsigned int eip;
+                while (fscanf(tf, "%x %7s", &eip, reg) == 2)
+                    if (eip >= MC2CHK_TEXREAD_BASE && eip < MC2CHK_TEXREAD_BASE + MC2CHK_TEXREAD_SIZE)
+                        mc2chk_texread_reg[eip - MC2CHK_TEXREAD_BASE] = strcmp(reg, "ebp") == 0 ? 2 : 1;
+                fclose(tf);
+            }
+        }
         const char* e = mc2chk_env("MC2CHK_TRACE_EAX", "");
         mc2chk_trace_eax_on = (*e != '\0');
         mc2chk_trace_eax = (Bit32u)strtoul(e, NULL, 16);
@@ -274,6 +305,9 @@ static void mc2chk_init(void) {
                 continue;
             char path[600];
             sprintf(path, "%s/sequence-002285FF-%08X.%s", mc2chk_seqdir, base, mc2chk_seqz ? "binz" : "bin");
+            strcpy(mc2chk_seqpath[i], path);
+            if (mc2chk_seqz)
+                strcat(path, ".z1tmp");
             mc2chk_seq[i].fp = fopen(path, "wb");
             if (mc2chk_seq[i].fp == NULL) {
                 fprintf(stderr, "MC2CHK: nelze otevrit %s\n", path);
@@ -310,6 +344,26 @@ static void mc2chk_stage(int idx, const char* what) {
 
 static bool mc2chk_finishing = false;
 
+/* The sequences closed; the .binz ones from <file>.z1tmp into <file> as "MC2SEQZ4",
+ * kept only when they give the same frames. */
+static void mc2chk_seq_close(void) {
+    for (int i = 0; i < MC2CHK_NSEQ; i++) {
+        if (mc2chk_seq[i].fp == NULL) continue;
+        fclose(mc2chk_seq[i].fp);
+        mc2chk_seq[i].fp = NULL;
+        if (!mc2chk_seqz) continue;
+        const std::string final_path = mc2chk_seqpath[i];
+        const std::string temp_path = final_path + ".z1tmp";
+        if (seqz::ConvertZ1ToZ4(temp_path, final_path) && seqz::SameFrames(temp_path, final_path))
+            remove(temp_path.c_str());
+        else {
+            remove(final_path.c_str());
+            fprintf(stderr, "MC2CHK: %s not converted to MC2SEQZ4, the frames stay in %s\n",
+                    final_path.c_str(), temp_path.c_str());
+        }
+    }
+}
+
 /* Konec behu - at uz radny nebo pres watchdog. */
 static void mc2chk_finish(int code, const char* why) {
     mc2chk_finishing = true;
@@ -319,8 +373,7 @@ static void mc2chk_finish(int code, const char* why) {
         fclose(mc2chk_fp);
         mc2chk_fp = NULL;
     }
-    for (int i = 0; i < MC2CHK_NSEQ; i++)
-        if (mc2chk_seq[i].fp != NULL) { fclose(mc2chk_seq[i].fp); mc2chk_seq[i].fp = NULL; }
+    mc2chk_seq_close();
     exit(code);
 }
 
@@ -379,6 +432,8 @@ static LONG WINAPI mc2chk_seh(EXCEPTION_POINTERS* ep) {
 #endif
 
 static void mc2chk_atexit(void) {
+    if (!mc2chk_finishing)
+        mc2chk_seq_close();//the frames written so far stay usable, as with MC2SEQZ1
     if (mc2chk_finishing || mc2chk_fp == NULL) return;
     fprintf(mc2chk_fp, "# NECEKANY KONEC: proces skoncil pres exit()/return,"
                        " ne nasim zpusobem (snimku %d z %d, krok %lld)\n",
@@ -630,6 +685,26 @@ static void mc2chk_tick(long long stepcount) {
             if (mc2chk_fp != NULL)
                 fprintf(mc2chk_fp, "# POKE 0x%08X: 0x%02X -> 0x%02X (snimek %d, krok %lld)\n",
                         mc2chk_poke_addr[i], before, mc2chk_poke_val[i], mc2chk_frame, stepcount);
+        }
+    }
+
+    /* B6253 mov al,[ebx+esi|ebp]: a texture read past the end of the BLOCK atlas (pointer 2BAC2C, 26000h bytes) */
+    if (mc2chk_texread_reg != NULL && mc2chk_started && reg_eip >= MC2CHK_TEXREAD_BASE && reg_eip < MC2CHK_TEXREAD_BASE + MC2CHK_TEXREAD_SIZE) {
+        const Bit8u r = mc2chk_texread_reg[reg_eip - MC2CHK_TEXREAD_BASE];
+        if (r != 0 && mc2chk_fp != NULL) {
+            const Bit32u texture = r == 2 ? reg_ebp : reg_esi;
+            const Bit32u atlas = mem_readd(0x2BAC2Cu);
+            const Bit32u atlasEnd = atlas + 0x26000u;
+            if (texture >= atlas && texture < atlasEnd && texture + reg_ebx >= atlasEnd) {
+                const long long past = (long long)(texture + reg_ebx) - (long long)atlasEnd;
+                mc2chk_texread_past++;
+                if (past > mc2chk_texread_max || mc2chk_texread_past <= 5) {
+                    if (past > mc2chk_texread_max) mc2chk_texread_max = past;
+                    fprintf(mc2chk_fp, "# TEXREAD za koncem atlasu: snimek %d, IDA 0x%05X, dlazdice +0x%X, posun 0x%X, %lld B za koncem (celkem %lld)\n",
+                            mc2chk_frame, reg_eip - 0x1E1000u, texture - atlas, reg_ebx, past, mc2chk_texread_past);
+                    fflush(mc2chk_fp);
+                }
+            }
         }
     }
 

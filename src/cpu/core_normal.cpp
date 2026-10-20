@@ -170,9 +170,11 @@ Bits CPU_Core_Normal_Run(void) {
 	    return CBRET_NONE;
 
 	while (CPU_Cycles-->0) {
-		LOADIP;
-
+        // enginestep() runs before LOADIP: its hooks may change reg_eip (MC2CHK_NORENDER skips a call,
+        // MC2CHK_NOWAIT skips the timer wait) and the core must fetch the instruction at the new EIP
         enginestep();
+
+		LOADIP;
 
 
 		core.opcode_index=cpu.code.big*(Bitu)0x200u;
