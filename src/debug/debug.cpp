@@ -4820,7 +4820,163 @@ void DEBUG_HeavyWriteLogInstruction(void) {
 	DEBUG_ShowMsg("DEBUG: Done.\n");
 }
 
+// remc1 verification: REMC1_DUMP=<code linear>,<data linear>,<length>,<file>[;...] (hex) writes the memory
+// when the instruction at the code address runs (REMC1_DUMP_HIT=n: the n-th time, default 1); REMC1_DUMP_EXIT=1
+// ends DOSBox after the last dump
+struct Remc1Dump { uint32_t code, data, length; std::string file; bool done; uint32_t hits; };
+static std::vector<Remc1Dump> remc1Dumps;
+static bool remc1DumpsRead = false;
+
+static void Remc1ReadDumps() {
+	remc1DumpsRead = true;
+	const char* env = getenv("REMC1_DUMP");
+	if (!env) return;
+	std::string all = env;
+	size_t pos = 0;
+	while (pos < all.size()) {
+		size_t end = all.find(';', pos);
+		if (end == std::string::npos) end = all.size();
+		std::string item = all.substr(pos, end - pos);
+		pos = end + 1;
+		Remc1Dump d;
+		char file[260] = "";
+		if (sscanf(item.c_str(), "%x,%x,%x,%259s", &d.code, &d.data, &d.length, file) == 4) {
+			d.file = file;
+			d.done = false;
+			d.hits = 0;
+			remc1Dumps.push_back(d);
+		}
+	}
+}
+
+// REMC1_POKE=<code linear>,<data linear>,<hex bytes>[;...] writes the bytes when the instruction runs (once)
+struct Remc1Poke { uint32_t code, data; std::vector<uint8_t> bytes; bool done; };
+static std::vector<Remc1Poke> remc1Pokes;
+
+static void Remc1ReadPokes() {
+	const char* env = getenv("REMC1_POKE");
+	if (!env) return;
+	std::string all = env;
+	size_t pos = 0;
+	while (pos < all.size()) {
+		size_t end = all.find(';', pos);
+		if (end == std::string::npos) end = all.size();
+		std::string item = all.substr(pos, end - pos);
+		pos = end + 1;
+		Remc1Poke p;
+		char hex[1024] = "";
+		if (sscanf(item.c_str(), "%x,%x,%1023s", &p.code, &p.data, hex) == 3) {
+			for (size_t i = 0; hex[i] && hex[i + 1]; i += 2) {
+				unsigned int value = 0;
+				sscanf(hex + i, "%2x", &value);
+				p.bytes.push_back((uint8_t)value);
+			}
+			p.done = false;
+			remc1Pokes.push_back(p);
+		}
+	}
+}
+
+// REMC1_NOISE=<code linear>[,<code linear>...] (hex): the MC1 stereogram (30D90) takes its noise from DOS memory at
+// linear 24080h; each time the code address runs it gets the noise of the port (remc2 Mc1DrawStereogram):
+// 2100h bytes, seed 1A2Bh, seed = seed * 24A1h + 24DFh (16 bits), byte = seed >> 8
+static std::vector<uint32_t> remc1NoiseCodes;
+
+static void Remc1ReadNoise() {
+	const char* env = getenv("REMC1_NOISE");
+	if (!env) return;
+	std::string all = env;
+	size_t pos = 0;
+	while (pos < all.size()) {
+		size_t end = all.find(',', pos);
+		if (end == std::string::npos) end = all.size();
+		unsigned int code = 0;
+		if (sscanf(all.substr(pos, end - pos).c_str(), "%x", &code) == 1) remc1NoiseCodes.push_back(code);
+		pos = end + 1;
+	}
+}
+
+static void Remc1WriteNoise() {
+	uint16_t seed = 0x1A2B;
+	for (uint32_t i = 0; i < 0x2100; i++) {
+		seed = (uint16_t)(seed * 0x24A1 + 0x24DF);
+		mem_writeb_checked((PhysPt)(0x24080 + i), (uint8_t)(seed >> 8));
+	}
+}
+
+// errors of the original fixed in the port, the same fixed here (always): at the code address the bytes replaced
+// when they are the original ones (so only in the right executable)
+struct Remc1Fix { uint32_t code, at; std::vector<uint8_t> original, fixed; };
+static const Remc1Fix remc1Fixes[] = {
+	// 59230 / 59740: 'cmp ebp, offset 369D0' (400h against the address of the free size function) -> 'cmp ebp, eax'
+	{ 0x59230 + 0x1D1000, 0x592D7 + 0x1D1000, { 0x81, 0xFD, 0xD0, 0x79, 0x20, 0x00 }, { 0x39, 0xC5, 0x90, 0x90, 0x90, 0x90 } },
+	{ 0x59740 + 0x1D1000, 0x597E7 + 0x1D1000, { 0x81, 0xFD, 0x90, 0x7D, 0x20, 0x00 }, { 0x39, 0xC5, 0x90, 0x90, 0x90, 0x90 } },
+};
+
+static void Remc1ApplyFixes(uint32_t linear) {
+	for (const Remc1Fix& fix : remc1Fixes) {
+		if (fix.code != linear) continue;
+		bool original = true;
+		for (size_t i = 0; i < fix.original.size() && original; i++) {
+			uint8_t value = 0;
+			mem_readb_checked((PhysPt)(fix.at + i), &value);
+			original = value == fix.original[i];
+		}
+		if (original)
+			for (size_t i = 0; i < fix.fixed.size(); i++) mem_writeb_checked((PhysPt)(fix.at + i), fix.fixed[i]);
+	}
+}
+
+static uint32_t Remc1DumpHit() {
+	static uint32_t hit = 0;
+	if (!hit) {
+		const char* env = getenv("REMC1_DUMP_HIT");
+		hit = env ? (uint32_t)atoi(env) : 1;
+		if (!hit) hit = 1;
+	}
+	return hit;
+}
+
+static void Remc1CheckDumps() {
+	if (!remc1DumpsRead) { Remc1ReadDumps(); Remc1ReadPokes(); Remc1ReadNoise(); }
+	uint32_t linear = (uint32_t)(SegPhys(cs) + reg_eip);
+	Remc1ApplyFixes(linear);
+	if (remc1Dumps.empty() && remc1Pokes.empty() && remc1NoiseCodes.empty()) return;
+	for (uint32_t code : remc1NoiseCodes)
+		if (code == linear) Remc1WriteNoise();
+	for (auto& p : remc1Pokes) {
+		if (!p.done && p.code == linear) {
+			for (size_t i = 0; i < p.bytes.size(); i++) mem_writeb_checked((PhysPt)(p.data + i), p.bytes[i]);
+			p.done = true;
+		}
+	}
+	if (remc1Dumps.empty()) return;
+	bool all = true;
+	bool wrote = false;
+	for (auto& d : remc1Dumps) {
+		if (!d.done && d.code == linear && ++d.hits >= Remc1DumpHit()) {
+			FILE* f = fopen(d.file.c_str(), "wb");
+			if (f) {
+				for (uint32_t i = 0; i < d.length; i++) {
+					uint8_t value = 0;
+					mem_readb_checked(d.data + i, &value);
+					fputc(value, f);
+				}
+				fclose(f);
+			}
+			d.done = true;
+			wrote = true;
+		}
+		all = all && d.done;
+	}
+	if (wrote && all) {
+		const char* quit = getenv("REMC1_DUMP_EXIT");
+		if (quit && quit[0] == '1') exit(0);
+	}
+}
+
 bool DEBUG_HeavyIsBreakpoint(void) {
+	Remc1CheckDumps();
 	if (cpuLog) {
 		if (cpuLogCounter>0) {
 			LogInstruction(SegValue(cs),reg_eip,cpuLogFile);
